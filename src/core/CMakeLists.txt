@@ -13,7 +13,7 @@ bb_add_more_warnings(
 
 bb_add_executable(steroids)
 
-target_compile_options(steroids PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(steroids PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(steroids PRIVATE
     main.c
     modules_manager.c

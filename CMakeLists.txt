@@ -44,22 +44,22 @@ set(ST_INTERNAL_MODULES_COUNT 0)
 #  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
 #  "${CMAKE_BINARY_DIR}/src/modules/dynarr/scv")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
- "${CMAKE_BINARY_DIR}/src/modules/events/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
- "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
- "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
+#  "${CMAKE_BINARY_DIR}/src/modules/events/simple")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
+#  "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
+#  "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gfxctx/egl"
 #  "${CMAKE_BINARY_DIR}/src/modules/gfxctx/egl")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gldebug/opengl"
 #  "${CMAKE_BINARY_DIR}/src/modules/gldebug/opengl")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/glloader/egl"
 #  "${CMAKE_BINARY_DIR}/src/modules/glloader/egl")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/htable/hash_table"
- "${CMAKE_BINARY_DIR}/src/modules/htable/hash_table")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/ini/inih"
- "${CMAKE_BINARY_DIR}/src/modules/ini/inih")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/htable/hash_table"
+#  "${CMAKE_BINARY_DIR}/src/modules/htable/hash_table")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/ini/inih"
+#  "${CMAKE_BINARY_DIR}/src/modules/ini/inih")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/keyboard/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/keyboard/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/logger/libsir"
@@ -114,22 +114,22 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/logger/libsir"
 #  "${CMAKE_BINARY_DIR}/src/modules/monitor/xlib")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mouse/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/mouse/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/opts/ketopt"
- "${CMAKE_BINARY_DIR}/src/modules/opts/ketopt")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/pathtools/cwalk"
- "${CMAKE_BINARY_DIR}/src/modules/pathtools/cwalk")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/plugin/simple"
- "${CMAKE_BINARY_DIR}/src/modules/plugin/simple")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/opts/ketopt"
+#  "${CMAKE_BINARY_DIR}/src/modules/opts/ketopt")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/pathtools/cwalk"
+#  "${CMAKE_BINARY_DIR}/src/modules/pathtools/cwalk")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/plugin/simple"
+#  "${CMAKE_BINARY_DIR}/src/modules/plugin/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/render/opengl"
 #  "${CMAKE_BINARY_DIR}/src/modules/render/opengl")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/rbuf/lwrb"
- "${CMAKE_BINARY_DIR}/src/modules/rbuf/lwrb")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/rbuf/lwrb"
+#  "${CMAKE_BINARY_DIR}/src/modules/rbuf/lwrb")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/runner/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/runner/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
- "${CMAKE_BINARY_DIR}/src/modules/so/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
- "${CMAKE_BINARY_DIR}/src/modules/spcpaths/cfgpath")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
+#  "${CMAKE_BINARY_DIR}/src/modules/so/simple")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
+#  "${CMAKE_BINARY_DIR}/src/modules/spcpaths/cfgpath")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sprite/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/sprite/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/terminal/simple"
@@ -142,8 +142,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
 #  "${CMAKE_BINARY_DIR}/src/modules/vec2/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/window/xlib"
 #  "${CMAKE_BINARY_DIR}/src/modules/window/xlib")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
- "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
+#  "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
 
 foreach(ST_INTERNAL_MODULE ${ST_INTERNAL_MODULES})
     set(INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES

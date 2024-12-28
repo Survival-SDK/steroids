@@ -2,13 +2,10 @@ if (${ST_MODULE_LOGGER_LIBSIR} STREQUAL "no")
     return()
 endif()
 
-set(ST_MODULE_NAME "libsir")
 set(ST_MODULE_TYPE ${ST_MODULE_LOGGER_LIBSIR})
 set(ST_MODULE_SUBSYSTEM "logger")
+set(ST_MODULE_NAME "libsir")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
-
-set(ST_MODULE_PREREQS "")
-set(ST_MODULE_PREREQS_COUNT 0)
 
 configure_file(
     "config.h.in"
@@ -41,7 +38,7 @@ bb_find_library(
   REQUIRED
 )
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "libsir.c"
 )

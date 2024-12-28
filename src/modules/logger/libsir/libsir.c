@@ -13,8 +13,30 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_logger_quit(st_loggerctx_t *logger_ctx);
+static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
+ struct st_eventsctx_s *events_ctx);
+static bool st_logger_set_stdout_levels(st_loggerctx_t *logger_ctx,
+ st_loglvl_t levels);
+static bool st_logger_set_stderr_levels(st_loggerctx_t *logger_ctx,
+ st_loglvl_t levels);
+static bool st_logger_set_log_file(st_loggerctx_t *logger_ctx,
+ const char *filename, st_loglvl_t levels);
+static bool st_logger_set_callback(st_loggerctx_t *logger_ctx, st_logcbk_t func,
+ void *userdata, st_loglvl_t levels);
+static void st_logger_debug(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_info(const st_loggerctx_t *logger_ctx, const char* format,
+ ...);
+static void st_logger_warning(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_error(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_set_postmortem_msg(st_loggerctx_t *logger_ctx,
+ const char *msg);
+
 static st_loggerctx_funcs_t loggerctx_funcs = {
-    .quit               = st_logger_quit,
+    st_modctx_funcs,
     .enable_events      = st_logger_enable_events,
     .set_stdout_levels  = st_logger_set_stdout_levels,
     .set_stderr_levels  = st_logger_set_stderr_levels,
@@ -27,7 +49,14 @@ static st_loggerctx_funcs_t loggerctx_funcs = {
     .set_postmortem_msg = st_logger_set_postmortem_msg,
 };
 
-ST_MODULE_DEF_GET_FUNC(logger_libsir)
+static st_moddata_t st_module_logger_libsir_data = {
+    .name = "libsir",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "logger",
+    .prereqs = (st_modprerq_t[]){ {0}, },
+    .ctor = st_logger_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(logger_libsir)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -43,11 +72,9 @@ static void log_file_destroy(void *plog_file) {
     sir_remfile(log_file->file);
 }
 
-static const char *st_module_subsystem = "logger";
-static const char *st_module_name = "libsir";
-
 static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
-    sirinit init_options = {
+    st_loggerctx_t *logger_ctx;
+    sirinit         init_options = {
         .d_stdout = {
             .levels = ST_LL_NONE,
             .opts = (sir_options)SIRO_NOHOST | (sir_options)SIRO_NONAME |
@@ -66,13 +93,13 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         },
         .name = "steroids", /* TODO(edomin): move name management to module */
     };
-    st_loggerctx_t *logger_ctx;
 
     if (sir_isinitialized())
         return NULL;
 
-    logger_ctx = st_modctx_new(st_module_subsystem, st_module_name,
-     sizeof(st_loggerctx_t), NULL, &loggerctx_funcs);
+    logger_ctx = (st_loggerctx_t *)st_modctx_new("logger", "libsir", 
+     sizeof(st_loggerctx_t), NULL, (st_object_dtor_t)st_logger_quit, 
+     &loggerctx_funcs);
     if (!logger_ctx) {
         fprintf(stderr,
          "logger_libsir: unable to create new logger ctx object\n");
@@ -87,7 +114,9 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         return NULL;
     }
 
-    logger_ctx->events_ctx = events_ctx;
+    logger_ctx->events_ctx = events_ctx 
+        ? st_weakptr_create((st_object_t *)events_ctx) 
+        : 0;
     logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
     if (!logger_ctx->callbacks)
@@ -101,7 +130,7 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
          "dlist for log files. Logging to file is not available on this run");
 
     if (events_ctx && !st_logger_enable_events(logger_ctx, events_ctx))
-        logger_ctx->events_ctx = NULL;
+        logger_ctx->events_ctx = 0;
 
     st_logger_info(logger_ctx, "logger_libsir: Logger initialized");
 
