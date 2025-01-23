@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
-
 #include "steroids/module.h"
 #include "steroids/types/modules/logger.h"
 
