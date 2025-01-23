@@ -157,20 +157,21 @@ static void st_logger_quit(st_loggerctx_t *logger_ctx) {
     fprintf(stderr, "logger_libsir: Logger destroyed\n");
 }
 
-static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
+static bool st_logger_enable_events(
+ __attribute__((unused)) st_loggerctx_t *logger_ctx,
  struct st_eventsctx_s *events_ctx) {
     /* Not implemented */
 
     return false;
 }
 
-static bool st_logger_set_stdout_levels(st_loggerctx_t *logger_ctx,
- st_loglvl_t levels) {
+static bool st_logger_set_stdout_levels(
+ __attribute__((unused)) st_loggerctx_t *logger_ctx, st_loglvl_t levels) {
     return sir_stdoutlevels((sir_levels)levels);
 }
 
-static bool st_logger_set_stderr_levels(st_loggerctx_t *logger_ctx,
- st_loglvl_t levels) {
+static bool st_logger_set_stderr_levels(
+ __attribute__((unused)) st_loggerctx_t *logger_ctx, st_loglvl_t levels) {
     return sir_stderrlevels((sir_levels)levels);
 }
 
