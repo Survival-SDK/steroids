@@ -8,10 +8,10 @@ typedef uintptr_t st_weakptr_t;
 
 struct st_object;
 
-typedef size_t (*st_object_dtor_t)(struct st_object *obj);
+typedef void (*st_object_dtor_t)(struct st_object *obj);
 
 typedef st_weakptr_t (*st_object_get_owner_t)(struct st_object *obj);
-typedef struct st_object *(*st_object_grab_t)(struct st_object *obj);
+typedef void *(*st_object_grab_t)(void *obj);
 typedef void (*st_object_release_t)(void *obj);
 typedef struct st_object *(*st_object_move_t)(struct st_object **obj);
 
@@ -26,11 +26,6 @@ typedef struct {
     st_object_move_t      move;
 } st_object_funcs_t;
 
-typedef struct {
-    st_object_funcs_t;
-    st_object_destroy_t destroy;
-} st_objbase_funcs_t;
-
 typedef struct st_object {
     st_object_dtor_t         dtor;
     const st_object_funcs_t *funcs;
@@ -39,10 +34,10 @@ typedef struct st_object {
 } st_object_t;
 
 static st_weakptr_t st_object_get_owner(st_object_t *obj);
-static st_object_t *st_object_grab(st_object_t *obj);
+static void *st_object_grab(void *obj);
 static void st_object_release(void *obj);
 static st_object_t *st_object_move(st_object_t **obj);
-static size_t st_object_destroy(st_object_t *obj);
+static void st_object_destroy(st_object_t *obj);
 
 static const st_object_funcs_t st_object_funcs = { 
     .get_owner = st_object_get_owner,
@@ -70,9 +65,9 @@ static st_weakptr_t st_object_get_owner(st_object_t *obj) {
     return obj->st_owner;
 }
 
-static st_object_t *st_object_grab(st_object_t *obj) {
+static void *st_object_grab(void *obj) {
     if (obj)
-        obj->st_refs++;
+        ((st_object_t *)obj)->st_refs++;
     return obj;
 }
 
@@ -89,12 +84,8 @@ static st_object_t *st_object_move(st_object_t **obj) {
     return temp;
 }
 
-static size_t st_object_destroy(st_object_t *obj) {
-    size_t remain_refs = obj->st_refs;
-
+static void st_object_destroy(st_object_t *obj) {
     free(obj);
-
-    return remain_refs;
 }
 
 static st_weakptr_t st_weakptr_create(st_object_t *obj) {
