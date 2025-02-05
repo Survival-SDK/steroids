@@ -1,6 +1,5 @@
 #pragma once
 
-#include <stdbool.h>
 #include <stdint.h>
 
 #pragma GCC diagnostic push
@@ -8,6 +7,7 @@
 #include <lwrb.h>
 #pragma GCC diagnostic pop
 
+#include "steroids/types/modctx.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"
 
