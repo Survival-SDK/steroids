@@ -11,7 +11,7 @@ struct st_object;
 
 typedef void (*st_object_dtor_t)(struct st_object *obj);
 
-typedef st_weakptr_t (*st_object_get_owner_t)(struct st_object *obj);
+typedef st_weakptr_t (*st_object_get_owner_t)(void *obj);
 typedef void *(*st_object_grab_t)(void *obj);
 typedef void (*st_object_release_t)(void *obj);
 typedef struct st_object *(*st_object_move_t)(struct st_object **obj);
@@ -34,7 +34,7 @@ typedef struct st_object {
     st_weakptr_t             st_owner;
 } st_object_t;
 
-static st_weakptr_t st_object_get_owner(st_object_t *obj);
+static st_weakptr_t st_object_get_owner(void *obj);
 static void *st_object_grab(void *obj);
 static void st_object_release(void *obj);
 static st_object_t *st_object_move(st_object_t **obj);
@@ -62,8 +62,8 @@ static st_object_t *st_object_new(size_t size, st_object_dtor_t dtor,
     return obj;
 }
 
-static st_weakptr_t st_object_get_owner(st_object_t *obj) {
-    return obj->st_owner;
+static st_weakptr_t st_object_get_owner(void *obj) {
+    return ((st_object_t *)obj)->st_owner;
 }
 
 static void *st_object_grab(void *obj) {
@@ -93,6 +93,6 @@ static st_weakptr_t st_weakptr_create(st_object_t *obj) {
     return (st_weakptr_t)obj;
 }
 
-static st_object_t *st_weakptr_grab(st_weakptr_t weakptr) {
+static void *st_weakptr_grab(st_weakptr_t weakptr) {
     return st_object_grab((st_object_t *)weakptr);
 }
