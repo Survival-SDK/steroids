@@ -41,6 +41,8 @@ typedef struct {
 } st_rbuf_funcs_t;
 
 #define ST_RBUFCTX_CALL(ctx, func, ...) \
-    ((st_rbufctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, ## __VA_ARGS__)
+    ((st_rbufctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)
 #define ST_RBUF_CALL(object, func, ...) \
-    ((st_rbuf_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_rbuf_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)
