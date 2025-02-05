@@ -44,8 +44,8 @@ set(ST_INTERNAL_MODULES_COUNT 0)
 #  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
 #  "${CMAKE_BINARY_DIR}/src/modules/dynarr/scv")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/events/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/events/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
