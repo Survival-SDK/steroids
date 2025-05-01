@@ -3,96 +3,85 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// #define ST_OBJCALL(obj, func, ...) obj->funcs.func(obj, ## __VA_ARGS__);
-
-typedef uintptr_t st_weakptr_t;
+#define ST_OBJCALL(obj, func, ...) obj->funcs.func(obj, ## __VA_ARGS__);
+#define ST_ALLOCATOR_CALL(allocator, func, ...) \
+    ((st_allocator_funcs_t *)((const st_object_t *)allocator)->funcs)->func(allocator, ## __VA_ARGS__)
 
 struct st_object;
+struct st_allocator;
 
-typedef void (*st_object_dtor_t)(struct st_object *obj);
-
-typedef st_weakptr_t (*st_object_get_owner_t)(void *obj);
-typedef void *(*st_object_grab_t)(void *obj);
-typedef void (*st_object_release_t)(void *obj);
-typedef struct st_object *(*st_object_move_t)(struct st_object **obj);
-
-typedef size_t (*st_object_destroy_t)(struct st_object *obj);
-
-static st_weakptr_t st_weakptr_create(struct st_object *obj);
+typedef void (*st_object_dtor_t)(void *obj);
+typedef struct st_object *(*st_object_get_owner_t)(void *obj);
+typedef void (*st_object_destroy_t)(void *obj);
+typedef void *(*st_allocator_alloc_t)(struct st_allocator *obj);
+typedef void (*st_allocator_free_t)(struct st_allocator *obj, void *ptr);
 
 typedef struct {
     st_object_get_owner_t get_owner;
-    st_object_grab_t      grab;
-    st_object_release_t   release;
-    st_object_move_t      move;
+    st_object_destroy_t   destroy;
 } st_object_funcs_t;
 
+typedef struct {
+    st_object_funcs_t;
+    st_allocator_alloc_t alloc;
+    st_allocator_free_t  free;
+} st_allocator_funcs_t;
+
 typedef struct st_object {
-    st_object_dtor_t         dtor;
     const st_object_funcs_t *funcs;
-    size_t                   st_refs;
-    st_weakptr_t             st_owner;
+    struct st_object        *st_owner;
+    st_object_dtor_t         st_dtor;
+    struct st_allocator     *st_allocator;
 } st_object_t;
 
-static st_weakptr_t st_object_get_owner(void *obj);
-static void *st_object_grab(void *obj);
-static void st_object_release(void *obj);
-static st_object_t *st_object_move(st_object_t **obj);
-static void st_object_destroy(st_object_t *obj);
+typedef struct st_allocator {
+    st_object_t;
+} st_allocator_t;
+
+static st_object_t *st_object_get_owner(void *obj);
+static void st_object_destroy(void *obj);
 
 static const st_object_funcs_t st_object_funcs = { 
     .get_owner = st_object_get_owner,
-    .grab      = st_object_grab,      
-    .release   = st_object_release,   
-    .move      = st_object_move,
+    .destroy = st_object_destroy,
 };
 
-static st_object_t *st_object_new(size_t size, st_object_dtor_t dtor, 
- const void *funcs, st_object_t *owner) {
-    st_object_t *obj = malloc(size);
-
+static st_object_t *st_object_init(st_object_t *obj, const void *funcs, 
+ st_object_dtor_t dtor, st_object_t *owner, st_allocator_t *allocator) {
     if (!obj)
         return NULL;
 
-    obj->dtor     = dtor ?: st_object_destroy;
-    obj->funcs    = funcs ?: &st_object_funcs;
-    obj->st_refs  = 1;
-    obj->st_owner = st_weakptr_create(owner);
+    obj->funcs        = funcs ?: &st_object_funcs;
+    obj->st_dtor      = dtor;
+    obj->st_owner     = owner;
+    obj->st_allocator = allocator;
 
     return obj;
 }
 
-static st_weakptr_t st_object_get_owner(void *obj) {
+static st_object_t *st_object_new(size_t size, const void *funcs, 
+ st_object_dtor_t dtor, st_object_t *owner) {
+    st_object_t *obj = malloc(size);
+
+    return st_object_init(obj, funcs, dtor, owner, NULL);
+}
+
+static st_object_t *st_object_alloc(const void *funcs, 
+ st_object_dtor_t dtor, st_object_t *owner, st_allocator_t *allocator) {
+    st_object_t *obj = ST_ALLOCATOR_CALL(allocator, alloc);
+
+    return st_object_init(obj, funcs, dtor, owner, allocator);
+}
+
+static st_object_t *st_object_get_owner(void *obj) {
     return ((st_object_t *)obj)->st_owner;
 }
 
-static void *st_object_grab(void *obj) {
-    if (obj)
-        ((st_object_t *)obj)->st_refs++;
-    return obj;
-}
-
-static void st_object_release(void *obj) {
-    if (obj && --((st_object_t *)obj)->st_refs == 0)
-        ((st_object_t *)obj)->dtor(obj);
-}
-
-static st_object_t *st_object_move(st_object_t **obj) {
-    st_object_t *temp = *obj;
-
-    *obj = NULL;
-
-    return temp;
-}
-
-static void st_object_destroy(st_object_t *obj) {
-    free(obj);
-}
-
-static st_weakptr_t st_weakptr_create(st_object_t *obj) {
-    return (st_weakptr_t)obj;
-}
-
-static void *st_weakptr_grab(st_weakptr_t weakptr) {
-    return st_object_grab((st_object_t *)weakptr);
+static void st_object_destroy(void *obj) {
+    if (((st_object_t *)obj)->st_dtor)
+        ((st_object_t *)obj)->st_dtor(obj);
+    else if (((st_object_t *)obj)->st_allocator)
+        ST_ALLOCATOR_CALL(((st_object_t *)obj)->st_allocator, free, obj);
+    else
+        free(obj);
 }
