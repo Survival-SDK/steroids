@@ -34,12 +34,12 @@ typedef struct {
 
 typedef struct st_loggerctx_s {
     st_modctx_t;
-    st_weakptr_t  events_ctx;
-    st_dlist_t   *log_files;
-    st_dlist_t   *callbacks;
-    st_evtypeid_t ev_log_output_debug;
-    st_evtypeid_t ev_log_output_info;
-    st_evtypeid_t ev_log_output_warning;
-    st_evtypeid_t ev_log_output_error;
-    char          postmortem_msg[ST_POSTMORTEM_MSG_SIZE_MAX];
+    struct st_eventsctx_s *events_ctx;
+    st_dlist_t            *log_files;
+    st_dlist_t            *callbacks;
+    st_evtypeid_t          ev_log_output_debug;
+    st_evtypeid_t          ev_log_output_info;
+    st_evtypeid_t          ev_log_output_warning;
+    st_evtypeid_t          ev_log_output_error;
+    char                   postmortem_msg[ST_POSTMORTEM_MSG_SIZE_MAX];
 } st_loggerctx_t;

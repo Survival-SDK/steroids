@@ -98,8 +98,8 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         return NULL;
 
     logger_ctx = (st_loggerctx_t *)st_modctx_new("logger", "libsir", 
-     sizeof(st_loggerctx_t), NULL, (st_object_dtor_t)st_logger_quit, 
-     &loggerctx_funcs);
+     sizeof(st_loggerctx_t), NULL, &loggerctx_funcs, 
+     (st_object_dtor_t)st_logger_quit);
     if (!logger_ctx) {
         fprintf(stderr,
          "logger_libsir: unable to create new logger ctx object\n");
@@ -114,9 +114,7 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         return NULL;
     }
 
-    logger_ctx->events_ctx = events_ctx 
-        ? st_weakptr_create((st_object_t *)events_ctx) 
-        : 0;
+    logger_ctx->events_ctx = events_ctx;
     logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
     if (!logger_ctx->callbacks)
@@ -130,7 +128,7 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
          "dlist for log files. Logging to file is not available on this run");
 
     if (events_ctx && !st_logger_enable_events(logger_ctx, events_ctx))
-        logger_ctx->events_ctx = 0;
+        logger_ctx->events_ctx = NULL;
 
     st_logger_info(logger_ctx, "logger_libsir: Logger initialized");
 
