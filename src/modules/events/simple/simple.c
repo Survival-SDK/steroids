@@ -78,8 +78,8 @@ static const char *st_module_name = "simple";
 static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
     st_rbuf_init_t  rbuf_init;
     st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events", 
-     "simple", sizeof(st_eventsctx_t), NULL, (st_object_dtor_t)st_events_quit, 
-     &eventsctx_funcs);
+     "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs, 
+     (st_object_dtor_t)st_events_quit);
 
     if (!events_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -104,7 +104,7 @@ static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
         goto rbuf_init_fail;
     }
 
-    events_ctx->logger_ctx = ST_LOGGERCTX_CALL(logger_ctx, grab);
+    events_ctx->logger_ctx = logger_ctx;
     events_ctx->types_count = 0;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
@@ -124,10 +124,8 @@ static void st_events_quit(st_eventsctx_t *events_ctx) {
     // Unsubscribe all queues
     // Delete queues
 
-    ST_RBUFCTX_CALL(events_ctx->rbuf_ctx, release);
     ST_LOGGERCTX_CALL(events_ctx->logger_ctx, info,
      "events_simple: Event subsystem destroyed");
-    ST_LOGGERCTX_CALL(events_ctx->logger_ctx, release);
     free(events_ctx);
 }
 
@@ -172,9 +170,8 @@ static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
     if (!handle)
         return NULL;
 
-    queue = (st_evq_t *)st_object_new(
-     sizeof(st_evq_t *), (st_object_dtor_t)st_events_destroy_queue, 
-     &evq_funcs, (st_object_t *)events_ctx);
+    queue = (st_evq_t *)st_object_new(sizeof(st_evq_t), &evq_funcs, 
+     (st_object_dtor_t)st_events_destroy_queue, (st_object_t *)events_ctx);
 
     if (!queue) {
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
@@ -182,7 +179,7 @@ static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
              "events_simple: Unable to allocate memory for events queue "
              "object: %s", errbuf);
 
-        ST_RBUF_CALL(handle, release);
+        st_object_destroy((st_object_t *)handle);
         st_object_destroy((st_object_t *)queue);
 
         return NULL;
@@ -197,57 +194,43 @@ static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
 static void st_events_destroy_queue(st_evq_t *queue) {
     st_events_unsubscribe_all(queue);
 
-    ST_RBUF_CALL(queue->handle, release);
+    st_object_destroy((st_object_t *)queue->handle);
     free(queue);
 }
 
 static bool st_events_subscribe(st_evq_t *queue, st_evtypeid_t type_id) {
-    st_eventsctx_t *events_ctx = st_weakptr_grab(st_object_get_owner(queue));
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_object_get_owner(queue);
     st_evtype_t    *evtype;
-    bool            result = false;
 
-    if (events_ctx)
+    if (!events_ctx || (type_id >= (st_evtypeid_t)events_ctx->types_count))
         return false;
-
-    if (type_id >= (st_evtypeid_t)events_ctx->types_count)
-        goto error;
 
     evtype = &events_ctx->types[type_id];
 
     for (size_t i = 0; i < evtype->subscribers_count; i++) {
         if (evtype->subscribers[i] == queue)
-            goto success;
+            return true;
     }
 
     if (evtype->subscribers_count >= SUBSCRIBERS_MAX)
-        goto error;
+        return false;
 
-    evtype->subscribers[evtype->subscribers_count++] = st_object_grab(queue);
+    evtype->subscribers[evtype->subscribers_count++] = queue;
 
-success:
-    result = true;
-error:
-    st_object_release(events_ctx);
-
-    return result;
+    return true;
 }
 
 static void st_events_unsubscribe(st_evq_t *queue, st_evtypeid_t type_id) {
-    st_eventsctx_t *events_ctx = st_weakptr_grab(st_object_get_owner(queue));
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_object_get_owner(queue);
     st_evtype_t    *evtype;
 
-    if (events_ctx)
+    if (!events_ctx || (type_id >= (st_evtypeid_t)events_ctx->types_count))
         return;
-    
-    if (type_id >= (st_evtypeid_t)events_ctx->types_count)
-        goto release;
 
     evtype = &events_ctx->types[type_id];
 
     for (size_t i = 0; i < evtype->subscribers_count; i++) {
         if (evtype->subscribers[i] == queue) {
-            st_object_release(evtype->subscribers[i]);
-
             if (i <= evtype->subscribers_count - 1) {
                 memmove(&evtype->subscribers[i], 
                  &evtype->subscribers[evtype->subscribers_count - 1],
@@ -255,24 +238,19 @@ static void st_events_unsubscribe(st_evq_t *queue, st_evtypeid_t type_id) {
             }
             evtype->subscribers_count--;
 
-            goto release;
+            return;
         }
     }
-
-release:
-    st_object_release(events_ctx);
 }
 
 static void st_events_unsubscribe_all(st_evq_t *queue) {
-    st_eventsctx_t *events_ctx = st_weakptr_grab(st_object_get_owner(queue));
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_object_get_owner(queue);
 
-    if (events_ctx)
+    if (!events_ctx)
         return;
 
     for (int i = 0; i < (st_evtypeid_t)events_ctx->types_count; i++)
         st_events_unsubscribe(queue, i);
-
-    st_object_release(events_ctx);
 }
 
 static void st_events_suspend(st_evq_t *queue, bool clear) {
@@ -322,36 +300,25 @@ static st_evtypeid_t st_events_peek_type(const st_evq_t *queue) {
 }
 
 static bool st_events_pop(st_evq_t *queue, void *data) {
-    st_eventsctx_t *events_ctx = st_weakptr_grab(st_object_get_owner(queue));
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_object_get_owner(queue);
     st_evtypeid_t   type_id;
-    bool            result;
 
-    if (events_ctx)
-        return false;
-
-    result = ST_RBUF_CALL(queue->handle, pop, &type_id, sizeof(st_evtypeid_t))
-     && ST_RBUF_CALL(queue->handle, pop, data,
-      events_ctx->types[type_id].data_size);
-
-    st_object_release(events_ctx);
-
-    return result;
+    return events_ctx
+        ? ST_RBUF_CALL(queue->handle, pop, &type_id, sizeof(st_evtypeid_t))
+          && ST_RBUF_CALL(queue->handle, pop, data,
+           events_ctx->types[type_id].data_size)
+        : false;
 }
 
 static bool st_events_drop(st_evq_t *queue) {
-    st_eventsctx_t *events_ctx = st_weakptr_grab(st_object_get_owner(queue));
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_object_get_owner(queue);
     st_evtypeid_t   type_id;
-    bool            result;
 
-    if (events_ctx)
-        return false;
-
-    result = ST_RBUF_CALL(queue->handle, pop, &type_id, sizeof(st_evtypeid_t))
-     && ST_RBUF_CALL(queue->handle, drop, events_ctx->types[type_id].data_size);
-
-    st_object_release(events_ctx);
-
-    return result;
+    return events_ctx
+        ? ST_RBUF_CALL(queue->handle, pop, &type_id, sizeof(st_evtypeid_t))
+          && ST_RBUF_CALL(queue->handle, drop, 
+           events_ctx->types[type_id].data_size)
+        : false;
 }
 
 static bool st_events_clear(st_evq_t *queue) {
