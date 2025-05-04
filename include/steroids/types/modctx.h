@@ -32,9 +32,9 @@ static const st_modctx_funcs_t st_modctx_funcs = {
 };
 
 static st_modctx_t *st_modctx_new(const char *subsystem, const char *name,
- size_t size, void *module, st_object_dtor_t dtor, const void *funcs) {
+ size_t size, void *module, const void *funcs, st_object_dtor_t dtor) {
     st_modctx_t *ctx = (st_modctx_t *)st_object_new(
-     size ?: sizeof(st_modctx_t), dtor, funcs ?: &st_modctx_funcs, module);
+     size ?: sizeof(st_modctx_t), funcs ?: &st_modctx_funcs, dtor, module);
     
     ctx->st_subsystem = subsystem;
     ctx->st_name      = name;
