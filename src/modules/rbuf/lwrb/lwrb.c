@@ -65,8 +65,8 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 
 static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx) {
     st_rbufctx_t *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf", "lwrb",
-     sizeof(st_rbufctx_t), NULL, (st_object_dtor_t)st_rbuf_quit, 
-     &rbufctx_funcs);
+     sizeof(st_rbufctx_t), NULL, &rbufctx_funcs, 
+     (st_object_dtor_t)st_rbuf_quit);
 
     if (!rbuf_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -75,7 +75,7 @@ static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    rbuf_ctx->logger_ctx = ST_LOGGERCTX_CALL(logger_ctx, grab);
+    rbuf_ctx->logger_ctx = logger_ctx;
 
     ST_LOGGERCTX_CALL(logger_ctx, info, "rbuf_lwrb: Module initialized");
 
@@ -85,14 +85,13 @@ static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx) {
 static void st_rbuf_quit(st_rbufctx_t *rbuf_ctx) {
     ST_LOGGERCTX_CALL(rbuf_ctx->logger_ctx, info,
      "rbuf_lwrb: Module destroyed");
-    ST_LOGGERCTX_CALL(rbuf_ctx->logger_ctx, release);
     free(rbuf_ctx);
 }
 
 static st_rbuf_t *st_rbuf_create(st_rbufctx_t *rbuf_ctx, size_t size) {
     st_rbuf_t *rbuf = (st_rbuf_t *)st_object_new(
-     sizeof(st_rbuf_t *) + size, (st_object_dtor_t)st_rbuf_destroy, 
-     &rbuf_funcs, (st_object_t *)rbuf_ctx);
+     sizeof(st_rbuf_t) + size, &rbuf_funcs, (st_object_dtor_t)st_rbuf_destroy, 
+     (st_object_t *)rbuf_ctx);
     char       errbuf[ERRMSGBUF_SIZE];
 
     if (!rbuf) {
