@@ -104,7 +104,8 @@ int main(int argc, char **argv) {
     // ST_INICTX_CALL(ini_ctx, quit);
 
 init_funcs_fail:
-    ST_LOGGERCTX_CALL(logger_ctx, release);
+    ST_LOGGERCTX_CALL(logger_ctx, destroy);
+get_logger_ctor_fail:
     st_modsmgr_destroy(modsmgr);
 
     return exitcode;
