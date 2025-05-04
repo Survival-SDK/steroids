@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "steroids/module.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"
@@ -13,10 +11,7 @@
     typedef struct st_htable_s st_htable_t;
 #endif
 #ifndef ST_HTITER_T_DEFINED
-    typedef struct {
-        st_object_t _object;
-        void       *_private;
-    } st_htiter_t;
+    typedef st_object_t st_htiter_t;
 #endif
 
 typedef uint32_t (*st_u32hashfunc_t)(const void *str);
@@ -45,12 +40,12 @@ typedef const void *(*st_htable_get_iter_key_t)(const st_htiter_t *iter);
 typedef void *(*st_htable_get_iter_value_t)(const st_htiter_t *iter);
 
 typedef struct {
-    st_htable_quit_t   quit;
+    st_modctx_funcs_t;
     st_htable_create_t create;
 } st_htablectx_funcs_t;
 
 typedef struct {
-    st_htable_destroy_t  destroy;
+    st_object_funcs_t;
     st_htable_insert_t   insert;
     st_htable_get_t      get;
     st_htable_remove_t   remove;
@@ -61,6 +56,7 @@ typedef struct {
 } st_htable_funcs_t;
 
 typedef struct st_htiter_funcs {
+    st_object_funcs_t;
     st_htable_next_t           get_next;
     st_htable_get_iter_key_t   get_key;
     st_htable_get_iter_value_t get_value;
