@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define ST_OBJCALL(obj, func, ...) obj->funcs.func(obj, ## __VA_ARGS__);
+#define ST_OBJECT_CALL(obj, func, ...) obj->funcs->func(obj, ## __VA_ARGS__);
 
 struct st_object;
 
