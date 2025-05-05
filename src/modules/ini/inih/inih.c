@@ -45,12 +45,14 @@ static void st_ini_quit(st_inictx_t *ini_ctx);
 static void st_ini_destroy(st_ini_t *ini);
 
 static st_inictx_funcs_t inictx_funcs = {
+    st_modctx_funcs,
     .create  = st_ini_create,
     .load    = st_ini_load,
     .memload = st_ini_memload,
 };
 
 static st_ini_funcs_t ini_funcs = {
+    st_object_funcs,
     .section_exists = st_ini_section_exists,
     .key_exists     = st_ini_key_exists,
     .get_str        = st_ini_get_str,
