@@ -52,8 +52,8 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 
 static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx) {
     st_fnv1actx_t *fnv1a_ctx = (st_fnv1actx_t *)st_modctx_new("fnv1a", "simple",
-     sizeof(st_fnv1actx_t), NULL, (st_object_dtor_t)st_fnv1a_quit, 
-     &fnv1actx_funcs);
+     sizeof(st_fnv1actx_t), NULL, &fnv1actx_funcs, 
+     (st_object_dtor_t)st_fnv1a_quit);
 
     if (!fnv1a_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -61,8 +61,6 @@ static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx) {
 
         return NULL;
     }
-
-    fnv1a_ctx->logger_ctx = ST_LOGGERCTX_CALL(logger_ctx, grab);
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "fnv1a_simple: FNV-1a hasher initialized");
@@ -88,7 +86,6 @@ static uint32_t fnv1_hash_string(const char *str) {
 static void st_fnv1a_quit(st_fnv1actx_t *fnv1a_ctx) {
     ST_LOGGERCTX_CALL(fnv1a_ctx->logger_ctx, info,
      "fnv1a_simple: FNV-1a hasher destroyed");
-    ST_LOGGERCTX_CALL(fnv1a_ctx->logger_ctx, release);
     free(fnv1a_ctx);
 }
 
