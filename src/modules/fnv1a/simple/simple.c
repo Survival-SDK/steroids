@@ -62,6 +62,8 @@ static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
+    fnv1a_ctx->logger_ctx = logger_ctx;
+
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "fnv1a_simple: FNV-1a hasher initialized");
 
