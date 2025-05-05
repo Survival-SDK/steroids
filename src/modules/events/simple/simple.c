@@ -52,9 +52,9 @@ static st_evq_funcs_t evq_funcs = {
 };
 
 static st_moddata_t st_module_events_simple_data = {
-    .name = "events",
+    .name = "simple",
     .type = ST_MODULE_TYPE,
-    .subsystem = "simple",
+    .subsystem = "events",
     .prereqs = (st_modprerq_t[]){ 
         { "logger", NULL, },
         { "rbuf", NULL, },
