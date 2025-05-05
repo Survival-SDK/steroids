@@ -180,7 +180,6 @@ static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
              "object: %s", errbuf);
 
         st_object_destroy((st_object_t *)handle);
-        st_object_destroy((st_object_t *)queue);
 
         return NULL;
     }
