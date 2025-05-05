@@ -1,10 +1,11 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "modules_manager.h"
 
 // #include "steroids/types/modules/fs.h"
-// #include "steroids/types/modules/ini.h"
+#include "steroids/types/modules/ini.h"
 #include "steroids/types/modules/logger.h"
 // #include "steroids/types/modules/opts.h"
 // #include "steroids/types/modules/pathtools.h"
@@ -15,7 +16,7 @@
 // #include "steroids/types/modules/zip.h"
 
 // static st_fs_init_t     st_fs_init;
-// static st_ini_init_t    st_ini_init;
+static st_ini_init_t    st_ini_init;
 static st_logger_init_t st_logger_init;
 // static st_opts_init_t   st_opts_init;
 
@@ -29,30 +30,25 @@ static st_logger_init_t st_logger_init;
 // static st_spcpaths_init_t  st_spcpaths_init;
 // static st_zip_init_t       st_zip_init;
 
-#define LOAD_FUNCTION(module, function)                                        \
-    st_##module##_##function = st_modsmgr_get_function(modsmgr, #module, NULL, \
-     #function);                                                               \
-    if (!st_##module##_##function) {                                           \
-        ST_LOGGERCTX_CALL(logger_ctx, error,                                   \
-         "steroids: Unable to load function \"%s\"", #function);               \
-        return false;                                                          \
+#define LOAD_CTOR(module)                                             \
+    st_##module##_init = st_modsmgr_get_ctor(modsmgr, #module, NULL); \
+    if (!st_##module##_init) {                                        \
+        ST_LOGGERCTX_CALL(logger_ctx, error,                          \
+         "steroids: Unable to load constructor of %s_ctx", #module);   \
+        return false;                                                 \
     }
 
-static bool init_funcs(st_modsmgr_t *modsmgr,
+static bool init_ctors(st_modsmgr_t *modsmgr,
  struct st_loggerctx_s *logger_ctx) {
-    // LOAD_FUNCTION(fs, init);
-    // LOAD_FUNCTION(ini, init);
-    // LOAD_FUNCTION(opts, init);
-
-//     LOAD_FUNCTION(runner, init);
-//     LOAD_FUNCTION(runner, quit);
-//     LOAD_FUNCTION(runner, run);
-
-    // LOAD_FUNCTION(pathtools, init);
-    // LOAD_FUNCTION(plugin,    init);
-    // LOAD_FUNCTION(so,        init);
-    // LOAD_FUNCTION(spcpaths,  init);
-    // LOAD_FUNCTION(zip,       init);
+    // LOAD_CTOR(fs);
+    LOAD_CTOR(ini);
+    // LOAD_CTOR(opts);
+//     LOAD_CTOR(runner);
+    // LOAD_CTOR(pathtools);
+    // LOAD_CTOR(plugin);
+    // LOAD_CTOR(so);
+    // LOAD_CTOR(spcpaths);
+    // LOAD_CTOR(zip);
 
     return true;
 }
@@ -60,7 +56,7 @@ static bool init_funcs(st_modsmgr_t *modsmgr,
 int main(int argc, char **argv) {
     st_modsmgr_t          *modsmgr = st_modsmgr_init();
     // st_fsctx_t            *fs_ctx;
-    // st_inictx_t           *ini_ctx;
+    st_inictx_t           *ini_ctx;
     struct st_loggerctx_s *logger_ctx;
     // st_optsctx_t          *opts_ctx;
     // st_modctx_t  *runner;
@@ -72,15 +68,23 @@ int main(int argc, char **argv) {
     int                exitcode = EXIT_SUCCESS;
 
     st_logger_init = st_modsmgr_get_ctor(modsmgr, "logger", NULL);
+    if (!st_logger_init) {
+        fprintf(stderr, 
+         "steroids: Unable to load function \"st_logger_init\"\n");
+        exitcode = EXIT_FAILURE;
+
+        goto get_logger_ctor_fail;
+    }
+
     logger_ctx = st_logger_init(NULL);
 
-    if (!init_funcs(modsmgr, logger_ctx)) {
+    if (!init_ctors(modsmgr, logger_ctx)) {
         exitcode = EXIT_FAILURE;
 
         goto init_funcs_fail;
     }
 
-    // ini_ctx = st_ini_init(logger_ctx);
+    ini_ctx = st_ini_init(logger_ctx);
     // opts_ctx = st_opts_init(argc, argv, logger_ctx);
     // pathtools_ctx = st_pathtools_init(logger_ctx);
     // fs_ctx = st_fs_init(logger_ctx, pathtools_ctx);
@@ -101,7 +105,7 @@ int main(int argc, char **argv) {
     // ST_FSCTX_CALL(fs_ctx, quit);
     // ST_PATHTOOLSCTX_CALL(pathtools_ctx, quit);
     // ST_OPTSCTX_CALL(opts_ctx, quit);
-    // ST_INICTX_CALL(ini_ctx, quit);
+    ST_INICTX_CALL(ini_ctx, destroy);
 
 init_funcs_fail:
     ST_LOGGERCTX_CALL(logger_ctx, destroy);
