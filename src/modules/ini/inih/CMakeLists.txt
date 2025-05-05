@@ -7,22 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_INI_INIH})
 set(ST_MODULE_SUBSYSTEM "ini")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "fnv1a",
-        .name = NULL,
-    },
-    {
-        .subsystem = "htable",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 3)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -52,7 +36,7 @@ bb_find_library(
   REQUIRED
 )
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "inih.c"
 )
