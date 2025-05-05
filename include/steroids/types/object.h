@@ -9,12 +9,14 @@ struct st_object;
 
 typedef void (*st_object_dtor_t)(void *obj);
 
-typedef struct st_object *(*st_object_get_owner_t)(void *obj);
+typedef const struct st_object *(*st_object_get_owner_t)(const void *obj);
+typedef struct st_object *(*st_object_get_owner_unsafe_t)(void *obj);
 typedef void (*st_object_destroy_t)(void *obj);
 
 typedef struct {
-    st_object_get_owner_t get_owner;
-    st_object_destroy_t   destroy;
+    st_object_get_owner_t        get_owner;
+    st_object_get_owner_unsafe_t get_owner_unsafe;
+    st_object_destroy_t          destroy;
 } st_object_funcs_t;
 
 typedef struct st_object {
@@ -24,12 +26,14 @@ typedef struct st_object {
     uintptr_t                st_userdata;
 } st_object_t;
 
-static st_object_t *st_object_get_owner(void *obj);
+static const st_object_t *st_object_get_owner(const void *obj);
+static st_object_t *st_object_get_owner_unsafe(void *obj);
 static void st_object_destroy(void *obj);
 
 static const st_object_funcs_t st_object_funcs = { 
-    .get_owner = st_object_get_owner,
-    .destroy = st_object_destroy,
+    .get_owner        = st_object_get_owner,
+    .get_owner_unsafe = st_object_get_owner_unsafe,
+    .destroy          = st_object_destroy,
 };
 
 static st_object_t *st_object_init(st_object_t *obj, const void *funcs, 
@@ -59,7 +63,11 @@ static st_object_t *st_object_placement_new(void *buffer, const void *funcs,
         : NULL;
 }
 
-static st_object_t *st_object_get_owner(void *obj) {
+static const st_object_t *st_object_get_owner(const void *obj) {
+    return ((const st_object_t *)obj)->st_owner;
+}
+
+static st_object_t *st_object_get_owner_unsafe(void *obj) {
     return ((st_object_t *)obj)->st_owner;
 }
 
