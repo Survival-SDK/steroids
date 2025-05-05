@@ -15,13 +15,11 @@
 #endif
 
 typedef st_inictx_t *(*st_ini_init_t)(struct st_loggerctx_s *logger_ctx);
-typedef void (*st_ini_quit_t)(st_inictx_t *ini_ctx);
 
 typedef st_ini_t *(*st_ini_create_t)(st_inictx_t *ini_ctx);
 typedef st_ini_t *(*st_ini_load_t)(st_inictx_t *ini_ctx, const char *filename);
 typedef st_ini_t *(*st_ini_memload_t)(st_inictx_t *ini_ctx, const void *ptr,
  size_t size);
-typedef void (*st_ini_destroy_t)(st_ini_t *ini);
 typedef bool (*st_ini_section_exists_t)(const st_ini_t *ini,
  const char *section);
 typedef bool (*st_ini_key_exists_t)(const st_ini_t *ini, const char *section,
@@ -42,14 +40,14 @@ typedef bool (*st_ini_export_t)(const st_ini_t *ini, char *buffer,
 typedef bool (*st_ini_save_t)(const st_ini_t *ini, const char *filename);
 
 typedef struct {
-    st_ini_quit_t    quit;
+    st_modctx_funcs_t;
     st_ini_load_t    load;
     st_ini_memload_t memload;
     st_ini_create_t  create;
 } st_inictx_funcs_t;
 
 typedef struct {
-    st_ini_destroy_t        destroy;
+    st_object_funcs_t;
     st_ini_section_exists_t section_exists;
     st_ini_key_exists_t     key_exists;
     st_ini_get_str_t        get_str;
@@ -63,7 +61,9 @@ typedef struct {
     st_ini_save_t           save;
 } st_ini_funcs_t;
 
-#define ST_INICTX_CALL(object, func, ...) \
-    ((st_inictx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+#define ST_INICTX_CALL(ctx, func, ...) \
+    ((st_inictx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)
 #define ST_INI_CALL(object, func, ...) \
-    ((st_ini_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_ini_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

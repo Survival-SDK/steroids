@@ -20,15 +20,37 @@ typedef struct {
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static st_ini_t *st_ini_create(st_inictx_t *ini_ctx);
+static st_ini_t *st_ini_load(st_inictx_t *ini_ctx, const char *filename);
+static st_ini_t *st_ini_memload(st_inictx_t *ini_ctx, const void *ptr,
+ size_t size);
+static bool st_ini_section_exists(const st_ini_t *ini, const char *section);
+static bool st_ini_key_exists(const st_ini_t *ini, const char *section,
+ const char *key);
+static const char *st_ini_get_str(const st_ini_t *ini, const char *section,
+ const char *key);
+static bool st_ini_fill_str(const st_ini_t *ini, char *dst, size_t dstsize,
+ const char *section, const char *key);
+static bool st_ini_delete_section(st_ini_t *ini, const char *section);
+static bool st_ini_delete_key(st_ini_t *ini, const char *section,
+ const char *key);
+static bool st_ini_clear_section(st_ini_t *ini, const char *section);
+static bool st_ini_add_section(st_ini_t *ini, const char *section);
+static bool st_ini_add_key(st_ini_t *ini, const char *section, const char *key,
+ const char *value);
+static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize);
+static bool st_ini_save(const st_ini_t *ini, const char *filename);
+
+static void st_ini_quit(st_inictx_t *ini_ctx);
+static void st_ini_destroy(st_ini_t *ini);
+
 static st_inictx_funcs_t inictx_funcs = {
-    .quit    = st_ini_quit,
     .create  = st_ini_create,
     .load    = st_ini_load,
     .memload = st_ini_memload,
 };
 
 static st_ini_funcs_t ini_funcs = {
-    .destroy        = st_ini_destroy,
     .section_exists = st_ini_section_exists,
     .key_exists     = st_ini_key_exists,
     .get_str        = st_ini_get_str,
@@ -42,14 +64,23 @@ static st_ini_funcs_t ini_funcs = {
     .save           = st_ini_save,
 };
 
-static void st_ini_free_section(void *ptr) {
-    st_inisection_t *section = ptr;
-
-    ST_HTABLE_CALL(section->data, destroy);
-    free(section);
+static void st_ini_free_section(st_inisection_t *section) {
+    ST_HTABLE_CALL(section, destroy);
 }
 
-ST_MODULE_DEF_GET_FUNC(ini_inih)
+static st_moddata_t st_module_ini_inih_data = {
+    .name = "inih",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "ini",
+    .prereqs = (st_modprerq_t[]){ 
+        { "fnv1a", NULL, },
+        { "htable", NULL, },
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_ini_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(ini_inih)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -67,8 +98,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
     st_fnv1a_init_t  fnv1a_init;
     st_htable_init_t htable_init;
 
-    fnv1a_init = global_modsmgr_funcs.get_function(global_modsmgr,
-     "fnv1a", NULL, "init");
+    fnv1a_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "fnv1a", NULL);
     if (!fnv1a_init) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: Unable to load function \"init\" from module \"fnv1a\"");
@@ -76,8 +106,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    htable_init = global_modsmgr_funcs.get_function(global_modsmgr,
-     "htable", NULL, "init");
+    htable_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "htable", NULL);
     if (!htable_init) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: Unable to load function \"init\" from module \"htable\"");
@@ -85,8 +114,8 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    ini_ctx = st_modctx_new(st_module_subsystem, st_module_name,
-     sizeof(st_inictx_t), NULL, &inictx_funcs);
+    ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih", sizeof(st_inictx_t), 
+     NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
     if (!ini_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: unable to create new ini ctx object");
@@ -110,7 +139,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
     return ini_ctx;
 
 htable_init_fail:
-    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, quit);
+    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, destroy);
 fnv1a_init_fail:
     free(ini_ctx);
 
@@ -118,8 +147,8 @@ fnv1a_init_fail:
 }
 
 static void st_ini_quit(st_inictx_t *ini_ctx) {
-    ST_HTABLECTX_CALL(ini_ctx->htable_ctx, quit);
-    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, quit);
+    ST_HTABLECTX_CALL(ini_ctx->htable_ctx, destroy);
+    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, destroy);
 
     ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, info,
      "ini_inih: INI-files manipulation module context destroyed");
@@ -131,7 +160,8 @@ static bool st_keyeqfunc(const void *left, const void *right) {
 }
 
 static st_ini_t *st_ini_create(st_inictx_t *ini_ctx) {
-    st_ini_t      *ini = malloc(sizeof(st_ini_t));
+    st_ini_t *ini = (st_ini_t *)st_object_new(sizeof(st_ini_t), &ini_funcs, 
+     (st_object_dtor_t)st_ini_destroy, (st_object_t *)ini_ctx);
 
     if (!ini) {
         char errbuf[ERRMSGBUF_SIZE];
@@ -143,15 +173,13 @@ static st_ini_t *st_ini_create(st_inictx_t *ini_ctx) {
         return NULL;
     }
 
-    st_object_make(ini, ini_ctx, &ini_funcs);
-
     _Static_assert(sizeof(unsigned int) == sizeof(uint32_t),
      "get_u32hashstr_func returned 32-bit unsigned int but we need 64-bit "
-     "insigned instead");
+     "unsigned instead");
     ini->sections = ST_HTABLECTX_CALL(ini_ctx->htable_ctx, create,
      (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(
       ini_ctx->fnv1a_ctx, get_u32hashstr_func),
-     st_keyeqfunc, free, st_ini_free_section);
+     st_keyeqfunc, free, (st_freefunc_t)st_ini_free_section);
     if (!ini->sections) {
         ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, error,
          "ini_inih: Unable to create hash table for sections");
@@ -215,7 +243,7 @@ static st_ini_t *st_ini_load(st_inictx_t *ini_ctx, const char *filename) {
     ret = ini_parse(filename, st_ini_parse_handler, &userdata);
     if (ret != 0) {
         st_process_error(ret, filename, ini_ctx->logger_ctx);
-        st_ini_destroy(ini);
+        ST_INI_CALL(ini, destroy);
 
         return NULL;
     }
@@ -275,7 +303,7 @@ static st_ini_t *st_ini_memload(st_inictx_t *ini_ctx, const void *ptr,
 free_terminated_and_ini_destroy:
     free(zero_terminated);
 ini_destroy:
-    st_ini_destroy(ini);
+    ST_INI_CALL(ini, destroy);;
     return NULL;
 }
 
@@ -298,10 +326,9 @@ static const char *st_ini_get_str(const st_ini_t *ini, const char *section_name,
     st_inisection_t *section = ST_HTABLE_CALL(ini->sections, get,
      !!section_name ? section_name : "");
 
-    if (!section)
-        return false;
-
-    return ST_HTABLE_CALL(section->data, get, key);
+    return section
+        ? ST_HTABLE_CALL(section, get, key)
+        : false;
 }
 
 static bool st_ini_fill_str(const st_ini_t *ini, char *dst, size_t dstsize,
@@ -331,7 +358,7 @@ static bool st_ini_delete_key(st_ini_t *ini, const char *section_name,
 
     section = ST_HTITER_CALL(&section_iter, get_value);
 
-    return ST_HTABLE_CALL(section->data, remove, key);
+    return ST_HTABLE_CALL(section, remove, key);
 }
 
 static bool st_ini_clear_section(st_ini_t *ini, const char *section_name) {
@@ -342,16 +369,16 @@ static bool st_ini_clear_section(st_ini_t *ini, const char *section_name) {
         return false;
 
     section = ST_HTITER_CALL(&section_iter, get_value);
-    ST_HTABLE_CALL(section->data, clear);
+    ST_HTABLE_CALL(section, clear);
 
     return true;
 }
 
 static bool st_ini_add_section(st_ini_t *ini, const char *section_name) {
-    st_inictx_t     *ini_ctx = st_object_get_owner(ini);
-    st_inisection_t *section;
-    char            *section_key;
-    char             errbuf[ERRMSGBUF_SIZE];
+    const st_inictx_t *ini_ctx = (const st_inictx_t *)st_object_get_owner(ini);
+    st_inisection_t   *section;
+    char              *section_key;
+    char               errbuf[ERRMSGBUF_SIZE];
 
     if (ST_HTABLE_CALL(ini->sections, contains, section_name))
         return true;
@@ -359,29 +386,16 @@ static bool st_ini_add_section(st_ini_t *ini, const char *section_name) {
     _Static_assert(sizeof(unsigned int) == sizeof(uint32_t),
      "get_u32hashstr_func returned 32-bit unsigned int but we need 64-bit "
      "insigned instead");
-    st_htable_t *section_ht = ST_HTABLECTX_CALL(ini_ctx->htable_ctx, create,
+    section = ST_HTABLECTX_CALL(ini_ctx->htable_ctx, create,
      (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(
       ini_ctx->fnv1a_ctx, get_u32hashstr_func),
      st_keyeqfunc, free, free);
-    if (!section_ht) {
+    if (!section) {
         ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, error,
          "ini_inih: Unable to create section \"%s\"", section_name);
 
         return false;
     }
-
-    section = malloc(sizeof(st_inisection_t));
-    if (!section) {
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, error,
-             "ini_inih: Unable to allocate memory for section \"%s\": %s",
-             section_name, errbuf);
-
-        goto malloc_fail;
-    }
-    section->data = section_ht;
-    /* TODO: crete weak_ptr */
-    section->ctx = ini_ctx;
 
     section_key = strdup(section_name);
     if (!section_key) {
@@ -404,20 +418,18 @@ static bool st_ini_add_section(st_ini_t *ini, const char *section_name) {
 insert_fail:
     free(section_key);
 strdup_fail:
-    free(section);
-malloc_fail:
-    ST_HTABLE_CALL(section_ht, destroy);
+    ST_HTABLE_CALL(section, destroy);
 
     return false;
 }
 
 static bool st_ini_add_key(st_ini_t *ini, const char *section_name,
  const char *key, const char *value) {
-    st_inictx_t     *ini_ctx = st_object_get_owner(ini);
-    st_inisection_t *section;
-    char            *keydup;
-    char            *valdup;
-    char             errbuf[ERRMSGBUF_SIZE];
+    const st_inictx_t *ini_ctx = (const st_inictx_t *)st_object_get_owner(ini);
+    st_inisection_t   *section;
+    char              *keydup;
+    char              *valdup;
+    char               errbuf[ERRMSGBUF_SIZE];
 
     if (!st_ini_add_section(ini, section_name))
         return false;
@@ -442,7 +454,7 @@ static bool st_ini_add_key(st_ini_t *ini, const char *section_name,
         goto valdup_fail;
     }
 
-    if (!ST_HTABLE_CALL(section->data, insert, NULL, keydup, valdup)) {
+    if (!ST_HTABLE_CALL(section, insert, NULL, keydup, valdup)) {
         ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, error,
          "ini_inih: Unable to insert key \"%s\" to section \"%s\"", key,
          section_name);
@@ -461,9 +473,9 @@ valdup_fail:
 }
 
 static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize) {
-    st_inictx_t *ini_ctx = st_object_get_owner(ini);
-    st_htiter_t  section_it;
-    size_t       bufoffset;
+    const st_inictx_t *ini_ctx = (const st_inictx_t *)st_object_get_owner(ini);
+    st_htiter_t        section_it;
+    size_t             bufoffset;
 
     if (!ST_HTABLE_CALL(ini->sections, get_first, &section_it))
         return true;
@@ -488,7 +500,7 @@ static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize) {
         buffer += sec_ret;
         bufsize -= (size_t)sec_ret;
 
-        if (ST_HTABLE_CALL(section->data, get_first, &key_it))
+        if (ST_HTABLE_CALL(section, get_first, &key_it))
             continue;
 
         do {
@@ -524,12 +536,12 @@ static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize) {
 }
 
 static bool st_ini_save(const st_ini_t *ini, const char *filename) {
-    st_inictx_t *ini_ctx = st_object_get_owner(ini);
-    char         buffer[SAVE_BUFFER_SIZE];
-    FILE        *file;
-    size_t       buflen;
-    size_t       writen;
-    bool         buffer_filled = st_ini_export(ini, buffer, SAVE_BUFFER_SIZE);
+    const st_inictx_t *ini_ctx = (const st_inictx_t *)st_object_get_owner(ini);
+    char               buffer[SAVE_BUFFER_SIZE];
+    FILE              *file;
+    size_t             buflen;
+    size_t             writen;
+    bool               buffer_filled = st_ini_export(ini, buffer, SAVE_BUFFER_SIZE);
 
     if (!buffer_filled)
         return false;
