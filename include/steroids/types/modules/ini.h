@@ -41,9 +41,9 @@ typedef bool (*st_ini_save_t)(const st_ini_t *ini, const char *filename);
 
 typedef struct {
     st_modctx_funcs_t;
+    st_ini_create_t  create;
     st_ini_load_t    load;
     st_ini_memload_t memload;
-    st_ini_create_t  create;
 } st_inictx_funcs_t;
 
 typedef struct {
