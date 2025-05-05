@@ -118,7 +118,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
      NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
     if (!ini_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "ini_inih: unable to create new ini ctx object");
+         "ini_inih: Unable to create new ini ctx object");
 
         return NULL;
     }
