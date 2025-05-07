@@ -48,8 +48,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
  "${CMAKE_BINARY_DIR}/src/modules/events/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
  "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gfxctx/egl"
 #  "${CMAKE_BINARY_DIR}/src/modules/gfxctx/egl")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gldebug/opengl"
