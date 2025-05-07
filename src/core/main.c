@@ -8,7 +8,7 @@
 #include "steroids/types/modules/ini.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/modules/opts.h"
-// #include "steroids/types/modules/pathtools.h"
+#include "steroids/types/modules/pathtools.h"
 // #include "steroids/types/modules/plugin.h"
 // #include "steroids/types/modules/runner.h"
 // #include "steroids/types/modules/so.h"
@@ -24,7 +24,7 @@ static st_opts_init_t   st_opts_init;
 // static st_runner_quit_t st_runner_quit;
 // static st_runner_run_t  st_runner_run;
 
-// static st_pathtools_init_t st_pathtools_init;
+static st_pathtools_init_t st_pathtools_init;
 // static st_plugin_init_t    st_plugin_init;
 // static st_so_init_t        st_so_init;
 // static st_spcpaths_init_t  st_spcpaths_init;
@@ -44,7 +44,7 @@ static bool init_ctors(st_modsmgr_t *modsmgr,
     LOAD_CTOR(ini);
     LOAD_CTOR(opts);
 //     LOAD_CTOR(runner);
-    // LOAD_CTOR(pathtools);
+    LOAD_CTOR(pathtools);
     // LOAD_CTOR(plugin);
     // LOAD_CTOR(so);
     // LOAD_CTOR(spcpaths);
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     struct st_loggerctx_s *logger_ctx;
     st_optsctx_t          *opts_ctx;
     // st_modctx_t  *runner;
-    // st_pathtoolsctx_t *pathtools_ctx;
+    st_pathtoolsctx_t *pathtools_ctx;
     // st_pluginctx_t    *plugin_ctx;
     // st_soctx_t        *so_ctx;
     // st_spcpathsctx_t  *spcpaths_ctx;
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 
     ini_ctx = st_ini_init(logger_ctx);
     opts_ctx = st_opts_init(argc, argv, logger_ctx);
-    // pathtools_ctx = st_pathtools_init(logger_ctx);
+    pathtools_ctx = st_pathtools_init(logger_ctx);
     // fs_ctx = st_fs_init(logger_ctx, pathtools_ctx);
     // so_ctx = st_so_init(logger_ctx);
     // spcpaths_ctx = st_spcpaths_init(logger_ctx);
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
     // ST_SPCPATHSCTX_CALL(spcpaths_ctx, quit);
     // ST_SOCTX_CALL(so_ctx, quit);
     // ST_FSCTX_CALL(fs_ctx, quit);
-    // ST_PATHTOOLSCTX_CALL(pathtools_ctx, quit);
+    ST_PATHTOOLSCTX_CALL(pathtools_ctx, destroy);
     ST_OPTSCTX_CALL(opts_ctx, destroy);
     ST_INICTX_CALL(ini_ctx, destroy);
 
