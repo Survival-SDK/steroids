@@ -22,13 +22,12 @@ typedef enum {
 
 typedef st_fsctx_t *(*st_fs_init_t)(struct st_loggerctx_s *logger_ctx,
  st_pathtoolsctx_t *pathtools_ctx);
-typedef void (*st_fs_quit_t)(st_fsctx_t *fs_ctx);
 typedef st_filetype_t (*st_fs_get_file_type_t)(st_fsctx_t *fs_ctx,
  const char *filename);
 typedef bool (*st_fs_mkdir_t)(st_fsctx_t *fs_ctx, const char *dirname);
 
 typedef struct {
-    st_fs_quit_t          quit;
+    st_modctx_funcs_t;
     st_fs_get_file_type_t get_file_type;
     st_fs_mkdir_t         mkdir;
 } st_fsctx_funcs_t;

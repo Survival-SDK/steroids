@@ -8,13 +8,30 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_fs_quit(st_fsctx_t *fs_ctx);
+
+static st_filetype_t st_fs_get_file_type(st_fsctx_t *fs_ctx,
+ const char *filename);
+static bool st_fs_mkdir(st_fsctx_t *fs_ctx, const char *dirname);
+
 static st_fsctx_funcs_t fsctx_funcs = {
-    .quit          = st_fs_quit,
+    st_modctx_funcs,
     .get_file_type = st_fs_get_file_type,
     .mkdir         = st_fs_mkdir,
 };
 
-ST_MODULE_DEF_GET_FUNC(fs_simple)
+static st_moddata_t st_module_fs_simple_data = {
+    .name = "simple",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "fs",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        { "pathtools", NULL, },
+        {0}, 
+    },
+    .ctor = st_fs_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(fs_simple)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -29,8 +46,8 @@ static const char *st_module_name = "simple";
 
 static st_fsctx_t *st_fs_init(struct st_loggerctx_s *logger_ctx,
  st_pathtoolsctx_t *pathtools_ctx) {
-    st_fsctx_t *fs_ctx = st_modctx_new(st_module_subsystem, st_module_name,
-     sizeof(st_fsctx_t), NULL, &fsctx_funcs);
+    st_fsctx_t *fs_ctx = (st_fsctx_t *)st_modctx_new("fs", "simple", 
+    sizeof(st_fsctx_t), NULL, &fsctx_funcs, (st_object_dtor_t)st_fs_quit);
 
     if (!fs_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -50,7 +67,7 @@ static st_fsctx_t *st_fs_init(struct st_loggerctx_s *logger_ctx,
 
 static void st_fs_quit(st_fsctx_t *fs_ctx) {
     ST_LOGGERCTX_CALL(fs_ctx->logger_ctx, info,
-     "fs_simple: hash tables manipulation module context destroyed");
+     "fs_simple: file system manager context destroyed");
     free(fs_ctx);
 }
 
@@ -114,8 +131,6 @@ static bool st_fs_mkdir(st_fsctx_t *fs_ctx, const char *dirname) {
         last_is_slash = *ch == '/';
 
         *ch = '\0';
-
-
 
         if (path[0] != '.' && path[1] && stat(path, &unused) != 0 &&
          mkdir(path, S_IRWXU | S_IRGRP | S_IROTH) == -1) { // NOLINT(hicpp-signed-bitwise)
