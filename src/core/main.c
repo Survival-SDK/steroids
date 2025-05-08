@@ -11,7 +11,7 @@
 #include "steroids/types/modules/pathtools.h"
 // #include "steroids/types/modules/plugin.h"
 // #include "steroids/types/modules/runner.h"
-// #include "steroids/types/modules/so.h"
+#include "steroids/types/modules/so.h"
 // #include "steroids/types/modules/spcpaths.h"
 // #include "steroids/types/modules/zip.h"
 
@@ -26,7 +26,7 @@ static st_opts_init_t   st_opts_init;
 
 static st_pathtools_init_t st_pathtools_init;
 // static st_plugin_init_t    st_plugin_init;
-// static st_so_init_t        st_so_init;
+static st_so_init_t        st_so_init;
 // static st_spcpaths_init_t  st_spcpaths_init;
 // static st_zip_init_t       st_zip_init;
 
@@ -46,7 +46,7 @@ static bool init_ctors(st_modsmgr_t *modsmgr,
 //     LOAD_CTOR(runner);
     LOAD_CTOR(pathtools);
     // LOAD_CTOR(plugin);
-    // LOAD_CTOR(so);
+    LOAD_CTOR(so);
     // LOAD_CTOR(spcpaths);
     // LOAD_CTOR(zip);
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     // st_modctx_t  *runner;
     st_pathtoolsctx_t *pathtools_ctx;
     // st_pluginctx_t    *plugin_ctx;
-    // st_soctx_t        *so_ctx;
+    st_soctx_t        *so_ctx;
     // st_spcpathsctx_t  *spcpaths_ctx;
     // st_zipctx_t       *zip_ctx;
     int                exitcode = EXIT_SUCCESS;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
     opts_ctx = st_opts_init(argc, argv, logger_ctx);
     pathtools_ctx = st_pathtools_init(logger_ctx);
     fs_ctx = st_fs_init(logger_ctx, pathtools_ctx);
-    // so_ctx = st_so_init(logger_ctx);
+    so_ctx = st_so_init(logger_ctx);
     // spcpaths_ctx = st_spcpaths_init(logger_ctx);
     // zip_ctx = st_zip_init(fs_ctx, logger_ctx, pathtools_ctx);
     // plugin_ctx = st_plugin_init(fs_ctx, logger_ctx, pathtools_ctx, so_ctx,
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     // ST_PLUGINCTX_CALL(plugin_ctx, quit);
     // ST_ZIPCTX_CALL(zip_ctx, quit);
     // ST_SPCPATHSCTX_CALL(spcpaths_ctx, quit);
-    // ST_SOCTX_CALL(so_ctx, quit);
+    ST_SOCTX_CALL(so_ctx, destroy);
     ST_FSCTX_CALL(fs_ctx, destroy);
     ST_PATHTOOLSCTX_CALL(pathtools_ctx, destroy);
     ST_OPTSCTX_CALL(opts_ctx, destroy);
