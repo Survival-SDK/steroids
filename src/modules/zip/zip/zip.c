@@ -15,21 +15,46 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_zip_quit(st_zipctx_t *zip_ctx);
+static void st_zip_close(st_zip_t *zip);
+
+static st_zip_t *st_zip_open(st_zipctx_t *zip_ctx, const char *filename);
+static st_zip_t *st_zip_memopen(st_zipctx_t *zip_ctx, const void *data,
+ size_t size);
+static ssize_t st_zip_get_entries_count(st_zip_t *zip);
+static bool st_zip_get_entry_name(st_zip_t *zip, char *dst, size_t dstsize,
+ size_t entrynum);
+static st_zipentrytype_t st_zip_get_entry_type(st_zip_t *zip, size_t entrynum);
+static bool st_zip_extract_entry(st_zip_t *zip, size_t entrynum,
+ const char *path);
+
 static st_zipctx_funcs_t zipctx_funcs = {
-    .quit    = st_zip_quit,
+    st_modctx_funcs,
     .open    = st_zip_open,
     .memopen = st_zip_memopen,
 };
 
 static st_zip_funcs_t zip_funcs = {
-    .close             = st_zip_close,
+    st_object_funcs,
     .get_entries_count = st_zip_get_entries_count,
     .get_entry_name    = st_zip_get_entry_name,
     .get_entry_type    = st_zip_get_entry_type,
     .extract_entry     = st_zip_extract_entry,
 };
 
-ST_MODULE_DEF_GET_FUNC(zip_zip)
+static st_moddata_t st_module_zip_zip_data = {
+    .name = "zip",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "zip",
+    .prereqs = (st_modprerq_t[]){ 
+        { "fs", NULL, },
+        { "logger", NULL, },
+        { "pathtools", NULL, },
+        {0}, 
+    },
+    .ctor = st_zip_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(zip_zip)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -44,8 +69,8 @@ static const char *st_module_name = "zip";
 
 static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx) {
-    st_zipctx_t  *zip_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_zipctx_t), NULL, &zipctx_funcs);
+    st_zipctx_t  *zip_ctx = (st_zipctx_t *)st_modctx_new("zip", "zip", 
+     sizeof(st_zipctx_t), NULL, &zipctx_funcs, (st_object_dtor_t)st_zip_quit);
 
     if (!zip_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -82,7 +107,8 @@ static st_zip_t *st_zip_open(st_zipctx_t *zip_ctx, const char *filename) {
         return NULL;
     }
 
-    zip = malloc(sizeof(st_zip_t));
+    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs, 
+     (st_object_dtor_t)st_zip_close, (st_object_t *)zip_ctx);
     if (!zip) {
         char errbuf[ERRMSGBUF_SIZE];
 
@@ -96,7 +122,6 @@ static st_zip_t *st_zip_open(st_zipctx_t *zip_ctx, const char *filename) {
         return NULL;
     }
 
-    st_object_make(zip, zip_ctx, &zip_funcs);
     zip->handle = handle;
     zip->type   = ST_ZT_FILE;
 
@@ -116,7 +141,8 @@ static st_zip_t *st_zip_memopen(st_zipctx_t *zip_ctx, const void *data,
         return NULL;
     }
 
-    zip = malloc(sizeof(st_zip_t));
+    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs, 
+     (st_object_dtor_t)st_zip_close, (st_object_t *)zip_ctx);
     if (!zip) {
         char errbuf[ERRMSGBUF_SIZE];
 
@@ -125,12 +151,11 @@ static st_zip_t *st_zip_memopen(st_zipctx_t *zip_ctx, const void *data,
              "zip_zip: Unable to allocate memory for opened zip structure: %s",
              errbuf);
 
-        zip_close(handle);
+        zip_stream_close(handle);
 
         return NULL;
     }
 
-    st_object_make(zip, zip_ctx, &zip_funcs);
     zip->handle = handle;
     zip->type   = ST_ZT_MEM;
 
@@ -147,7 +172,7 @@ static void st_zip_close(st_zip_t *zip) {
 }
 
 static ssize_t st_zip_get_entries_count(st_zip_t *zip) {
-    st_zipctx_t *zip_ctx = st_object_get_owner(zip);
+    st_zipctx_t *zip_ctx = (st_zipctx_t *)st_object_get_owner(zip);
     ssize_t      ret;
 
     if (!zip || !zip->handle)
@@ -166,7 +191,7 @@ static ssize_t st_zip_get_entries_count(st_zip_t *zip) {
 
 static bool st_zip_get_entry_name(st_zip_t *zip, char *dst, size_t dstsize,
  size_t entrynum) {
-    st_zipctx_t *zip_ctx = st_object_get_owner(zip);
+    st_zipctx_t *zip_ctx = (st_zipctx_t *)st_object_get_owner(zip);
     int          ret;
     const char  *entry_name;
 
@@ -201,7 +226,7 @@ static bool st_zip_get_entry_name(st_zip_t *zip, char *dst, size_t dstsize,
 }
 
 static st_zipentrytype_t st_zip_get_entry_type(st_zip_t *zip, size_t entrynum) {
-    st_zipctx_t *zip_ctx = st_object_get_owner(zip);
+    st_zipctx_t *zip_ctx = (st_zipctx_t *)st_object_get_owner(zip);
     int          ret;
 
     if (!zip || !zip->handle)
@@ -227,7 +252,7 @@ static st_zipentrytype_t st_zip_get_entry_type(st_zip_t *zip, size_t entrynum) {
 
 static bool st_zip_extract_entry(st_zip_t *zip, size_t entrynum,
  const char *path) {
-    st_zipctx_t *zip_ctx = st_object_get_owner(zip);
+    st_zipctx_t *zip_ctx = (st_zipctx_t *)st_object_get_owner(zip);
     char         result_filename[PATH_MAX];
     const char  *presult_filename;
     int          ret;

@@ -144,8 +144,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
 #  "${CMAKE_BINARY_DIR}/src/modules/vec2/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/window/xlib"
 #  "${CMAKE_BINARY_DIR}/src/modules/window/xlib")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
-#  "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
+ "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
 
 foreach(ST_INTERNAL_MODULE ${ST_INTERNAL_MODULES})
     set(INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES
