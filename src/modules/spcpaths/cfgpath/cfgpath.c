@@ -11,14 +11,32 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_spcpaths_quit(st_spcpathsctx_t *spcpaths_ctx);
+static void st_spcpaths_get_config_path(st_spcpathsctx_t *spcpaths_ctx,
+ char *dst, size_t dstlen, const char *appname);
+static void st_spcpaths_get_data_path(st_spcpathsctx_t *spcpaths_ctx, char *dst,
+ size_t dstlen, const char *appname);
+static void st_spcpaths_get_cache_path(st_spcpathsctx_t *spcpaths_ctx,
+ char *dst, size_t dstlen, const char *appname);
+
 static st_spcpathsctx_funcs_t spcpathsctx_funcs = {
-    .quit            = st_spcpaths_quit,
+    st_modctx_funcs,
     .get_config_path = st_spcpaths_get_config_path,
     .get_data_path   = st_spcpaths_get_data_path,
     .get_cache_path  = st_spcpaths_get_cache_path,
 };
 
-ST_MODULE_DEF_GET_FUNC(spcpaths_cfgpath)
+static st_moddata_t st_module_spcpaths_cfgpath_data = {
+    .name = "cfgpath",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "spcpaths",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_spcpaths_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(spcpaths_cfgpath)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -32,8 +50,9 @@ static const char *st_module_subsystem = "spcpaths";
 static const char *st_module_name = "cfgpath";
 
 static st_spcpathsctx_t *st_spcpaths_init(struct st_loggerctx_s *logger_ctx) {
-    st_spcpathsctx_t *spcpaths_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_spcpathsctx_t), NULL, &spcpathsctx_funcs);
+    st_spcpathsctx_t *spcpaths_ctx = (st_spcpathsctx_t *)st_modctx_new(
+     "spcpaths", "cfgpath", sizeof(st_spcpathsctx_t), NULL, &spcpathsctx_funcs, 
+     (st_object_dtor_t)st_spcpaths_quit);
 
     if (!spcpaths_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,

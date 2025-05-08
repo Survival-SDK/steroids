@@ -1,10 +1,11 @@
 #pragma once
 
-#include "steroids/types/modules/logger.h"
 #include "steroids/types/modctx.h"
+#include "steroids/types/modules/logger.h"
 
-ST_MODCTX (
+typedef struct {
+    st_modctx_t;
     struct st_loggerctx_s *logger_ctx;
-) st_spcpathsctx_t;
+} st_spcpathsctx_t;
 
 #define ST_SPCPATHSCTX_T_DEFINED
