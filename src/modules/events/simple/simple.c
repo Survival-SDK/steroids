@@ -162,7 +162,6 @@ static st_evtypeid_t st_events_get_type_id(st_eventsctx_t *events_ctx,
 
 static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
  size_t pool_size) {
-    char       errbuf[ERRMSGBUF_SIZE];
     st_evq_t  *queue;
     st_rbuf_t *handle = ST_RBUFCTX_CALL(events_ctx->rbuf_ctx, create, 
      pool_size);
@@ -174,6 +173,8 @@ static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
      (st_object_dtor_t)st_events_destroy_queue, (st_object_t *)events_ctx);
 
     if (!queue) {
+        char errbuf[ERRMSGBUF_SIZE];
+        
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
             ST_LOGGERCTX_CALL(events_ctx->logger_ctx, error,
              "events_simple: Unable to allocate memory for events queue "
