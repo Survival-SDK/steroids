@@ -12,13 +12,35 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_plugin_quit(st_pluginctx_t *plugin_ctx);
+
+static bool st_plugin_load(st_pluginctx_t *plugin_ctx, const char *filename,
+ bool force);
+static bool st_plugin_memload(st_pluginctx_t *plugin_ctx, const void *data,
+ size_t size, bool force);
+
 static st_pluginctx_funcs_t pluginctx_funcs = {
-    .quit    = st_plugin_quit,
+    st_modctx_funcs,
     .load    = st_plugin_load,
     .memload = st_plugin_memload,
 };
 
-ST_MODULE_DEF_GET_FUNC(plugin_simple)
+static st_moddata_t st_module_plugin_simple_data = {
+    .name = "zimple",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "plugin",
+    .prereqs = (st_modprerq_t[]){ 
+        { "fs", NULL, },
+        { "logger", NULL, },
+        { "pathtools", NULL, },
+        { "so", NULL, },
+        { "spcpaths", NULL, },
+        { "zip", NULL, },
+        {0}, 
+    },
+    .ctor = st_plugin_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(plugin_simple)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -34,8 +56,9 @@ static const char *st_module_name = "simple";
 static st_pluginctx_t *st_plugin_init(st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,
  st_soctx_t *so_ctx, st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx) {
-    st_pluginctx_t *plugin_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_pluginctx_t), NULL, &pluginctx_funcs);
+    st_pluginctx_t *plugin_ctx = (st_pluginctx_t *)st_modctx_new("plugin", 
+     "simple", sizeof(st_pluginctx_t), NULL, &pluginctx_funcs, 
+     (st_object_dtor_t)st_plugin_quit);
 
     if (!plugin_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -126,12 +149,12 @@ static bool st_plugin_load_impl(st_pluginctx_t *plugin_ctx, st_zip_t *zip,
             ST_LOGGERCTX_CALL(plugin_ctx->logger_ctx, error,
              "plugin_simple: Module %s has not function \"st_module_init\"");
 
-            ST_SO_CALL(so, close);
+            ST_SO_CALL(so, destroy);
 
             goto fail;
         }
 
-        ST_ZIP_CALL(zip, close);
+        ST_ZIP_CALL(zip, destroy);
 
         return global_modsmgr_funcs.load_module(global_modsmgr, modinit_func,
          force);
@@ -141,7 +164,7 @@ fail:
     ST_LOGGERCTX_CALL(plugin_ctx->logger_ctx, error,
      "plugin_simple: Plugin \"%s\" cannot be loaded on this platform",
      filename);
-    ST_ZIP_CALL(zip, close);
+    ST_ZIP_CALL(zip, destroy);
 
     return false;
 }
