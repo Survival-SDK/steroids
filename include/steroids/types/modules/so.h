@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
+#include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"
 
 #ifndef ST_SOCTX_T_DEFINED
@@ -22,13 +23,13 @@ typedef void (*st_so_close_t)(st_so_t *so);
 typedef void *(*st_so_load_symbol_t)(st_so_t *so, const char *name);
 
 typedef struct {
-    st_so_quit_t    quit;
+    st_modctx_funcs_t;
     st_so_open_t    open;
     st_so_memopen_t memopen;
 } st_soctx_funcs_t;
 
 typedef struct {
-    st_so_close_t       close;
+    st_object_funcs_t;
     st_so_load_symbol_t load_symbol;
 } st_so_funcs_t;
 

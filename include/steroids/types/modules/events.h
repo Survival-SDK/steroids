@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
-#include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"
 
 #define ST_EVTYPE_ID_NONE -1
@@ -18,7 +17,6 @@ struct st_loggerctx_s;
 
 typedef struct st_eventsctx_s *(*st_events_init_t)(
  struct st_loggerctx_s *logger_ctx);
-typedef void (*st_events_quit_t)(struct st_eventsctx_s *events_ctx);
 
 typedef st_evtypeid_t (*st_events_register_type_t)(
  struct st_eventsctx_s *events_ctx, const char *type_name, size_t size);
@@ -43,7 +41,7 @@ typedef bool (*st_events_drop_t)(struct st_evq_s *queue);
 typedef bool (*st_events_clear_t)(struct st_evq_s *queue);
 
 typedef struct {
-    st_events_quit_t          quit;
+    st_modctx_funcs_t;
     st_events_register_type_t register_type;
     st_events_get_type_id_t   get_type_id;
     st_events_create_queue_t  create_queue;
@@ -51,7 +49,7 @@ typedef struct {
 } st_eventsctx_funcs_t;
 
 typedef struct {
-    st_events_destroy_queue_t   destroy_queue;
+    st_object_funcs_t;
     st_events_subscribe_t       subscribe;
     st_events_unsubscribe_t     unsubscribe;
     st_events_unsubscribe_all_t unsubscribe_all;

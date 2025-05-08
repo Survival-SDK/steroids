@@ -15,14 +15,33 @@ typedef enum {
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_pathtools_quit(st_pathtoolsctx_t *pathtools_ctx);
+
+static bool st_pathtools_resolve(st_pathtoolsctx_t *pathtools_ctx, char *dst,
+ size_t dstsize, const char *path);
+static bool st_pathtools_get_parent_dir(st_pathtoolsctx_t *pathtools_ctx,
+ char *dst, size_t dstsize, const char *path);
+static bool st_pathtools_concat(st_pathtoolsctx_t *pathtools_ctx, char *dst,
+ size_t dstsize, const char *path, const char *append);
+
 static st_pathtoolsctx_funcs_t pathtoolsctx_funcs = {
-    .quit           = st_pathtools_quit,
+    st_modctx_funcs,
     .resolve        = st_pathtools_resolve,
     .get_parent_dir = st_pathtools_get_parent_dir,
     .concat         = st_pathtools_concat,
 };
 
-ST_MODULE_DEF_GET_FUNC(pathtools_cwalk)
+static st_moddata_t st_module_pathtools_cwalk_data = {
+    .name = "cwalk",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "pathtools",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_pathtools_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(pathtools_cwalk)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -36,8 +55,9 @@ static const char *st_module_subsystem = "pathtools";
 static const char *st_module_name = "cwalk";
 
 static st_pathtoolsctx_t *st_pathtools_init(struct st_loggerctx_s *logger_ctx) {
-    st_pathtoolsctx_t *pathtools_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_pathtoolsctx_t), NULL, &pathtoolsctx_funcs);
+    st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)st_modctx_new(
+     "pathtools", "cwalk", sizeof(st_pathtoolsctx_t), NULL, &pathtoolsctx_funcs, 
+     (st_object_dtor_t)st_pathtools_quit);
 
     if (!pathtools_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -49,14 +69,14 @@ static st_pathtoolsctx_t *st_pathtools_init(struct st_loggerctx_s *logger_ctx) {
     pathtools_ctx->logger_ctx = logger_ctx;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
-     "pathtools_cwalk: path tools initialized");
+     "pathtools_cwalk: Path tools initialized");
 
     return pathtools_ctx;
 }
 
 static void st_pathtools_quit(st_pathtoolsctx_t *pathtools_ctx) {
     ST_LOGGERCTX_CALL(pathtools_ctx->logger_ctx, info,
-     "pathtools_cwalk: path tools destroyed");
+     "pathtools_cwalk: Path tools destroyed");
     free(pathtools_ctx);
 }
 

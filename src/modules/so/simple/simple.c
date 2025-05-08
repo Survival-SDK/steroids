@@ -7,23 +7,39 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "steroids/types/object.h"
-
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_so_quit(st_soctx_t *so_ctx);
+static void st_so_close(st_so_t *so);
+
+static st_so_t *st_so_open(st_soctx_t *so_ctx, const char *filename);
+static st_so_t *st_so_memopen(st_soctx_t *so_ctx, const void *data,
+ size_t size);
+static void *st_so_load_symbol(st_so_t *so, const char *name);
+
 static st_soctx_funcs_t soctx_funcs = {
-    .quit    = st_so_quit,
+    st_modctx_funcs,
     .open    = st_so_open,
     .memopen = st_so_memopen,
 };
 
 static st_so_funcs_t so_funcs = {
-    .close       = st_so_close,
+    st_object_funcs,
     .load_symbol = st_so_load_symbol,
 };
 
-ST_MODULE_DEF_GET_FUNC(so_simple)
+static st_moddata_t st_module_so_simple_data = {
+    .name = "simple",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "so",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_so_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(so_simple)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -37,7 +53,7 @@ static const char *st_module_subsystem = "so";
 static const char *st_module_name = "simple";
 
 static void st_so_free(void *so) {
-    st_soctx_t *so_ctx = st_object_get_owner(so);
+    st_soctx_t *so_ctx = (st_soctx_t *)st_object_get_owner(so);
 
     if (dlclose(((st_so_t *)so)->handle) != 0)
         ST_LOGGERCTX_CALL(so_ctx->logger_ctx, warning,
@@ -45,8 +61,8 @@ static void st_so_free(void *so) {
 }
 
 static st_soctx_t *st_so_init(struct st_loggerctx_s *logger_ctx) {
-    st_soctx_t *so_ctx = st_modctx_new(st_module_subsystem, st_module_name,
-     sizeof(st_soctx_t), NULL, &soctx_funcs);
+    st_soctx_t *so_ctx = (st_soctx_t *)st_modctx_new("so", "simple", 
+     sizeof(st_soctx_t), NULL, &soctx_funcs, (st_object_dtor_t)st_so_quit);
 
     if (so_ctx == NULL) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -66,7 +82,7 @@ static st_soctx_t *st_so_init(struct st_loggerctx_s *logger_ctx) {
     }
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
-     "so_simple: So manager context initialized");
+     "so_simple: Shared libraries manager context initialized");
 
     return so_ctx;
 }
@@ -75,7 +91,7 @@ static void st_so_quit(st_soctx_t *so_ctx) {
     st_dlist_destroy(so_ctx->opened_handles);
 
     ST_LOGGERCTX_CALL(so_ctx->logger_ctx, info,
-     "so_simple: So manager context destroyed");
+     "so_simple: Shared libraries manager context destroyed");
     free(so_ctx);
 }
 
@@ -94,7 +110,8 @@ static st_so_t *st_so_open(st_soctx_t *so_ctx, const char *filename) {
         return NULL;
     }
 
-    st_object_make(&so, so_ctx, &so_funcs);
+    st_object_placement_new(&so, &so_funcs, st_object_fake_dtor, 
+     (st_object_t *)so_ctx);
 
     node = st_dlist_push_back(so_ctx->opened_handles, &so);
     if (!node) {
@@ -118,7 +135,7 @@ static st_so_t *st_so_memopen(st_soctx_t *so_ctx,
 }
 
 static void st_so_close(st_so_t *so) {
-    st_soctx_t  *so_ctx = st_object_get_owner(so);
+    st_soctx_t  *so_ctx = (st_soctx_t *)st_object_get_owner(so);
     st_dlnode_t *node = st_dlist_get_head(so_ctx->opened_handles);
 
     while (node) {
@@ -135,7 +152,7 @@ static void st_so_close(st_so_t *so) {
 }
 
 static void *st_so_load_symbol(st_so_t *so, const char *name) {
-    st_soctx_t *so_ctx = st_object_get_owner(so);
+    st_soctx_t *so_ctx = (st_soctx_t *)st_object_get_owner(so);
     void       *symbol = dlsym(so->handle, name);
 
     if (symbol)

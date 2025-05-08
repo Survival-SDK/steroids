@@ -7,16 +7,36 @@
 
 #include <hash_table.h>
 
+#define ITERS_COUNT_MAX 128
+
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_htable_quit(st_htablectx_t *htable_ctx);
+static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
+ st_u32hashfunc_t hashfunc, st_keyeqfunc_t keyeqfunc, st_freefunc_t keydelfunc,
+ st_freefunc_t valdelfunc);
+static void st_htable_destroy(st_htable_t *htable);
+static bool st_htable_insert(st_htable_t *htable, st_htiter_t *iter,
+ const void *key, void *value);
+static void *st_htable_get(st_htable_t *htable, const void *key);
+static bool st_htable_remove(st_htable_t *htable, const void *key);
+static void st_htable_clear(st_htable_t *htable);
+static bool st_htable_contains(st_htable_t *htable, const void *key);
+static bool st_htable_find(st_htable_t *htable, st_htiter_t *dst,
+ const void *key);
+static bool st_htable_first(st_htable_t *htable, st_htiter_t *dst);
+static bool st_htable_next(st_htiter_t *current, st_htiter_t *dst);
+static const void *st_htable_get_iter_key(const st_htiter_t *iter);
+static void *st_htable_get_iter_value(const st_htiter_t *iter);
+
 static st_htablectx_funcs_t htablectx_funcs = {
-    .quit   = st_htable_quit,
+    st_modctx_funcs,
     .create = st_htable_create,
 };
 
 static st_htable_funcs_t htable_funcs = {
-    .destroy   = st_htable_destroy,
+    st_object_funcs,
     .insert    = st_htable_insert,
     .get       = st_htable_get,
     .remove    = st_htable_remove,
@@ -27,12 +47,23 @@ static st_htable_funcs_t htable_funcs = {
 };
 
 static st_htiter_funcs_t htiter_funcs = {
+    st_object_funcs,
     .get_next  = st_htable_next,
     .get_key   = st_htable_get_iter_key,
     .get_value = st_htable_get_iter_value,
 };
 
-ST_MODULE_DEF_GET_FUNC(htable_hash_table)
+static st_moddata_t st_module_htable_hash_table_data = {
+    .name = "hash_table",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "htable",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_htable_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(htable_hash_table)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -42,12 +73,10 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "htable";
-static const char *st_module_name = "hash_table";
-
 static st_htablectx_t *st_htable_init(struct st_loggerctx_s *logger_ctx) {
-    st_htablectx_t *htable_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_htablectx_t), NULL, &htablectx_funcs);
+    st_htablectx_t *htable_ctx = (st_htablectx_t *)st_modctx_new("htable", 
+     "hash_table", sizeof(st_htablectx_t), NULL, &htablectx_funcs, 
+     (st_object_dtor_t)st_htable_quit);
 
     if (!htable_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -83,7 +112,8 @@ static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
         return NULL;
     }
 
-    htable = malloc(sizeof(st_htable_t));
+    htable = (st_htable_t *)st_object_new(sizeof(st_htable_t), &htable_funcs, 
+     (st_object_dtor_t)st_htable_destroy, (st_object_t *)htable_ctx);
     if (!htable) {
         ST_LOGGERCTX_CALL(htable_ctx->logger_ctx, error,
          "htable_hash_table: Unable allocate memory for hash_table");
@@ -92,7 +122,6 @@ static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
         return NULL;
     }
 
-    st_object_make(htable, htable_ctx, &htable_funcs);
     htable->handle = handle;
     htable->keydelfunc = keydelfunc;
     htable->valdelfunc = valdelfunc;
@@ -126,8 +155,9 @@ static bool st_htable_insert(st_htable_t *htable, st_htiter_t *iter,
         return false;
 
     if (iter) {
-        st_object_make(iter, htable, &htiter_funcs);
-        iter->handle = entry;
+        st_object_placement_new(iter, &htiter_funcs, st_object_fake_dtor, 
+         (st_object_t *)htable);
+        iter->st_userdata = (uintptr_t)entry;
     }
 
     if (delete_old) {
@@ -148,7 +178,7 @@ static void *st_htable_get(st_htable_t *htable, const void *key) {
     st_htiter_t iter;
 
     if (ST_HTABLE_CALL(htable, find, &iter, key))
-        return iter.handle->data;
+        return ST_HTITER_CALL(&iter, get_value);
 
     return NULL;
 }
@@ -204,8 +234,9 @@ static bool st_htable_find(st_htable_t *htable, st_htiter_t *dst,
     if (!handle)
         return false;
 
-    st_object_make(dst, htable, &htiter_funcs);
-    dst->handle = handle;
+    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor, 
+     (st_object_t *)htable);
+    dst->st_userdata = (uintptr_t)handle;
 
     return true;
 }
@@ -218,13 +249,14 @@ static bool st_htable_first_or_next(st_htable_t *htable, st_htiter_t *current,
         return false;
 
     entry = hash_table_next_entry(htable->handle,
-     current ? current->handle : NULL);
+     current ? (struct hash_entry *)current->st_userdata : NULL);
 
     if (!entry)
         return false;
 
-    st_object_make(dst, htable, &htiter_funcs);
-    dst->handle = entry;
+    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor, 
+     (st_object_t *)htable);
+    dst->st_userdata = (uintptr_t)entry;
 
     return true;
 }
@@ -235,14 +267,15 @@ static bool st_htable_first(st_htable_t *htable, st_htiter_t *dst) {
 
 static bool st_htable_next(st_htiter_t *current, st_htiter_t *dst) {
     return current
-        ? st_htable_first_or_next(st_object_get_owner(current), current, dst)
+        ? st_htable_first_or_next((st_htable_t *)st_object_get_owner(current), 
+           current, dst)
         : false;
 }
 
 static const void *st_htable_get_iter_key(const st_htiter_t *iter) {
-    return iter->handle->key;
+    return ((struct hash_entry *)iter->st_userdata)->key;
 }
 
 static void *st_htable_get_iter_value(const st_htiter_t *iter) {
-    return iter->handle->data;
+    return ((struct hash_entry *)iter->st_userdata)->data;
 }

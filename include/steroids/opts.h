@@ -5,12 +5,3 @@
 
 static st_optsctx_t *st_opts_init(int argc, char **argv,
  struct st_loggerctx_s *logger_ctx);
-static void st_opts_quit(st_optsctx_t *opts_ctx);
-
-static bool st_opts_add_option(st_optsctx_t *opts_ctx, char short_option,
- const char *long_option, st_opt_arg_t arg, const char *arg_fmt,
- const char *option_descr);
-static bool st_opts_get_str(st_optsctx_t *opts_ctx, const char *opt, char *dst,
- size_t dstsize);
-static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
- size_t columns);

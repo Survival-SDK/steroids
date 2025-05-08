@@ -39,17 +39,6 @@
         return false;                                                         \
     }
 
-#define ST_MODULE_DEF_GET_FUNC(modname)                                       \
-    void *st_module_##modname##_get_func(const char *func_name) {             \
-        size_t entry_index = 0;                                               \
-        do {                                                                  \
-            if (strcmp(st_module_##modname##_funcs[entry_index].func_name,    \
-             func_name) == 0)                                                 \
-                return st_module_##modname##_funcs[entry_index].func_pointer; \
-        } while (st_module_##modname##_funcs[++entry_index].func_name);       \
-        return NULL;                                                          \
-    }
-
 #define ST_MODULE_DEF_INIT_FUNC(modname)                                    \
     st_moddata_t *st_module_##modname##_init(st_modsmgr_t *modsmgr,         \
      st_modsmgr_funcs_t *modsmgr_funcs) {                                   \
@@ -70,8 +59,7 @@ typedef struct {
     const char    *type;
     const char    *subsystem;
     st_modprerq_t *prereqs;
-    size_t         prereqs_count;
-    st_getfunc_t   get_function;
+    void          *ctor;
 } st_moddata_t;
 
 struct st_modsmgr_funcs_s;
@@ -88,17 +76,13 @@ typedef bool (*st_modsmgr_load_module_t)(st_modsmgr_t *modsmgr,
 typedef void (*st_modsmgr_process_deps_t)(st_modsmgr_t *modsmgr);
 typedef void (*st_modsmgr_get_module_names_t)(st_modsmgr_t *modsmgr, char **dst,
  size_t mods_count, size_t modname_size, const char *subsystem);
-typedef void *(*st_modsmgr_get_function_t)(const st_modsmgr_t *modsmgr,
- const char *subsystem, const char *module_name, const char *func_name);
+typedef void *(*st_modsmgr_get_ctor_t)(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
 
 typedef struct st_modsmgr_funcs_s {
     st_modsmgr_get_module_names_t get_module_names;
     st_modsmgr_load_module_t      load_module;
     st_modsmgr_process_deps_t     process_deps;
-    st_modsmgr_get_function_t     get_function;
+    st_modsmgr_get_ctor_t         get_ctor;
 } st_modsmgr_funcs_t;
 
-typedef struct {
-    const char *func_name;
-    void       *func_pointer;
-} st_modfuncentry_t;

@@ -2,10 +2,10 @@
 
 #include <zip/zip.h>
 
+#include "steroids/types/modctx.h"
 #include "steroids/types/modules/fs.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/modules/pathtools.h"
-#include "steroids/types/modctx.h"
 #include "steroids/types/object.h"
 
 typedef enum {
@@ -13,16 +13,18 @@ typedef enum {
     ST_ZT_MEM,
 } st_ziptype_t;
 
-ST_MODCTX (
+typedef struct {
+    st_modctx_t;
     st_fsctx_t            *fs_ctx;
     struct st_loggerctx_s *logger_ctx;
     st_pathtoolsctx_t     *pathtools_ctx;
-) st_zipctx_t;
+} st_zipctx_t;
 
-ST_CLASS (
+typedef struct {
+    st_object_t;
     struct zip_t *handle;
     st_ziptype_t  type;
-) st_zip_t;
+} st_zip_t;
 
 #define ST_ZIPCTX_T_DEFINED
 #define ST_ZIP_T_DEFINED

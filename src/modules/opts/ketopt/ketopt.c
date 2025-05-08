@@ -17,8 +17,18 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
-static st_optsctx_funcs_t st_optsctx_funcs = {
-    .quit       = st_opts_quit,
+static void st_opts_quit(st_optsctx_t *opts_ctx);
+
+static bool st_opts_add_option(st_optsctx_t *opts_ctx, char short_option,
+ const char *long_option, st_opt_arg_t arg, const char *arg_fmt,
+ const char *option_descr);
+static bool st_opts_get_str(st_optsctx_t *opts_ctx, const char *opt, char *dst,
+ size_t dstsize);
+static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
+ size_t columns);
+
+static st_optsctx_funcs_t optsctx_funcs = {
+    st_modctx_funcs,
     .add_option = st_opts_add_option,
     .get_str    = st_opts_get_str,
     .get_help   = st_opts_get_help,
@@ -29,7 +39,17 @@ typedef enum {
     ST_OT_LONG,
 } st_opttype_t;
 
-ST_MODULE_DEF_GET_FUNC(opts_ketopt)
+static st_moddata_t st_module_opts_ketopt_data = {
+    .name = "ketopt",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "opts",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_opts_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(opts_ketopt)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -44,8 +64,9 @@ static const char *st_module_name = "ketopt";
 
 static st_optsctx_t *st_opts_init(int argc, char **argv,
  struct st_loggerctx_s *logger_ctx) {
-    st_optsctx_t *opts_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_optsctx_t), NULL, &st_optsctx_funcs);
+    st_optsctx_t *opts_ctx = (st_optsctx_t *)st_modctx_new("opts", "ketopt",
+     sizeof(st_optsctx_t), NULL, &optsctx_funcs, 
+     (st_object_dtor_t)st_opts_quit);
 
     if (!opts_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,

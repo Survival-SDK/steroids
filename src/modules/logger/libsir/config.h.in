@@ -1,18 +1,4 @@
 #pragma once
 
-#include "steroids/module.h"
-
 #define ST_MODULE_TYPE_@ST_MODULE_TYPE@
-
-void *st_module_logger_libsir_get_func(const char *func_name);
-
-static st_moddata_t st_module_logger_libsir_data = {
-    .name = "@ST_MODULE_NAME@",
-    .type = "@ST_MODULE_TYPE@",
-    .subsystem = "@ST_MODULE_SUBSYSTEM@",
-    .prereqs = (st_modprerq_t[]){
-        @ST_MODULE_PREREQS@
-    },
-    .prereqs_count = @ST_MODULE_PREREQS_COUNT@,
-    .get_function = st_module_logger_libsir_get_func,
-};
+#define ST_MODULE_TYPE "@ST_MODULE_TYPE@"

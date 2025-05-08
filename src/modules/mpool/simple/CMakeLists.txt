@@ -1,10 +1,10 @@
-if (${ST_MODULE_FNV1A_SIMPLE} STREQUAL "no")
+if (${ST_MODULE_MPOOL_SIMPLE} STREQUAL "no")
     return()
 endif()
 
 set(ST_MODULE_NAME "simple")
-set(ST_MODULE_TYPE ${ST_MODULE_FNV1A_SIMPLE})
-set(ST_MODULE_SUBSYSTEM "fnv1a")
+set(ST_MODULE_TYPE ${ST_MODULE_MPOOL_SIMPLE})
+set(ST_MODULE_SUBSYSTEM "mpool")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
 configure_file(
@@ -25,7 +25,7 @@ bb_add_more_warnings(
     OPTIONS C_COMPILE_OPTIONS
 )
 
-st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_FNV1A_SIMPLE})
+st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_MPOOL_SIMPLE})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
 target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
@@ -36,6 +36,7 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
+    "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )

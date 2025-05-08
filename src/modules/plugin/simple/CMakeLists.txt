@@ -7,34 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_PLUGIN_SIMPLE})
 set(ST_MODULE_SUBSYSTEM "plugin")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "fs",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-    {
-        .subsystem = "pathtools",
-        .name = NULL,
-    },
-    {
-        .subsystem = "so",
-        .name = NULL,
-    },
-    {
-        .subsystem = "spcpaths",
-        .name = NULL,
-    },
-    {
-        .subsystem = "zip",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 6)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -56,7 +28,7 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_PLUGIN_SIMPLE})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "simple.c"
 )

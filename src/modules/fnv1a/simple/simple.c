@@ -11,15 +11,36 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static void st_fnv1a_quit(st_fnv1actx_t *fnv1a_ctx);
+
+static uint32_t st_fnv1a_u32hash_string(st_fnv1actx_t *fnv1a_ctx,
+ const char *str);
+static uint32_t st_fnv1a_u32hash_bytes(st_fnv1actx_t *fnv1a_ctx,
+ const void *ptr, size_t size);
+static st_u32hashstrfunc_t st_fnv1a_get_u32hashstr_func(
+ st_fnv1actx_t *fnv1a_ctx);
+static st_u32hashbytesfunc_t st_fnv1a_get_u32hashbytes_func(
+ st_fnv1actx_t *fnv1a_ctx);
+
 static st_fnv1actx_funcs_t fnv1actx_funcs = {
-    .quit                  = st_fnv1a_quit,
+    st_modctx_funcs,
     .u32hash_string        = st_fnv1a_u32hash_string,
     .u32hash_bytes         = st_fnv1a_u32hash_bytes,
     .get_u32hashstr_func   = st_fnv1a_get_u32hashstr_func,
     .get_u32hashbytes_func = st_fnv1a_get_u32hashbytes_func,
 };
 
-ST_MODULE_DEF_GET_FUNC(fnv1a_simple)
+static st_moddata_t st_module_fnv1a_simple_data = {
+    .name = "fnv1a",
+    .type = ST_MODULE_TYPE,
+    .subsystem = "fnv1a",
+    .prereqs = (st_modprerq_t[]){ 
+        { "logger", NULL, },
+        {0}, 
+    },
+    .ctor = st_fnv1a_init,
+};
+
 ST_MODULE_DEF_INIT_FUNC(fnv1a_simple)
 
 #ifdef ST_MODULE_TYPE_shared
@@ -29,14 +50,12 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "fnv1a";
-static const char *st_module_name = "simple";
-
 static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx) {
-    st_fnv1actx_t *fnv1a_ctx = st_modctx_new(st_module_subsystem,
-     st_module_name, sizeof(st_fnv1actx_t), NULL, &fnv1actx_funcs);
+    st_fnv1actx_t *fnv1a_ctx = (st_fnv1actx_t *)st_modctx_new("fnv1a", "simple",
+     sizeof(st_fnv1actx_t), NULL, &fnv1actx_funcs, 
+     (st_object_dtor_t)st_fnv1a_quit);
 
-    if (fnv1a_ctx == NULL) {
+    if (!fnv1a_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "fnv1a_simple: unable to create new fnv1a ctx object");
 

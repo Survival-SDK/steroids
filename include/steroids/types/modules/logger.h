@@ -26,7 +26,6 @@ typedef void (*st_logger_generic_msg_t)(const struct st_loggerctx_s *logger_ctx,
 
 typedef struct st_loggerctx_s *(*st_logger_init_t)(
  struct st_eventsctx_s *events_ctx);
-typedef void (*st_logger_quit_t)(struct st_loggerctx_s *logger_ctx);
 
 typedef bool (*st_logger_enable_events_t)(struct st_loggerctx_s *logger_ctx,
  struct st_eventsctx_s *events_ctx);
@@ -46,7 +45,7 @@ typedef void (*st_logger_set_postmortem_msg_t)(
  struct st_loggerctx_s *logger_ctx, const char *msg);
 
 typedef struct {
-    st_logger_quit_t               quit;
+    st_modctx_funcs_t;
     st_logger_enable_events_t      enable_events;
     st_logger_set_stdout_levels_t  set_stdout_levels;
     st_logger_set_stderr_levels_t  set_stderr_levels;
@@ -61,3 +60,4 @@ typedef struct {
 
 #define ST_LOGGERCTX_CALL(ctx, func, ...) \
     ((st_loggerctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, ## __VA_ARGS__)
+

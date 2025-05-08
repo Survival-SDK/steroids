@@ -26,7 +26,7 @@ typedef st_u32hashbytesfunc_t (*st_fnv1a_get_u32hashbytes_func_t)(
  st_fnv1actx_t *fnv1a_ctx);
 
 typedef struct {
-    st_fnv1a_quit_t                  quit;
+    st_modctx_funcs_t;
     st_fnv1a_u32hash_string_t        u32hash_string;
     st_fnv1a_u32hash_bytes_t         u32hash_bytes;
     st_fnv1a_get_u32hashstr_func_t   get_u32hashstr_func;

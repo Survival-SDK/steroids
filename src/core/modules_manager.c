@@ -11,12 +11,12 @@
 #include "utils.h"
 
 #define FOUND_MODULES_MAX 8
-#define ST_MODSMGR_FUNCS                                      \
-    &(st_modsmgr_funcs_t){                                    \
-        .get_module_names      = st_modsmgr_get_module_names, \
-        .load_module           = st_modsmgr_load_module,      \
-        .process_deps          = st_modsmgr_process_deps,     \
-        .get_function          = st_modsmgr_get_function,     \
+#define ST_MODSMGR_FUNCS                                 \
+    &(st_modsmgr_funcs_t){                               \
+        .get_module_names = st_modsmgr_get_module_names, \
+        .load_module      = st_modsmgr_load_module,      \
+        .process_deps     = st_modsmgr_process_deps,     \
+        .get_ctor         = st_modsmgr_get_ctor,         \
      }
 
 st_modctx_t *st_modsmgr_init_module_ctx(st_modsmgr_t *modsmgr,
@@ -62,12 +62,17 @@ static inline bool st_modsmgr_have_module(const st_modsmgr_t *modsmgr,
 
 static bool st_modsmgr_module_have_deps(const st_modsmgr_t *modsmgr,
  const st_moddata_t *module_data) {
-    for (unsigned i = 0; i < module_data->prereqs_count; i++) {
+    int i = 0;
+
+    while (memcmp(&module_data->prereqs[i], &(st_modprerq_t){0}, sizeof(st_modprerq_t)) != 0) {
         bool have_prereq = st_modsmgr_have_module(modsmgr,
          module_data->prereqs[i].subsystem, module_data->prereqs[i].name);
 
-        if (have_prereq)
+        if (have_prereq) {
+            i++;
+
             continue;
+        }
 
         if (module_data->prereqs[i].name == NULL)
             fprintf(stderr, "steroids: Missing module of subsystem \"%s\" as "
@@ -192,13 +197,10 @@ void st_modsmgr_destroy(st_modsmgr_t *modsmgr) {
     st_dlist_destroy(modsmgr);
 }
 
-void *st_modsmgr_get_function(const st_modsmgr_t *modsmgr,
- const char *subsystem, const char *module_name, const char *func_name) {
+void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name) {
     st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
      module_name);
 
-    if (!module_data)
-        return NULL;
-
-    return module_data->get_function(func_name);
+    return module_data ? module_data->ctor : NULL;
 }

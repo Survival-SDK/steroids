@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "modules_manager.h"
@@ -29,31 +30,25 @@ static st_so_init_t        st_so_init;
 static st_spcpaths_init_t  st_spcpaths_init;
 static st_zip_init_t       st_zip_init;
 
-#define LOAD_FUNCTION(module, function)                                        \
-    st_##module##_##function = st_modsmgr_get_function(modsmgr, #module, NULL, \
-     #function);                                                               \
-    if (!st_##module##_##function) {                                           \
-        ST_LOGGERCTX_CALL(logger_ctx, error,                                   \
-         "steroids: Unable to load function \"%s\"",                           \
-         #function);                                                           \
-        return false;                                                          \
+#define LOAD_CTOR(module)                                             \
+    st_##module##_init = st_modsmgr_get_ctor(modsmgr, #module, NULL); \
+    if (!st_##module##_init) {                                        \
+        ST_LOGGERCTX_CALL(logger_ctx, error,                          \
+         "steroids: Unable to load constructor of %s_ctx", #module);   \
+        return false;                                                 \
     }
 
-static bool init_funcs(st_modsmgr_t *modsmgr,
+static bool init_ctors(st_modsmgr_t *modsmgr,
  struct st_loggerctx_s *logger_ctx) {
-    LOAD_FUNCTION(fs, init);
-    LOAD_FUNCTION(ini, init);
-    LOAD_FUNCTION(opts, init);
-
-//     LOAD_FUNCTION(runner, init);
-//     LOAD_FUNCTION(runner, quit);
-//     LOAD_FUNCTION(runner, run);
-
-    LOAD_FUNCTION(pathtools, init);
-    LOAD_FUNCTION(plugin,    init);
-    LOAD_FUNCTION(so,        init);
-    LOAD_FUNCTION(spcpaths,  init);
-    LOAD_FUNCTION(zip,       init);
+    LOAD_CTOR(fs);
+    LOAD_CTOR(ini);
+    LOAD_CTOR(opts);
+//     LOAD_CTOR(runner);
+    LOAD_CTOR(pathtools);
+    LOAD_CTOR(plugin);
+    LOAD_CTOR(so);
+    LOAD_CTOR(spcpaths);
+    LOAD_CTOR(zip);
 
     return true;
 }
@@ -72,10 +67,18 @@ int main(int argc, char **argv) {
     st_zipctx_t       *zip_ctx;
     int                exitcode = EXIT_SUCCESS;
 
-    st_logger_init = st_modsmgr_get_function(modsmgr, "logger", NULL, "init");
+    st_logger_init = st_modsmgr_get_ctor(modsmgr, "logger", NULL);
+    if (!st_logger_init) {
+        fprintf(stderr, 
+         "steroids: Unable to load function \"st_logger_init\"\n");
+        exitcode = EXIT_FAILURE;
+
+        goto get_logger_ctor_fail;
+    }
+
     logger_ctx = st_logger_init(NULL);
 
-    if (!init_funcs(modsmgr, logger_ctx)) {
+    if (!init_ctors(modsmgr, logger_ctx)) {
         exitcode = EXIT_FAILURE;
 
         goto init_funcs_fail;
@@ -95,17 +98,18 @@ int main(int argc, char **argv) {
 //     st_runner_run(runner, NULL);
 
 //     st_runner_quit(runner);
-    ST_PLUGINCTX_CALL(plugin_ctx, quit);
-    ST_ZIPCTX_CALL(zip_ctx, quit);
-    ST_SPCPATHSCTX_CALL(spcpaths_ctx, quit);
-    ST_SOCTX_CALL(so_ctx, quit);
-    ST_FSCTX_CALL(fs_ctx, quit);
-    ST_PATHTOOLSCTX_CALL(pathtools_ctx, quit);
-    ST_OPTSCTX_CALL(opts_ctx, quit);
-    ST_INICTX_CALL(ini_ctx, quit);
+    ST_PLUGINCTX_CALL(plugin_ctx, destroy);
+    ST_ZIPCTX_CALL(zip_ctx, destroy);
+    ST_SPCPATHSCTX_CALL(spcpaths_ctx, destroy);
+    ST_SOCTX_CALL(so_ctx, destroy);
+    ST_FSCTX_CALL(fs_ctx, destroy);
+    ST_PATHTOOLSCTX_CALL(pathtools_ctx, destroy);
+    ST_OPTSCTX_CALL(opts_ctx, destroy);
+    ST_INICTX_CALL(ini_ctx, destroy);
 
 init_funcs_fail:
-    ST_LOGGERCTX_CALL(logger_ctx, quit);
+    ST_LOGGERCTX_CALL(logger_ctx, destroy);
+get_logger_ctor_fail:
     st_modsmgr_destroy(modsmgr);
 
     return exitcode;
