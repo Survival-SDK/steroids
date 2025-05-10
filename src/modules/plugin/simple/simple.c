@@ -7,8 +7,6 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "steroids/types/object.h"
-
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
