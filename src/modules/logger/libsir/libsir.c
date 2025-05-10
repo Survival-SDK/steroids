@@ -130,6 +130,8 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
     if (events_ctx && !st_logger_enable_events(logger_ctx, events_ctx))
         logger_ctx->events_ctx = NULL;
 
+    memset(logger_ctx->postmortem_msg, '\0', ST_POSTMORTEM_MSG_SIZE_MAX);
+
     st_logger_info(logger_ctx, "logger_libsir: Logger initialized");
 
     return logger_ctx;
