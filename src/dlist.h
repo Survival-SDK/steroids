@@ -22,4 +22,6 @@ bool st_dlist_clear(st_dlist_t *list);
 bool st_dlist_destroy(st_dlist_t *list);
 bool st_dlist_import_data(st_dlnode_t *node, const void *data);
 bool st_dlist_export_data(void *data, const st_dlnode_t *node);
+/* For cases where data stores pointer */
+void *st_dlist_export_ptr(const st_dlnode_t *node);
 void *st_dlist_get_data(st_dlnode_t *node);

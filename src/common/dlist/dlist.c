@@ -227,6 +227,11 @@ bool st_dlist_export_data(void *data, const st_dlnode_t *node) {
     return true;
 }
 
+/* For cases where data stores pointer */
+void *st_dlist_export_ptr(const st_dlnode_t *node) {
+    return node ? *(void **)node->data : NULL;
+}
+
 void *st_dlist_get_data(st_dlnode_t *node) {
     return node ? node->data : NULL;
 }
