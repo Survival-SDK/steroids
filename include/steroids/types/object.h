@@ -30,13 +30,13 @@ static const st_object_t *st_object_get_owner(const void *obj);
 static st_object_t *st_object_get_owner_unsafe(void *obj);
 static void st_object_destroy(void *obj);
 
-static const st_object_funcs_t st_object_funcs = { 
+static const st_object_funcs_t st_object_funcs = {
     .get_owner        = st_object_get_owner,
     .get_owner_unsafe = st_object_get_owner_unsafe,
     .destroy          = st_object_destroy,
 };
 
-static st_object_t *st_object_init(st_object_t *obj, const void *funcs, 
+static st_object_t *st_object_init(st_object_t *obj, const void *funcs,
  st_object_dtor_t dtor, st_object_t *owner) {
     if (!obj)
         return NULL;
@@ -49,14 +49,14 @@ static st_object_t *st_object_init(st_object_t *obj, const void *funcs,
     return obj;
 }
 
-static st_object_t *st_object_new(size_t size, const void *funcs, 
+static st_object_t *st_object_new(size_t size, const void *funcs,
  st_object_dtor_t dtor, st_object_t *owner) {
     st_object_t *obj = malloc(size);
 
     return st_object_init(obj, funcs, dtor, owner);
 }
 
-static st_object_t *st_object_placement_new(void *buffer, const void *funcs, 
+static st_object_t *st_object_placement_new(void *buffer, const void *funcs,
  st_object_dtor_t dtor, st_object_t *owner) {
     return dtor
         ? st_object_init(buffer, funcs, dtor, owner)
@@ -81,4 +81,9 @@ static void st_object_destroy(void *obj) {
 /* For stack objects, created with placement new */
 static void st_object_fake_dtor(void *obj) {
     /* noop */
+}
+
+/* Destructor for object pointer placed inside container */
+static void st_object_free_by_ptr(void *objptr) {
+    st_object_destroy(*(void **)objptr);
 }
