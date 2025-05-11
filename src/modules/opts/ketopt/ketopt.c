@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "steroids/types/moddata.h"
+
 #define ERRMSGBUF_SIZE               128
 #define LONG_OPT_NUM_TO_INDEX_OFFSET 300
 #define SHORT_OPTS_FMT_SIZE          100
@@ -39,18 +41,19 @@ typedef enum {
     ST_OT_LONG,
 } st_opttype_t;
 
-static st_moddata_t st_module_opts_ketopt_data = {
-    .name = "ketopt",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "opts",
-    .prereqs = (st_modprerq_t[]){ 
-        { "logger", NULL, },
-        {0}, 
-    },
-    .ctor = st_opts_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(opts_ketopt)
+st_moddata_t *st_module_opts_ketopt_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("opts", "ketopt", ST_MODULE_TYPE, mod_prereqs,
+     st_opts_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -65,7 +68,7 @@ static const char *st_module_name = "ketopt";
 static st_optsctx_t *st_opts_init(int argc, char **argv,
  struct st_loggerctx_s *logger_ctx) {
     st_optsctx_t *opts_ctx = (st_optsctx_t *)st_modctx_new("opts", "ketopt",
-     sizeof(st_optsctx_t), NULL, &optsctx_funcs, 
+     sizeof(st_optsctx_t), NULL, &optsctx_funcs,
      (st_object_dtor_t)st_opts_quit);
 
     if (!opts_ctx) {

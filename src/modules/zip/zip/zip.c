@@ -10,6 +10,8 @@
 
 #include <zip/zip.h>
 
+#include "steroids/types/moddata.h"
+
 #define ERRMSGBUF_SIZE 128
 
 static st_modsmgr_t      *global_modsmgr;
@@ -42,20 +44,21 @@ static st_zip_funcs_t zip_funcs = {
     .extract_entry     = st_zip_extract_entry,
 };
 
-static st_moddata_t st_module_zip_zip_data = {
-    .name = "zip",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "zip",
-    .prereqs = (st_modprerq_t[]){ 
-        { "fs", NULL, },
-        { "logger", NULL, },
-        { "pathtools", NULL, },
-        {0}, 
-    },
-    .ctor = st_zip_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "fs", NULL, },
+    { "logger", NULL, },
+    { "pathtools", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(zip_zip)
+st_moddata_t *st_module_zip_zip_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("zip", "zip", ST_MODULE_TYPE, mod_prereqs,
+     st_zip_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -69,7 +72,7 @@ static const char *st_module_name = "zip";
 
 static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx) {
-    st_zipctx_t  *zip_ctx = (st_zipctx_t *)st_modctx_new("zip", "zip", 
+    st_zipctx_t  *zip_ctx = (st_zipctx_t *)st_modctx_new("zip", "zip",
      sizeof(st_zipctx_t), NULL, &zipctx_funcs, (st_object_dtor_t)st_zip_quit);
 
     if (!zip_ctx) {
@@ -107,7 +110,7 @@ static st_zip_t *st_zip_open(st_zipctx_t *zip_ctx, const char *filename) {
         return NULL;
     }
 
-    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs, 
+    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs,
      (st_object_dtor_t)st_zip_close, (st_object_t *)zip_ctx);
     if (!zip) {
         char errbuf[ERRMSGBUF_SIZE];
@@ -141,7 +144,7 @@ static st_zip_t *st_zip_memopen(st_zipctx_t *zip_ctx, const void *data,
         return NULL;
     }
 
-    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs, 
+    zip = (st_zip_t *)st_object_new(sizeof(st_zip_t), &zip_funcs,
      (st_object_dtor_t)st_zip_close, (st_object_t *)zip_ctx);
     if (!zip) {
         char errbuf[ERRMSGBUF_SIZE];

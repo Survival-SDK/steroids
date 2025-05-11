@@ -7,6 +7,8 @@
 
 #include <hash_table.h>
 
+#include "steroids/types/moddata.h"
+
 #define ITERS_COUNT_MAX 128
 
 static st_modsmgr_t      *global_modsmgr;
@@ -53,18 +55,19 @@ static st_htiter_funcs_t htiter_funcs = {
     .get_value = st_htable_get_iter_value,
 };
 
-static st_moddata_t st_module_htable_hash_table_data = {
-    .name = "hash_table",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "htable",
-    .prereqs = (st_modprerq_t[]){ 
-        { "logger", NULL, },
-        {0}, 
-    },
-    .ctor = st_htable_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(htable_hash_table)
+st_moddata_t *st_module_htable_hash_table_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("htable", "hash_table", ST_MODULE_TYPE, mod_prereqs,
+     st_htable_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -74,8 +77,8 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 #endif
 
 static st_htablectx_t *st_htable_init(struct st_loggerctx_s *logger_ctx) {
-    st_htablectx_t *htable_ctx = (st_htablectx_t *)st_modctx_new("htable", 
-     "hash_table", sizeof(st_htablectx_t), NULL, &htablectx_funcs, 
+    st_htablectx_t *htable_ctx = (st_htablectx_t *)st_modctx_new("htable",
+     "hash_table", sizeof(st_htablectx_t), NULL, &htablectx_funcs,
      (st_object_dtor_t)st_htable_quit);
 
     if (!htable_ctx) {
@@ -112,7 +115,7 @@ static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
         return NULL;
     }
 
-    htable = (st_htable_t *)st_object_new(sizeof(st_htable_t), &htable_funcs, 
+    htable = (st_htable_t *)st_object_new(sizeof(st_htable_t), &htable_funcs,
      (st_object_dtor_t)st_htable_destroy, (st_object_t *)htable_ctx);
     if (!htable) {
         ST_LOGGERCTX_CALL(htable_ctx->logger_ctx, error,
@@ -155,7 +158,7 @@ static bool st_htable_insert(st_htable_t *htable, st_htiter_t *iter,
         return false;
 
     if (iter) {
-        st_object_placement_new(iter, &htiter_funcs, st_object_fake_dtor, 
+        st_object_placement_new(iter, &htiter_funcs, st_object_fake_dtor,
          (st_object_t *)htable);
         iter->st_userdata = (uintptr_t)entry;
     }
@@ -234,7 +237,7 @@ static bool st_htable_find(st_htable_t *htable, st_htiter_t *dst,
     if (!handle)
         return false;
 
-    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor, 
+    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor,
      (st_object_t *)htable);
     dst->st_userdata = (uintptr_t)handle;
 
@@ -254,7 +257,7 @@ static bool st_htable_first_or_next(st_htable_t *htable, st_htiter_t *current,
     if (!entry)
         return false;
 
-    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor, 
+    st_object_placement_new(dst, &htiter_funcs, st_object_fake_dtor,
      (st_object_t *)htable);
     dst->st_userdata = (uintptr_t)entry;
 
@@ -267,7 +270,7 @@ static bool st_htable_first(st_htable_t *htable, st_htiter_t *dst) {
 
 static bool st_htable_next(st_htiter_t *current, st_htiter_t *dst) {
     return current
-        ? st_htable_first_or_next((st_htable_t *)st_object_get_owner(current), 
+        ? st_htable_first_or_next((st_htable_t *)st_object_get_owner(current),
            current, dst)
         : false;
 }

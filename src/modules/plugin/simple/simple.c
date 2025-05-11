@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "steroids/types/moddata.h"
+
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
@@ -23,23 +25,24 @@ static st_pluginctx_funcs_t pluginctx_funcs = {
     .memload = st_plugin_memload,
 };
 
-static st_moddata_t st_module_plugin_simple_data = {
-    .name = "zimple",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "plugin",
-    .prereqs = (st_modprerq_t[]){ 
-        { "fs", NULL, },
-        { "logger", NULL, },
-        { "pathtools", NULL, },
-        { "so", NULL, },
-        { "spcpaths", NULL, },
-        { "zip", NULL, },
-        {0}, 
-    },
-    .ctor = st_plugin_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "fs", NULL, },
+    { "logger", NULL, },
+    { "pathtools", NULL, },
+    { "so", NULL, },
+    { "spcpaths", NULL, },
+    { "zip", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(plugin_simple)
+st_moddata_t *st_module_plugin_simple_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("plugin", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_plugin_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -54,8 +57,8 @@ static const char *st_module_name = "simple";
 static st_pluginctx_t *st_plugin_init(st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,
  st_soctx_t *so_ctx, st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx) {
-    st_pluginctx_t *plugin_ctx = (st_pluginctx_t *)st_modctx_new("plugin", 
-     "simple", sizeof(st_pluginctx_t), NULL, &pluginctx_funcs, 
+    st_pluginctx_t *plugin_ctx = (st_pluginctx_t *)st_modctx_new("plugin",
+     "simple", sizeof(st_pluginctx_t), NULL, &pluginctx_funcs,
      (st_object_dtor_t)st_plugin_quit);
 
     if (!plugin_ctx) {
