@@ -5,6 +5,8 @@
 
 #include <cwalk.h>
 
+#include "steroids/types/moddata.h"
+
 typedef enum {
     ST_PT_IRI,
     ST_PT_ABSOLUTE,
@@ -31,18 +33,19 @@ static st_pathtoolsctx_funcs_t pathtoolsctx_funcs = {
     .concat         = st_pathtools_concat,
 };
 
-static st_moddata_t st_module_pathtools_cwalk_data = {
-    .name = "cwalk",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "pathtools",
-    .prereqs = (st_modprerq_t[]){ 
-        { "logger", NULL, },
-        {0}, 
-    },
-    .ctor = st_pathtools_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(pathtools_cwalk)
+st_moddata_t *st_module_pathtools_cwalk_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("pathtools", "cwalk", ST_MODULE_TYPE, mod_prereqs,
+     st_pathtools_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -56,7 +59,7 @@ static const char *st_module_name = "cwalk";
 
 static st_pathtoolsctx_t *st_pathtools_init(struct st_loggerctx_s *logger_ctx) {
     st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)st_modctx_new(
-     "pathtools", "cwalk", sizeof(st_pathtoolsctx_t), NULL, &pathtoolsctx_funcs, 
+     "pathtools", "cwalk", sizeof(st_pathtoolsctx_t), NULL, &pathtoolsctx_funcs,
      (st_object_dtor_t)st_pathtools_quit);
 
     if (!pathtools_ctx) {

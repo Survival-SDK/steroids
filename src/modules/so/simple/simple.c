@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "steroids/types/moddata.h"
+
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
@@ -29,18 +31,19 @@ static st_so_funcs_t so_funcs = {
     .load_symbol = st_so_load_symbol,
 };
 
-static st_moddata_t st_module_so_simple_data = {
-    .name = "simple",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "so",
-    .prereqs = (st_modprerq_t[]){ 
-        { "logger", NULL, },
-        {0}, 
-    },
-    .ctor = st_so_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(so_simple)
+st_moddata_t *st_module_so_simple_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("so", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_so_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -61,7 +64,7 @@ static void st_so_free(void *so) {
 }
 
 static st_soctx_t *st_so_init(struct st_loggerctx_s *logger_ctx) {
-    st_soctx_t *so_ctx = (st_soctx_t *)st_modctx_new("so", "simple", 
+    st_soctx_t *so_ctx = (st_soctx_t *)st_modctx_new("so", "simple",
      sizeof(st_soctx_t), NULL, &soctx_funcs, (st_object_dtor_t)st_so_quit);
 
     if (so_ctx == NULL) {
@@ -110,7 +113,7 @@ static st_so_t *st_so_open(st_soctx_t *so_ctx, const char *filename) {
         return NULL;
     }
 
-    st_object_placement_new(&so, &so_funcs, st_object_fake_dtor, 
+    st_object_placement_new(&so, &so_funcs, st_object_fake_dtor,
      (st_object_t *)so_ctx);
 
     node = st_dlist_push_back(so_ctx->opened_handles, &so);

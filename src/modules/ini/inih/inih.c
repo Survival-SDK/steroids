@@ -9,6 +9,8 @@
 
 #include <ini.h>
 
+#include "steroids/types/moddata.h"
+
 #define ERRMSGBUF_SIZE      128
 #define SAVE_BUFFER_SIZE 131072
 
@@ -70,20 +72,21 @@ static void st_ini_free_section(st_inisection_t *section) {
     ST_HTABLE_CALL(section, destroy);
 }
 
-static st_moddata_t st_module_ini_inih_data = {
-    .name = "inih",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "ini",
-    .prereqs = (st_modprerq_t[]){ 
-        { "fnv1a", NULL, },
-        { "htable", NULL, },
-        { "logger", NULL, },
-        {0}, 
-    },
-    .ctor = st_ini_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "fnv1a", NULL, },
+    { "htable", NULL, },
+    { "logger", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(ini_inih)
+st_moddata_t *st_module_ini_inih_init(st_modsmgr_t *modsmgr,
+ st_modsmgr_funcs_t *modsmgr_funcs) {
+    global_modsmgr_funcs = *modsmgr_funcs;
+    global_modsmgr = modsmgr;
+
+    return st_moddata_new("ini", "inih", ST_MODULE_TYPE, mod_prereqs,
+     st_ini_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -116,7 +119,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih", sizeof(st_inictx_t), 
+    ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih", sizeof(st_inictx_t),
      NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
     if (!ini_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
@@ -162,7 +165,7 @@ static bool st_keyeqfunc(const void *left, const void *right) {
 }
 
 static st_ini_t *st_ini_create(st_inictx_t *ini_ctx) {
-    st_ini_t *ini = (st_ini_t *)st_object_new(sizeof(st_ini_t), &ini_funcs, 
+    st_ini_t *ini = (st_ini_t *)st_object_new(sizeof(st_ini_t), &ini_funcs,
      (st_object_dtor_t)st_ini_destroy, (st_object_t *)ini_ctx);
 
     if (!ini) {

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "steroids/types/modctx.h"
+#include "steroids/types/moddata.h"
 
 #define ST_MT_internal 0
 #define ST_MT_shared   1
@@ -39,29 +40,6 @@
         return false;                                                         \
     }
 
-#define ST_MODULE_DEF_INIT_FUNC(modname)                                    \
-    st_moddata_t *st_module_##modname##_init(st_modsmgr_t *modsmgr,         \
-     st_modsmgr_funcs_t *modsmgr_funcs) {                                   \
-        global_modsmgr_funcs = *modsmgr_funcs;                              \
-        global_modsmgr = modsmgr;                                           \
-        return &st_module_##modname##_data;                                 \
-    }
-
-typedef struct {
-    const char *subsystem;
-    const char *name;
-} st_modprerq_t;
-
-typedef void *(*st_getfunc_t)(const char *funcname);
-
-typedef struct {
-    const char    *name;
-    const char    *type;
-    const char    *subsystem;
-    st_modprerq_t *prereqs;
-    void          *ctor;
-} st_moddata_t;
-
 struct st_modsmgr_funcs_s;
 
 #ifndef ST_MODSMGR_T_DEFINED
@@ -85,4 +63,3 @@ typedef struct st_modsmgr_funcs_s {
     st_modsmgr_process_deps_t     process_deps;
     st_modsmgr_get_ctor_t         get_ctor;
 } st_modsmgr_funcs_t;
-
