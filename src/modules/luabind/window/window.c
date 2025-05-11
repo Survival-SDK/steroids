@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "steroids/types/modules/window.h"
+#include "steroids/modules/window.h"
 
 #define CTX_METATABLE_NAME    "window_ctx"
 #define WINDOW_METATABLE_NAME "window"

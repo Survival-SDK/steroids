@@ -1,17 +1,17 @@
 #pragma once
 
-#include "steroids/types/modules/angle.h"
-#include "steroids/types/modules/drawq.h"
-#include "steroids/types/modules/dynarr.h"
-#include "steroids/types/modules/gfxctx.h"
-#include "steroids/types/modules/gldebug.h"
-#include "steroids/types/modules/glloader.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/matrix3x3.h"
-#include "steroids/types/modules/sprite.h"
-#include "steroids/types/modules/texture.h"
-#include "steroids/types/modules/vec2.h"
-#include "steroids/types/modules/window.h"
+#include "steroids/modules/angle.h"
+#include "steroids/modules/drawq.h"
+#include "steroids/modules/dynarr.h"
+#include "steroids/modules/gfxctx.h"
+#include "steroids/modules/gldebug.h"
+#include "steroids/modules/glloader.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/matrix3x3.h"
+#include "steroids/modules/sprite.h"
+#include "steroids/modules/texture.h"
+#include "steroids/modules/vec2.h"
+#include "steroids/modules/window.h"
 
 typedef struct {
     st_modctx_t    *ctx;

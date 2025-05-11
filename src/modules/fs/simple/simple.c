@@ -5,8 +5,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 static st_fsctx_t *st_fs_init(struct st_loggerctx_s *logger_ctx,
  st_pathtoolsctx_t *pathtools_ctx);

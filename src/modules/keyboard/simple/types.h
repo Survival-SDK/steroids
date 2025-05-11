@@ -1,9 +1,9 @@
 #pragma once
 
-#include "steroids/types/modules/events.h"
-#include "steroids/types/modules/htable.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/keyboard.h"
+#include "steroids/modules/events.h"
+#include "steroids/modules/htable.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/keyboard.h"
 
 #define INPUT_SIZE 4
 

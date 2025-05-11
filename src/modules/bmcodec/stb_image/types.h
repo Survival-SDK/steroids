@@ -1,7 +1,7 @@
 #pragma once
 
-#include "steroids/types/modules/bitmap.h"
-#include "steroids/types/modules/logger.h"
+#include "steroids/modules/bitmap.h"
+#include "steroids/modules/logger.h"
 
 typedef struct {
     st_modctx_t       *ctx;

@@ -1,4 +1,4 @@
 [
-    { include: ["\"steroids/types/modules/htable.h\"", "private", "\"steroids/htable.h\"", "public"] },
+    { include: ["\"steroids/modules/htable.h\"", "private", "\"steroids/htable.h\"", "public"] },
     { include: ["\"steroids/module.h\""              , "private", "\"steroids/htable.h\"", "public"] },
 ]

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "steroids/types/modules/bmcodec.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/bmcodec.h"
+#include "steroids/modules/logger.h"
+#include "steroids/object.h"
 
 #include "slist.h"
 

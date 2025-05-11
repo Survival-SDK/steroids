@@ -3,11 +3,11 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "steroids/types/modules/fnv1a.h"
-#include "steroids/types/modules/htable.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/window.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/fnv1a.h"
+#include "steroids/modules/htable.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/window.h"
+#include "steroids/object.h"
 
 #include "dlist.h"
 

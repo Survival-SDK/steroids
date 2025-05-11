@@ -2,9 +2,9 @@
 
 #include "config.h" // IWYU pragma: keep
 #include "steroids/luabind.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/lua.h"
-#include "steroids/types/modules/mouse.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/lua.h"
+#include "steroids/modules/mouse.h"
 
 typedef struct {
     st_modctx_t      *ctx;

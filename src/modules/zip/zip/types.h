@@ -2,11 +2,11 @@
 
 #include <zip/zip.h>
 
-#include "steroids/types/modctx.h"
-#include "steroids/types/modules/fs.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/pathtools.h"
-#include "steroids/types/object.h"
+#include "steroids/modctx.h"
+#include "steroids/modules/fs.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/pathtools.h"
+#include "steroids/object.h"
 
 typedef enum {
     ST_ZT_FILE,

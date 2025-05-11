@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define OFFSET_BASIS 0x811C9dC5u
 #define PRIME        0x01000193u

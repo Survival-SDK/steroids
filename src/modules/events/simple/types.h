@@ -3,10 +3,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "steroids/types/modctx.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/rbuf.h"
-#include "steroids/types/object.h"
+#include "steroids/modctx.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/rbuf.h"
+#include "steroids/object.h"
 
 #define EVENT_TYPE_NAME_SIZE 32
 #define EVENT_TYPES_MAX      32

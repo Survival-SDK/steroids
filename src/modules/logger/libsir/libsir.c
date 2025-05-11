@@ -10,8 +10,8 @@
 #pragma GCC diagnostic pop
 #include <sir/errors.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx);
 static void st_logger_quit(st_loggerctx_t *logger_ctx);

@@ -7,8 +7,8 @@
 #include <klib/ketopt.h>
 #pragma GCC diagnostic pop
 
-#include "steroids/types/modctx.h"
-#include "steroids/types/modules/logger.h"
+#include "steroids/modctx.h"
+#include "steroids/modules/logger.h"
 
 #define ST_OPTS_OPTS_MAX 128
 

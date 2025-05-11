@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "steroids/types/modules/window.h"
+#include "steroids/modules/window.h"
 
 #define EVQ_POOL_SIZE 1024
 
@@ -222,4 +222,3 @@ static const char *st_keyboard_get_input(const st_modctx_t *keyboard_ctx) {
 
     return *module->input ? module->input : NULL;
 }
-

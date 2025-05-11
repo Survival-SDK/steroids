@@ -1,6 +1,6 @@
 #pragma once
 
-#include "steroids/types/modules/glloader.h"
+#include "steroids/modules/glloader.h"
 
 #include <assert.h>
 
