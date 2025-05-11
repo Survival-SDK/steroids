@@ -32,10 +32,6 @@ static st_modsmgr_funcs_t modsmgr_funcs = {
     .get_ctor         = st_modsmgr_get_ctor,
 };
 
-// st_modctx_t *st_modsmgr_init_module_ctx(st_modsmgr_t *modsmgr,
-//  const st_moddata_t *module_data, size_t data_size);
-// void st_free_module_ctx(st_modsmgr_t *modsmgr, st_modctx_t *modctx);
-
 static st_moddata_t *st_modsmgr_find_module(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name) {
     st_dlnode_t  *node;
@@ -193,7 +189,7 @@ st_modsmgr_t *st_modsmgr_init(void) {
     if (!modsmgr)
         return NULL;
 
-    modsmgr->modsdata = st_dlist_create(sizeof(st_moddata_t),
+    modsmgr->modsdata = st_dlist_create(sizeof(st_moddata_t *),
      st_object_free_by_ptr);
 
     if (!modsmgr->modsdata) {
