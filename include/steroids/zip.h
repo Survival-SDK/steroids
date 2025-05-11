@@ -1,8 +1,5 @@
 #pragma once
 
-#include <stddef.h>
-
-#include "steroids/module.h"
 #include "steroids/types/modules/zip.h"
 
 static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
