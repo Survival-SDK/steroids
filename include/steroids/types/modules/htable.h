@@ -1,6 +1,5 @@
 #pragma once
 
-#include "steroids/module.h"
 #include "steroids/types/modctx.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"

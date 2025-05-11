@@ -2,8 +2,6 @@
 
 #include <stddef.h>
 
-#include "steroids/module.h"
-
 typedef struct {
     size_t           modules_count;
     st_modinitfunc_t modules_init_funcs[];

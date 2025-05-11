@@ -2,7 +2,6 @@
 
 #include <stddef.h>
 
-#include "steroids/module.h"
 #include "steroids/types/modctx.h"
 #include "steroids/types/modules/fs.h"
 #include "steroids/types/modules/pathtools.h"

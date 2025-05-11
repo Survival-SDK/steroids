@@ -1,6 +1,5 @@
 #pragma once
 
-#include "steroids/module.h"
 #include "steroids/types/modules/plugin.h"
 
 static st_pluginctx_t *st_plugin_init(st_modsmgr_t *modsmgr, st_fsctx_t *fs_ctx,
