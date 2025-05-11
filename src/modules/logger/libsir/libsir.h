@@ -2,4 +2,4 @@
 
 #include "config.h" // IWYU pragma: keep
 #include "types.h" // IWYU pragma: keep
-#include "steroids/logger.h"
+#include "steroids/types/modules/logger.h"

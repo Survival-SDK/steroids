@@ -11,6 +11,7 @@
 #define OFFSET_BASIS 0x811C9dC5u
 #define PRIME        0x01000193u
 
+static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx);
 static void st_fnv1a_quit(st_fnv1actx_t *fnv1a_ctx);
 
 static uint32_t st_fnv1a_u32hash_string(st_fnv1actx_t *fnv1a_ctx,

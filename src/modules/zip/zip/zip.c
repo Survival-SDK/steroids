@@ -15,6 +15,8 @@
 
 #define ERRMSGBUF_SIZE 128
 
+static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
+ struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx);
 static void st_zip_quit(st_zipctx_t *zip_ctx);
 static void st_zip_close(st_zip_t *zip);
 

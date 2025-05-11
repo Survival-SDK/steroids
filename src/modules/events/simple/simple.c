@@ -8,7 +8,9 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx);
 static void st_events_quit(st_eventsctx_t *events_ctx);
+
 static st_evtypeid_t st_events_register_type(st_eventsctx_t *events_ctx,
  const char *type_name, size_t size);
 static st_evtypeid_t st_events_get_type_id(st_eventsctx_t *events_ctx,
@@ -55,10 +57,10 @@ static st_moddata_t st_module_events_simple_data = {
     .name = "simple",
     .type = ST_MODULE_TYPE,
     .subsystem = "events",
-    .prereqs = (st_modprerq_t[]){ 
+    .prereqs = (st_modprerq_t[]){
         { "logger", NULL, },
         { "rbuf", NULL, },
-        {0}, 
+        {0},
     },
     .ctor = st_events_init,
 };
@@ -77,8 +79,8 @@ static const char *st_module_name = "simple";
 
 static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
     st_rbuf_init_t  rbuf_init;
-    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events", 
-     "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs, 
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events",
+     "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
      (st_object_dtor_t)st_events_quit);
 
     if (!events_ctx) {
@@ -90,7 +92,7 @@ static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
 
     rbuf_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "rbuf", NULL);
     if (!rbuf_init) {
-        ST_LOGGERCTX_CALL(logger_ctx, error, 
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "events_simple: unable to get rbuf ctor");
 
         goto get_ctor_fail;
@@ -98,9 +100,9 @@ static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
 
     events_ctx->rbuf_ctx = rbuf_init(logger_ctx);
     if (!events_ctx->rbuf_ctx) {
-        ST_LOGGERCTX_CALL(logger_ctx, error, 
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "events_simple: unable to create rbuf");
-        
+
         goto rbuf_init_fail;
     }
 
@@ -163,18 +165,18 @@ static st_evtypeid_t st_events_get_type_id(st_eventsctx_t *events_ctx,
 static st_evq_t *st_events_create_queue(st_eventsctx_t *events_ctx,
  size_t pool_size) {
     st_evq_t  *queue;
-    st_rbuf_t *handle = ST_RBUFCTX_CALL(events_ctx->rbuf_ctx, create, 
+    st_rbuf_t *handle = ST_RBUFCTX_CALL(events_ctx->rbuf_ctx, create,
      pool_size);
 
     if (!handle)
         return NULL;
 
-    queue = (st_evq_t *)st_object_new(sizeof(st_evq_t), &evq_funcs, 
+    queue = (st_evq_t *)st_object_new(sizeof(st_evq_t), &evq_funcs,
      (st_object_dtor_t)st_events_destroy_queue, (st_object_t *)events_ctx);
 
     if (!queue) {
         char errbuf[ERRMSGBUF_SIZE];
-        
+
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
             ST_LOGGERCTX_CALL(events_ctx->logger_ctx, error,
              "events_simple: Unable to allocate memory for events queue "
@@ -232,7 +234,7 @@ static void st_events_unsubscribe(st_evq_t *queue, st_evtypeid_t type_id) {
     for (size_t i = 0; i < evtype->subscribers_count; i++) {
         if (evtype->subscribers[i] == queue) {
             if (i <= evtype->subscribers_count - 1) {
-                memmove(&evtype->subscribers[i], 
+                memmove(&evtype->subscribers[i],
                  &evtype->subscribers[evtype->subscribers_count - 1],
                  sizeof(st_evq_t *));
             }
@@ -316,7 +318,7 @@ static bool st_events_drop(st_evq_t *queue) {
 
     return events_ctx
         ? ST_RBUF_CALL(queue->handle, pop, &type_id, sizeof(st_evtypeid_t))
-          && ST_RBUF_CALL(queue->handle, drop, 
+          && ST_RBUF_CALL(queue->handle, drop,
            events_ctx->types[type_id].data_size)
         : false;
 }
