@@ -23,6 +23,11 @@ typedef struct {
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx,
+ st_modsmgr_t *modsmgr);
+static void st_ini_quit(st_inictx_t *ini_ctx);
+static void st_ini_destroy(st_ini_t *ini);
+
 static st_ini_t *st_ini_create(st_inictx_t *ini_ctx);
 static st_ini_t *st_ini_load(st_inictx_t *ini_ctx, const char *filename);
 static st_ini_t *st_ini_memload(st_inictx_t *ini_ctx, const void *ptr,
@@ -43,9 +48,6 @@ static bool st_ini_add_key(st_ini_t *ini, const char *section, const char *key,
  const char *value);
 static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize);
 static bool st_ini_save(const st_ini_t *ini, const char *filename);
-
-static void st_ini_quit(st_inictx_t *ini_ctx);
-static void st_ini_destroy(st_ini_t *ini);
 
 static st_inictx_funcs_t inictx_funcs = {
     st_modctx_funcs,

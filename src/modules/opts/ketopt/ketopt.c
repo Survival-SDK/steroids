@@ -17,6 +17,8 @@
 #define OPTS_COLUMNS_MAX            1024
 #define HELP_COLUMNS_MIN               8
 
+static st_optsctx_t *st_opts_init(int argc, char **argv,
+ struct st_loggerctx_s *logger_ctx);
 static void st_opts_quit(st_optsctx_t *opts_ctx);
 
 static bool st_opts_add_option(st_optsctx_t *opts_ctx, char short_option,

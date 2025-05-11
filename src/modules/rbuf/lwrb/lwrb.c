@@ -16,7 +16,9 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
+static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx);
 static void st_rbuf_quit(st_rbufctx_t *rbuf_ctx);
+
 static st_rbuf_t *st_rbuf_create(st_rbufctx_t *rbuf_ctx, size_t size);
 static void st_rbuf_destroy(st_rbuf_t *rbuf);
 static bool st_rbuf_push(st_rbuf_t *rbuf, const void *data, size_t size);
@@ -47,9 +49,9 @@ static st_moddata_t st_module_rbuf_lwrb_data = {
     .name = "lwrb",
     .type = ST_MODULE_TYPE,
     .subsystem = "rbuf",
-    .prereqs = (st_modprerq_t[]){ 
+    .prereqs = (st_modprerq_t[]){
         { "logger", NULL, },
-        {0}, 
+        {0},
     },
     .ctor = st_rbuf_init,
 };
@@ -65,7 +67,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 
 static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx) {
     st_rbufctx_t *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf", "lwrb",
-     sizeof(st_rbufctx_t), NULL, &rbufctx_funcs, 
+     sizeof(st_rbufctx_t), NULL, &rbufctx_funcs,
      (st_object_dtor_t)st_rbuf_quit);
 
     if (!rbuf_ctx) {
@@ -90,7 +92,7 @@ static void st_rbuf_quit(st_rbufctx_t *rbuf_ctx) {
 
 static st_rbuf_t *st_rbuf_create(st_rbufctx_t *rbuf_ctx, size_t size) {
     st_rbuf_t *rbuf = (st_rbuf_t *)st_object_new(
-     sizeof(st_rbuf_t) + size, &rbuf_funcs, (st_object_dtor_t)st_rbuf_destroy, 
+     sizeof(st_rbuf_t) + size, &rbuf_funcs, (st_object_dtor_t)st_rbuf_destroy,
      (st_object_t *)rbuf_ctx);
     char       errbuf[ERRMSGBUF_SIZE];
 

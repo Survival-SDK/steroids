@@ -15,6 +15,7 @@ typedef enum {
     ST_PT_NOT_PATH,
 } st_pathtype_t;
 
+static st_pathtoolsctx_t *st_pathtools_init(struct st_loggerctx_s *logger_ctx);
 static void st_pathtools_quit(st_pathtoolsctx_t *pathtools_ctx);
 
 static bool st_pathtools_resolve(st_pathtoolsctx_t *pathtools_ctx, char *dst,
