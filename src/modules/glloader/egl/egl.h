@@ -2,7 +2,7 @@
 
 #include "config.h" // IWYU pragma: keep
 #include "steroids/glloader.h"
-#include "steroids/types/modules/logger.h"
+#include "steroids/modules/logger.h"
 
 typedef struct {
     st_modctx_t      *ctx;

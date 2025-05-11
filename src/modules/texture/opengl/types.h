@@ -2,12 +2,12 @@
 
 #include <GL/gl.h>
 
-#include "steroids/types/modules/bitmap.h"
-#include "steroids/types/modules/gfxctx.h"
-#include "steroids/types/modules/gldebug.h"
-#include "steroids/types/modules/glloader.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/bitmap.h"
+#include "steroids/modules/gfxctx.h"
+#include "steroids/modules/gldebug.h"
+#include "steroids/modules/glloader.h"
+#include "steroids/modules/logger.h"
+#include "steroids/object.h"
 
 typedef struct {
     st_modctx_t           *ctx;

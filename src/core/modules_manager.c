@@ -8,8 +8,8 @@
 #include <string.h>
 
 #include "internal_modules.h"
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 #include "utils.h"
 
 #define FOUND_MODULES_MAX 8

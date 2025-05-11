@@ -7,7 +7,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#include "steroids/types/modules/monitor.h"
+#include "steroids/modules/monitor.h"
 
 #define ATOM_BITS 32
 

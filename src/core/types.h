@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dlist.h"
-#include "steroids/types/object.h"
+#include "steroids/object.h"
 
 typedef struct {
     st_object_t;

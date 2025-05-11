@@ -1,6 +1,6 @@
 #pragma once
 
-#include "steroids/types/modules/gfxctx.h"
+#include "steroids/modules/gfxctx.h"
 
 #include "modules_data.h"
 

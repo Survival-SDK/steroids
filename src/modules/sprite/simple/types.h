@@ -1,8 +1,8 @@
 #pragma once
 
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/texture.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/texture.h"
+#include "steroids/object.h"
 
 typedef struct {
     st_modctx_t      *ctx;

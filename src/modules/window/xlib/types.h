@@ -2,10 +2,10 @@
 
 #include <X11/Xlib.h>
 
-#include "steroids/types/modules/events.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/monitor.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/events.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/monitor.h"
+#include "steroids/object.h"
 
 #include "dlist.h"
 

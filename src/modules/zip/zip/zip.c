@@ -10,8 +10,8 @@
 
 #include <zip/zip.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE 128
 

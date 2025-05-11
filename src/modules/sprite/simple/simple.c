@@ -3,8 +3,8 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "steroids/types/modules/atlas.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/atlas.h"
+#include "steroids/object.h"
 
 #define ERRMSGBUF_SIZE 128
 

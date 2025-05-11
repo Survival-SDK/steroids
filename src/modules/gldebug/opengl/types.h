@@ -3,9 +3,9 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
-#include "steroids/types/modules/gfxctx.h"
-#include "steroids/types/modules/glloader.h"
-#include "steroids/types/modules/logger.h"
+#include "steroids/modules/gfxctx.h"
+#include "steroids/modules/glloader.h"
+#include "steroids/modules/logger.h"
 
 typedef struct {
     st_modctx_t        *ctx;

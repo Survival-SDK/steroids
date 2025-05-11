@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE               128
 #define LONG_OPT_NUM_TO_INDEX_OFFSET 300

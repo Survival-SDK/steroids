@@ -2,8 +2,8 @@
 
 #include <lua.h>
 
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/luabind.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/luabind.h"
 
 #include "slist.h"
 

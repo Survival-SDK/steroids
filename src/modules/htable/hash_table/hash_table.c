@@ -7,8 +7,8 @@
 
 #include <hash_table.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ITERS_COUNT_MAX 128
 

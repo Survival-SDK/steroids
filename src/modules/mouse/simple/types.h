@@ -1,9 +1,9 @@
 #pragma once
 
-#include "steroids/types/modules/events.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/mouse.h"
-#include "steroids/types/modules/window.h"
+#include "steroids/modules/events.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/mouse.h"
+#include "steroids/modules/window.h"
 
 typedef enum {
     EV_MOUSE_PRESS = 0,

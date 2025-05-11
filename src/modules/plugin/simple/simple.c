@@ -7,8 +7,8 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 static st_pluginctx_t *st_plugin_init(st_modsmgr_t *modsmgr, st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,

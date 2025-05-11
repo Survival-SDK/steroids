@@ -5,7 +5,7 @@
 
 #include <GL/gl.h>
 
-#include "steroids/types/modules/sprite.h"
+#include "steroids/modules/sprite.h"
 
 #include "batcher.inl"
 #include "shader.inl"

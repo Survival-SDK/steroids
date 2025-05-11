@@ -1,5 +1,5 @@
 [
     { include: ["\"sirtypes.h\""                     , "private", "<sir.h>"              , "public"] },
     { include: ["\"steroids/module.h\""              , "private", "\"steroids/logger.h\"", "public"] },
-    { include: ["\"steroids/types/modules/logger.h\"", "private", "\"steroids/logger.h\"", "public"] },
+    { include: ["\"steroids/modules/logger.h\"", "private", "\"steroids/logger.h\"", "public"] },
 ]

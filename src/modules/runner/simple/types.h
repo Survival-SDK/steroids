@@ -1,10 +1,10 @@
 #pragma once
 
-#include "steroids/types/modules/ini.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/opts.h"
-#include "steroids/types/modules/pathtools.h"
-#include "steroids/types/modules/plugin.h"
+#include "steroids/modules/ini.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/opts.h"
+#include "steroids/modules/pathtools.h"
+#include "steroids/modules/plugin.h"
 
 typedef struct {
     st_modctx_t  *ctx;

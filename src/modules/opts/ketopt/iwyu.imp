@@ -1,4 +1,4 @@
 [
-    { include: ["\"steroids/types/modules/opts.h\"", "private", "\"steroids/opts.h\"", "public"] },
+    { include: ["\"steroids/modules/opts.h\"", "private", "\"steroids/opts.h\"", "public"] },
     { include: ["\"steroids/module.h\""            , "private", "\"steroids/opts.h\"", "public"] },
 ]

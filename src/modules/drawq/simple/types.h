@@ -2,10 +2,10 @@
 
 #include <stdbool.h>
 
-#include "steroids/types/modules/dynarr.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/sprite.h"
-#include "steroids/types/object.h"
+#include "steroids/modules/dynarr.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/sprite.h"
+#include "steroids/object.h"
 
 typedef struct {
     st_modctx_t       *ctx;

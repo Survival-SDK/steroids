@@ -1,13 +1,13 @@
 #pragma once
 
-#include "steroids/types/modctx.h"
-#include "steroids/types/modsmgr.h"
-#include "steroids/types/modules/fs.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/pathtools.h"
-#include "steroids/types/modules/so.h"
-#include "steroids/types/modules/spcpaths.h"
-#include "steroids/types/modules/zip.h"
+#include "steroids/modctx.h"
+#include "steroids/modsmgr.h"
+#include "steroids/modules/fs.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/pathtools.h"
+#include "steroids/modules/so.h"
+#include "steroids/modules/spcpaths.h"
+#include "steroids/modules/zip.h"
 
 typedef struct {
     st_modctx_t;

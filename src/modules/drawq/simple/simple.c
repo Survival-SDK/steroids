@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "steroids/types/modules/sprite.h"
+#include "steroids/modules/sprite.h"
 
 #define ERRMSGBUF_SIZE           1024
 #define DYNARR_INITIAL_CAPACITY 16384

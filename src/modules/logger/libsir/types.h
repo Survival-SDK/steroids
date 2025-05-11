@@ -8,8 +8,8 @@
 #pragma GCC diagnostic pop
 
 #include "dlist.h"
-#include "steroids/types/modctx.h"
-#include "steroids/types/modules/events.h"
+#include "steroids/modctx.h"
+#include "steroids/modules/events.h"
 
 #define ST_POSTMORTEM_MSG_SIZE_MAX 131072
 

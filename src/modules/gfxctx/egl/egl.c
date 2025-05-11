@@ -7,7 +7,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "steroids/types/modules/monitor.h"
+#include "steroids/modules/monitor.h"
 
 #define ERRMSGBUF_SIZE    128
 #define GAPI_STR_SIZE_MAX  32
@@ -570,7 +570,7 @@ void st_try_to_enable_debug(st_gfxctx_t *gfxctx) {
      "eglDebugMessageControlKHR");
     if (!module->egl_debug_message_control_khr)
         return;
-    
+
     module->egl_label_object_khr = (void *)eglGetProcAddress(
      "eglLabelObjectKHR");
     if (!module->egl_label_object_khr)

@@ -6,7 +6,7 @@
 
 #include <GL/gl.h>
 
-#include "steroids/types/object.h"
+#include "steroids/object.h"
 
 #define ERRMSGBUF_SIZE 128
 

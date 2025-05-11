@@ -9,8 +9,8 @@
 
 #include <ini.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE      128
 #define SAVE_BUFFER_SIZE 131072

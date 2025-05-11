@@ -5,8 +5,8 @@
 
 #include <cwalk.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 typedef enum {
     ST_PT_IRI,

@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "steroids/types/object.h"
+#include "steroids/object.h"
 
 #define CTX_METATABLE_NAME    "sprite_ctx"
 #define SPRITE_METATABLE_NAME "sprite"

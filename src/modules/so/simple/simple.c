@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "steroids/types/moddata.h"
-#include "steroids/types/modsmgr.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 static st_soctx_t *st_so_init(struct st_loggerctx_s *logger_ctx);
 static void st_so_quit(st_soctx_t *so_ctx);
