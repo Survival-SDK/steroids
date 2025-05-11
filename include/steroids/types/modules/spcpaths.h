@@ -3,6 +3,7 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
+#include "steroids/types/modctx.h"
 #include "steroids/types/object.h"
 
 #ifndef ST_SPCPATHSCTX_T_DEFINED

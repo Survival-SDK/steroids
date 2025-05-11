@@ -6,6 +6,7 @@
 #include <cwalk.h>
 
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 
 typedef enum {
     ST_PT_IRI,
@@ -13,9 +14,6 @@ typedef enum {
     ST_PT_RELATIVE,
     ST_PT_NOT_PATH,
 } st_pathtype_t;
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
 
 static void st_pathtools_quit(st_pathtoolsctx_t *pathtools_ctx);
 
@@ -38,11 +36,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_pathtools_cwalk_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_pathtools_cwalk_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("pathtools", "cwalk", ST_MODULE_TYPE, mod_prereqs,
      st_pathtools_init, modsmgr);
 }

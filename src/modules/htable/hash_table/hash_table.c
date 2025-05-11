@@ -8,11 +8,9 @@
 #include <hash_table.h>
 
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 
 #define ITERS_COUNT_MAX 128
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
 
 static void st_htable_quit(st_htablectx_t *htable_ctx);
 static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
@@ -60,11 +58,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_htable_hash_table_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_htable_hash_table_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("htable", "hash_table", ST_MODULE_TYPE, mod_prereqs,
      st_htable_init, modsmgr);
 }

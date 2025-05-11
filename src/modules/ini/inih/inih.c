@@ -10,6 +10,7 @@
 #include <ini.h>
 
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 
 #define ERRMSGBUF_SIZE      128
 #define SAVE_BUFFER_SIZE 131072
@@ -79,11 +80,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_ini_inih_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_ini_inih_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("ini", "inih", ST_MODULE_TYPE, mod_prereqs,
      st_ini_init, modsmgr);
 }
@@ -98,12 +95,13 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "ini";
 static const char *st_module_name = "inih";
 
-static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
+static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx,
+ st_modsmgr_t *modsmgr) {
     st_inictx_t     *ini_ctx;
     st_fnv1a_init_t  fnv1a_init;
     st_htable_init_t htable_init;
 
-    fnv1a_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "fnv1a", NULL);
+    fnv1a_init = ST_MODSMGR_CALL(modsmgr, get_ctor, "fnv1a", NULL);
     if (!fnv1a_init) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: Unable to load function \"init\" from module \"fnv1a\"");
@@ -111,7 +109,7 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    htable_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "htable", NULL);
+    htable_init = ST_MODSMGR_CALL(modsmgr, get_ctor, "htable", NULL);
     if (!htable_init) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: Unable to load function \"init\" from module \"htable\"");

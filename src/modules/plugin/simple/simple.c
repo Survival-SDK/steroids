@@ -8,9 +8,7 @@
 #include <sys/types.h>
 
 #include "steroids/types/moddata.h"
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/types/modsmgr.h"
 
 static void st_plugin_quit(st_pluginctx_t *plugin_ctx);
 
@@ -35,11 +33,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_plugin_simple_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_plugin_simple_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("plugin", "simple", ST_MODULE_TYPE, mod_prereqs,
      st_plugin_init, modsmgr);
 }
@@ -54,7 +48,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "plugin";
 static const char *st_module_name = "simple";
 
-static st_pluginctx_t *st_plugin_init(st_fsctx_t *fs_ctx,
+static st_pluginctx_t *st_plugin_init(st_modsmgr_t *modsmgr, st_fsctx_t *fs_ctx,
  struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,
  st_soctx_t *so_ctx, st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx) {
     st_pluginctx_t *plugin_ctx = (st_pluginctx_t *)st_modctx_new("plugin",
@@ -68,6 +62,7 @@ static st_pluginctx_t *st_plugin_init(st_fsctx_t *fs_ctx,
         return NULL;
     }
 
+    plugin_ctx->modsmgr       = modsmgr;
     plugin_ctx->fs_ctx        = fs_ctx;
     plugin_ctx->logger_ctx    = logger_ctx;
     plugin_ctx->pathtools_ctx = pathtools_ctx;
@@ -157,7 +152,7 @@ static bool st_plugin_load_impl(st_pluginctx_t *plugin_ctx, st_zip_t *zip,
 
         ST_ZIP_CALL(zip, destroy);
 
-        return global_modsmgr_funcs.load_module(global_modsmgr, modinit_func,
+        return ST_MODSMGR_CALL(plugin_ctx->modsmgr, load_module, modinit_func,
          force);
     }
 

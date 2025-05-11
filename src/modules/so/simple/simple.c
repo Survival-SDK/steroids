@@ -8,9 +8,7 @@
 #include <string.h>
 
 #include "steroids/types/moddata.h"
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/types/modsmgr.h"
 
 static void st_so_quit(st_soctx_t *so_ctx);
 static void st_so_close(st_so_t *so);
@@ -36,11 +34,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_so_simple_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_so_simple_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("so", "simple", ST_MODULE_TYPE, mod_prereqs,
      st_so_init, modsmgr);
 }

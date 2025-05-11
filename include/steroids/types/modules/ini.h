@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
+#include "steroids/types/modctx.h"
+#include "steroids/types/modsmgr.h"
 #include "steroids/types/modules/logger.h"
 #include "steroids/types/object.h"
 
@@ -14,7 +16,8 @@
     typedef struct st_ini_s st_ini_t;
 #endif
 
-typedef st_inictx_t *(*st_ini_init_t)(struct st_loggerctx_s *logger_ctx);
+typedef st_inictx_t *(*st_ini_init_t)(struct st_loggerctx_s *logger_ctx,
+ st_modsmgr_t *modsmgr);
 
 typedef st_ini_t *(*st_ini_create_t)(st_inictx_t *ini_ctx);
 typedef st_ini_t *(*st_ini_load_t)(st_inictx_t *ini_ctx, const char *filename);

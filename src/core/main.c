@@ -30,12 +30,12 @@ static st_so_init_t        st_so_init;
 static st_spcpaths_init_t  st_spcpaths_init;
 static st_zip_init_t       st_zip_init;
 
-#define LOAD_CTOR(module)                                             \
-    st_##module##_init = st_modsmgr_get_ctor(modsmgr, #module, NULL); \
-    if (!st_##module##_init) {                                        \
-        ST_LOGGERCTX_CALL(logger_ctx, error,                          \
-         "steroids: Unable to load constructor of %s_ctx", #module);   \
-        return false;                                                 \
+#define LOAD_CTOR(module)                                                   \
+    st_##module##_init = ST_MODSMGR_CALL(modsmgr, get_ctor, #module, NULL); \
+    if (!st_##module##_init) {                                              \
+        ST_LOGGERCTX_CALL(logger_ctx, error,                                \
+         "steroids: Unable to load constructor of %s_ctx", #module);        \
+        return false;                                                       \
     }
 
 static bool init_ctors(st_modsmgr_t *modsmgr,
@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
     st_zipctx_t       *zip_ctx;
     int                exitcode = EXIT_SUCCESS;
 
-    st_logger_init = st_modsmgr_get_ctor(modsmgr, "logger", NULL);
+    st_logger_init = ST_MODSMGR_CALL(modsmgr, get_ctor, "logger", NULL);
     if (!st_logger_init) {
-        fprintf(stderr, 
+        fprintf(stderr,
          "steroids: Unable to load function \"st_logger_init\"\n");
         exitcode = EXIT_FAILURE;
 
@@ -84,15 +84,15 @@ int main(int argc, char **argv) {
         goto init_funcs_fail;
     }
 
-    ini_ctx = st_ini_init(logger_ctx);
+    ini_ctx = st_ini_init(logger_ctx, modsmgr);
     opts_ctx = st_opts_init(argc, argv, logger_ctx);
     pathtools_ctx = st_pathtools_init(logger_ctx);
     fs_ctx = st_fs_init(logger_ctx, pathtools_ctx);
     so_ctx = st_so_init(logger_ctx);
     spcpaths_ctx = st_spcpaths_init(logger_ctx);
     zip_ctx = st_zip_init(fs_ctx, logger_ctx, pathtools_ctx);
-    plugin_ctx = st_plugin_init(fs_ctx, logger_ctx, pathtools_ctx, so_ctx,
-     spcpaths_ctx, zip_ctx);
+    plugin_ctx = st_plugin_init(modsmgr, fs_ctx, logger_ctx, pathtools_ctx,
+     so_ctx, spcpaths_ctx, zip_ctx);
 //     runner = st_runner_init(ini, logger, opts, pathtools, plugin);
 
 //     st_runner_run(runner, NULL);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 init_funcs_fail:
     ST_LOGGERCTX_CALL(logger_ctx, destroy);
 get_logger_ctor_fail:
-    st_modsmgr_destroy(modsmgr);
+    ST_MODSMGR_CALL(modsmgr, destroy);
 
     return exitcode;
 }

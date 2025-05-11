@@ -9,9 +9,7 @@
 #pragma GCC diagnostic pop
 
 #include "steroids/types/moddata.h"
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/types/modsmgr.h"
 
 static void st_spcpaths_quit(st_spcpathsctx_t *spcpaths_ctx);
 static void st_spcpaths_get_config_path(st_spcpathsctx_t *spcpaths_ctx,
@@ -33,11 +31,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_spcpaths_cfgpath_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_spcpaths_cfgpath_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("spcpaths", "cfgpath", ST_MODULE_TYPE, mod_prereqs,
      st_spcpaths_init, modsmgr);
 }

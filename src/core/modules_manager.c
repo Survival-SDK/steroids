@@ -9,20 +9,32 @@
 
 #include "internal_modules.h"
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 #include "utils.h"
 
 #define FOUND_MODULES_MAX 8
-#define ST_MODSMGR_FUNCS                                 \
-    &(st_modsmgr_funcs_t){                               \
-        .get_module_names = st_modsmgr_get_module_names, \
-        .load_module      = st_modsmgr_load_module,      \
-        .process_deps     = st_modsmgr_process_deps,     \
-        .get_ctor         = st_modsmgr_get_ctor,         \
-     }
 
-st_modctx_t *st_modsmgr_init_module_ctx(st_modsmgr_t *modsmgr,
- const st_moddata_t *module_data, size_t data_size);
-void st_free_module_ctx(st_modsmgr_t *modsmgr, st_modctx_t *modctx);
+static bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
+ st_modinitfunc_t modinit_func, bool force);
+static void st_modsmgr_process_deps(st_modsmgr_t *modsmgr);
+static void st_modsmgr_get_module_names(st_modsmgr_t *modsmgr, char **dst,
+ size_t mods_count, size_t modname_size, const char *subsystem);
+static void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
+
+static void st_modsmgr_destroy(st_modsmgr_t *modsmgr);
+
+static st_modsmgr_funcs_t modsmgr_funcs = {
+    st_object_funcs,
+    .load_module      = st_modsmgr_load_module,
+    .process_deps     = st_modsmgr_process_deps,
+    .get_module_names = st_modsmgr_get_module_names,
+    .get_ctor         = st_modsmgr_get_ctor,
+};
+
+// st_modctx_t *st_modsmgr_init_module_ctx(st_modsmgr_t *modsmgr,
+//  const st_moddata_t *module_data, size_t data_size);
+// void st_free_module_ctx(st_modsmgr_t *modsmgr, st_modctx_t *modctx);
 
 static st_moddata_t *st_modsmgr_find_module(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name) {
@@ -160,9 +172,9 @@ static void st_modsmgr_get_module_names(st_modsmgr_t *modsmgr, char **dst,
  * Load noninternal module. Internal modules being loaded by function
  * st_modsmgr_init
  */
-bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
+static bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
  st_modinitfunc_t modinit_func, bool force) {
-    st_moddata_t *module_data = modinit_func(modsmgr, ST_MODSMGR_FUNCS);
+    st_moddata_t *module_data = modinit_func(modsmgr);
 
     printf("steroids: Trying to add module \"%s_%s\"\n",
      ST_MODDATA_CALL(module_data, get_subsystem),
@@ -175,7 +187,8 @@ bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
 }
 
 st_modsmgr_t *st_modsmgr_init(void) {
-    st_modsmgr_t *modsmgr = malloc(sizeof(st_modsmgr_t));
+    st_modsmgr_t *modsmgr = (st_modsmgr_t *)st_object_new(sizeof(st_modsmgr_t),
+     &modsmgr_funcs, (st_object_dtor_t)st_modsmgr_destroy, NULL);
 
     if (!modsmgr)
         return NULL;
@@ -183,14 +196,16 @@ st_modsmgr_t *st_modsmgr_init(void) {
     modsmgr->modsdata = st_dlist_create(sizeof(st_moddata_t),
      st_object_free_by_ptr);
 
-    if (!modsmgr->modsdata)
+    if (!modsmgr->modsdata) {
+        free(modsmgr);
+
         return NULL;
+    }
 
     printf("steroids: Searching internal modules...\n");
     for (size_t i = 0; i < ST_INTERNAL_MODULES_COUNT; i++) {
         st_moddata_t *module_data =
-         st_internal_modules_entrypoints.modules_init_funcs[i](modsmgr,
-          ST_MODSMGR_FUNCS);
+         st_internal_modules_entrypoints.modules_init_funcs[i](modsmgr);
 
         if (!module_data)
             continue;
@@ -207,12 +222,12 @@ st_modsmgr_t *st_modsmgr_init(void) {
     return modsmgr;
 }
 
-void st_modsmgr_destroy(st_modsmgr_t *modsmgr) {
+static void st_modsmgr_destroy(st_modsmgr_t *modsmgr) {
     st_dlist_destroy(modsmgr->modsdata);
     free(modsmgr);
 }
 
-void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+static void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name) {
     st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
      module_name);

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define ST_OBJECT_CALL(obj, func, ...) obj->funcs->func(obj, ## __VA_ARGS__);
 
