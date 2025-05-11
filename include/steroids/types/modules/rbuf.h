@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
+#include "steroids/types/modctx.h"
 #include "steroids/types/object.h"
 
 #ifndef ST_RBUFCTX_T_DEFINED

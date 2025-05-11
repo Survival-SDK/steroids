@@ -6,9 +6,7 @@
 #include <sys/stat.h>
 
 #include "steroids/types/moddata.h"
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/types/modsmgr.h"
 
 static void st_fs_quit(st_fsctx_t *fs_ctx);
 
@@ -28,11 +26,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_fs_simple_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_fs_simple_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("fs", "simple", ST_MODULE_TYPE, mod_prereqs,
      st_fs_init, modsmgr);
 }

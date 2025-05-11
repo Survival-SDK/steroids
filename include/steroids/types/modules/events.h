@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include "steroids/module.h"
+#include "steroids/types/modctx.h"
 #include "steroids/types/object.h"
 
 #define ST_EVTYPE_ID_NONE -1

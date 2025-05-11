@@ -6,12 +6,10 @@
 #include <string.h>
 
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 
 #define OFFSET_BASIS 0x811C9dC5u
 #define PRIME        0x01000193u
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
 
 static void st_fnv1a_quit(st_fnv1actx_t *fnv1a_ctx);
 
@@ -37,11 +35,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_fnv1a_simple_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_fnv1a_simple_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("fnv1a", "simple", ST_MODULE_TYPE, mod_prereqs,
      st_fnv1a_init, modsmgr);
 }

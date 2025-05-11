@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "steroids/types/moddata.h"
+#include "steroids/types/modsmgr.h"
 
 #define ERRMSGBUF_SIZE               128
 #define LONG_OPT_NUM_TO_INDEX_OFFSET 300
@@ -15,9 +16,6 @@
 #define LONGOPTS_COUNT                64
 #define OPTS_COLUMNS_MAX            1024
 #define HELP_COLUMNS_MIN               8
-
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
 
 static void st_opts_quit(st_optsctx_t *opts_ctx);
 
@@ -46,11 +44,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_opts_ketopt_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    global_modsmgr_funcs = *modsmgr_funcs;
-    global_modsmgr = modsmgr;
-
+st_moddata_t *st_module_opts_ketopt_init(st_modsmgr_t *modsmgr) {
     return st_moddata_new("opts", "ketopt", ST_MODULE_TYPE, mod_prereqs,
      st_opts_init, modsmgr);
 }
