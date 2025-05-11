@@ -2,6 +2,8 @@
 
 #include "dlist.h"
 
-typedef st_dlist_t st_modsmgr_t;
+typedef struct {
+    st_dlist_t *modsdata;
+} st_modsmgr_t;
 
 #define ST_MODSMGR_T_DEFINED
