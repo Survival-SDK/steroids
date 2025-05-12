@@ -15,9 +15,6 @@ typedef struct st_evq_s st_evq_t;
 struct st_eventsctx_s;
 struct st_loggerctx_s;
 
-typedef struct st_eventsctx_s *(*st_events_init_t)(
- struct st_loggerctx_s *logger_ctx);
-
 typedef st_evtypeid_t (*st_events_register_type_t)(
  struct st_eventsctx_s *events_ctx, const char *type_name, size_t size);
 typedef st_evtypeid_t (*st_events_get_type_id_t)(
