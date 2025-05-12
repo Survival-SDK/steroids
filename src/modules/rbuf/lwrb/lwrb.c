@@ -13,10 +13,7 @@
 
 #define ERRMSGBUF_SIZE 128
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
-
-static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx);
+static st_rbufctx_t *st_rbuf_init(const st_ctxctorparam_t params[]);
 static void st_rbuf_quit(st_rbufctx_t *rbuf_ctx);
 
 static st_rbuf_t *st_rbuf_create(st_rbufctx_t *rbuf_ctx, size_t size);
@@ -65,9 +62,14 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static st_rbufctx_t *st_rbuf_init(struct st_loggerctx_s *logger_ctx) {
-    st_rbufctx_t *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf", "lwrb",
-     sizeof(st_rbufctx_t), NULL, &rbufctx_funcs,
+static st_rbufctx_t *st_rbuf_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_rbufctx_t          *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf",
+     "lwrb", sizeof(st_rbufctx_t), NULL, &rbufctx_funcs,
      (st_object_dtor_t)st_rbuf_quit);
 
     if (!rbuf_ctx) {

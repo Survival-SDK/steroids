@@ -8,7 +8,7 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
-static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx);
+static st_eventsctx_t *st_events_init(const st_ctxctorparam_t params[]);
 static void st_events_quit(st_eventsctx_t *events_ctx);
 
 static st_evtypeid_t st_events_register_type(st_eventsctx_t *events_ctx,
@@ -77,10 +77,17 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "events";
 static const char *st_module_name = "simple";
 
-static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
-    st_rbuf_init_t  rbuf_init;
-    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events",
-     "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
+static st_eventsctx_t *st_events_init(const st_ctxctorparam_t params[]) {
+    st_rbuf_init_t         rbuf_init;
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_rbufctx_t          *rbuf_ctx = (st_rbufctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "rbuf", NULL);
+    st_eventsctx_t        *events_ctx = (st_eventsctx_t *)st_modctx_new(
+     "events", "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
      (st_object_dtor_t)st_events_quit);
 
     if (!events_ctx) {
@@ -90,23 +97,8 @@ static st_eventsctx_t *st_events_init(struct st_loggerctx_s *logger_ctx) {
         return NULL;
     }
 
-    rbuf_init = global_modsmgr_funcs.get_ctor(global_modsmgr, "rbuf", NULL);
-    if (!rbuf_init) {
-        ST_LOGGERCTX_CALL(logger_ctx, error,
-         "events_simple: unable to get rbuf ctor");
-
-        goto get_ctor_fail;
-    }
-
-    events_ctx->rbuf_ctx = rbuf_init(logger_ctx);
-    if (!events_ctx->rbuf_ctx) {
-        ST_LOGGERCTX_CALL(logger_ctx, error,
-         "events_simple: unable to create rbuf");
-
-        goto rbuf_init_fail;
-    }
-
     events_ctx->logger_ctx = logger_ctx;
+    events_ctx->rbuf_ctx = rbuf_ctx;
     events_ctx->types_count = 0;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,

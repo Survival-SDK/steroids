@@ -12,14 +12,22 @@
 #include "steroids/modsmgr.h"
 #include "utils.h"
 
-#define FOUND_MODULES_MAX 8
+#define FOUND_MODULES_MAX    8
+#define FOUND_SINGLETONS_MAX 8
 
 static bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
  st_modinitfunc_t modinit_func, bool force);
 static void st_modsmgr_process_deps(st_modsmgr_t *modsmgr);
 static void st_modsmgr_get_module_names(st_modsmgr_t *modsmgr, char **dst,
  size_t mods_count, size_t modname_size, const char *subsystem);
-static void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+static st_ctx_ctor_t st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
+static st_modctx_t *st_modsmgr_create_singleton(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name,
+ const st_ctxctorparam_t params[]);
+static bool st_modsmgr_have_singleton(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
+static st_modctx_t *st_modsmgr_get_singleton(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name);
 
 static void st_modsmgr_destroy(st_modsmgr_t *modsmgr);
@@ -30,6 +38,9 @@ static st_modsmgr_funcs_t modsmgr_funcs = {
     .process_deps     = st_modsmgr_process_deps,
     .get_module_names = st_modsmgr_get_module_names,
     .get_ctor         = st_modsmgr_get_ctor,
+    .create_singleton = st_modsmgr_create_singleton,
+    .have_singleton   = st_modsmgr_have_singleton,
+    .get_singleton    = st_modsmgr_get_singleton,
 };
 
 static st_moddata_t *st_modsmgr_find_module(const st_modsmgr_t *modsmgr,
@@ -191,12 +202,13 @@ st_modsmgr_t *st_modsmgr_init(void) {
 
     modsmgr->modsdata = st_dlist_create(sizeof(st_moddata_t *),
      st_object_free_by_ptr);
+    if (!modsmgr->modsdata)
+        goto modsdata_list_fail;
 
-    if (!modsmgr->modsdata) {
-        free(modsmgr);
-
-        return NULL;
-    }
+    modsmgr->singletons = st_dlist_create(sizeof(st_modctx_t *),
+     st_object_free_by_ptr);
+    if (!modsmgr->singletons)
+        goto singletons_list_fail;
 
     printf("steroids: Searching internal modules...\n");
     for (size_t i = 0; i < ST_INTERNAL_MODULES_COUNT; i++) {
@@ -216,14 +228,22 @@ st_modsmgr_t *st_modsmgr_init(void) {
     st_modsmgr_process_deps(modsmgr);
 
     return modsmgr;
+
+singletons_list_fail:
+    st_dlist_destroy(modsmgr->modsdata);
+modsdata_list_fail:
+    free(modsmgr);
+
+    return NULL;
 }
 
 static void st_modsmgr_destroy(st_modsmgr_t *modsmgr) {
+    st_dlist_destroy(modsmgr->singletons);
     st_dlist_destroy(modsmgr->modsdata);
     free(modsmgr);
 }
 
-static void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
+static st_ctx_ctor_t st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name) {
     st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
      module_name);
@@ -231,4 +251,66 @@ static void *st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
     return module_data
         ? ST_MODDATA_CALL(module_data, get_ctx_ctor)
         : NULL;
+}
+
+static st_modctx_t *st_modsmgr_get_singleton(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name) {
+    st_dlnode_t *node;
+    st_modctx_t *found_singletons[FOUND_SINGLETONS_MAX];
+    size_t       found_count = 0;
+
+    if (!modsmgr || !subsystem)
+        return NULL;
+
+    node = st_dlist_get_head(modsmgr->singletons);
+    while (node) {
+        st_modctx_t *singleton = st_dlist_export_ptr(node);
+        bool         subsystem_equal = st_utl_strings_equal(
+         ST_MODCTX_CALL(singleton, get_subsystem), subsystem);
+        bool         name_equal = st_utl_strings_equal(
+         ST_MODCTX_CALL(singleton, get_name), module_name);
+        bool         name_is_null = module_name == NULL;
+
+        if (subsystem_equal && (name_equal || name_is_null))
+            found_singletons[found_count++] = singleton;
+
+        node = st_dlist_get_next(node);
+    }
+
+    for (size_t i = 0; i < found_count; i++) {
+        if (!st_utl_strings_equal(ST_MODCTX_CALL(found_singletons[i], get_name),
+         "simple"))
+            return found_singletons[i];
+    }
+
+    return found_count > 0 ? found_singletons[0] : NULL;
+}
+
+static bool st_modsmgr_have_singleton(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name) {
+    return !!st_modsmgr_get_singleton(modsmgr, subsystem, module_name);
+}
+
+static st_modctx_t *st_modsmgr_create_singleton(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name,
+ const st_ctxctorparam_t params[]) {
+    if (!st_modsmgr_have_singleton(modsmgr, subsystem, module_name)) {
+        st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
+        module_name);
+        st_ctx_ctor_t ctx_ctor = module_data
+            ? ST_MODDATA_CALL(module_data, get_ctx_ctor)
+            : NULL;
+        st_modctx_t  *ctx = ctx_ctor
+            ? ctx_ctor(params)
+            : NULL;
+
+        if (!st_dlist_push_back(modsmgr->singletons, &ctx)) {
+            ST_MODCTX_CALL(ctx, destroy);
+            ctx = NULL;
+        }
+
+        return ctx;
+    }
+
+    return NULL;
 }
