@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 
+#include "steroids/modctx.h"
 #include "steroids/moddata.h"
 #include "steroids/object.h"
 
@@ -18,7 +19,15 @@ typedef bool (*st_modsmgr_load_module_t)(st_modsmgr_t *modsmgr,
 typedef void (*st_modsmgr_process_deps_t)(st_modsmgr_t *modsmgr);
 typedef void (*st_modsmgr_get_module_names_t)(st_modsmgr_t *modsmgr, char **dst,
  size_t mods_count, size_t modname_size, const char *subsystem);
-typedef void *(*st_modsmgr_get_ctor_t)(const st_modsmgr_t *modsmgr,
+typedef st_ctx_ctor_t (*st_modsmgr_get_ctor_t)(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
+
+typedef st_modctx_t *(*st_modsmgr_create_singleton_t)(
+ const st_modsmgr_t *modsmgr, const char *subsystem, const char *module_name,
+ const st_ctxctorparam_t params[]);
+typedef bool (*st_modsmgr_have_singleton_t)(const st_modsmgr_t *modsmgr,
+ const char *subsystem, const char *module_name);
+typedef st_modctx_t *(*st_modsmgr_get_singleton_t)(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name);
 
 typedef struct st_modsmgr_funcs {
@@ -27,6 +36,9 @@ typedef struct st_modsmgr_funcs {
     st_modsmgr_process_deps_t     process_deps;
     st_modsmgr_get_module_names_t get_module_names;
     st_modsmgr_get_ctor_t         get_ctor;
+    st_modsmgr_create_singleton_t create_singleton;
+    st_modsmgr_have_singleton_t   have_singleton;
+    st_modsmgr_get_singleton_t    get_singleton;
 } st_modsmgr_funcs_t;
 
 #define ST_MODSMGR_CALL(object, func, ...) \

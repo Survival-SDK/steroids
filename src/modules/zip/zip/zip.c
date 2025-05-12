@@ -15,8 +15,7 @@
 
 #define ERRMSGBUF_SIZE 128
 
-static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
- struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx);
+static st_zipctx_t *st_zip_init(const st_ctxctorparam_t params[]);
 static void st_zip_quit(st_zipctx_t *zip_ctx);
 static void st_zip_close(st_zip_t *zip);
 
@@ -66,9 +65,17 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "zip";
 static const char *st_module_name = "zip";
 
-static st_zipctx_t *st_zip_init(st_fsctx_t *fs_ctx,
- struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx) {
-    st_zipctx_t  *zip_ctx = (st_zipctx_t *)st_modctx_new("zip", "zip",
+static st_zipctx_t *st_zip_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_fsctx_t            *fs_ctx = (st_fsctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "fs", NULL);
+    st_pathtoolsctx_t     *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "pathtools", NULL);
+    st_zipctx_t           *zip_ctx = (st_zipctx_t *)st_modctx_new("zip", "zip",
      sizeof(st_zipctx_t), NULL, &zipctx_funcs, (st_object_dtor_t)st_zip_quit);
 
     if (!zip_ctx) {

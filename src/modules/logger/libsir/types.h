@@ -9,6 +9,7 @@
 
 #include "dlist.h"
 #include "steroids/modctx.h"
+#include "steroids/modsmgr.h"
 #include "steroids/modules/events.h"
 
 #define ST_POSTMORTEM_MSG_SIZE_MAX 131072
@@ -34,6 +35,7 @@ typedef struct {
 
 typedef struct st_loggerctx_s {
     st_modctx_t;
+    st_modsmgr_t          *modsmgr;
     struct st_eventsctx_s *events_ctx;
     st_dlist_t            *log_files;
     st_dlist_t            *callbacks;

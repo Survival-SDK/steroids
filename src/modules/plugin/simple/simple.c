@@ -10,9 +10,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_pluginctx_t *st_plugin_init(st_modsmgr_t *modsmgr, st_fsctx_t *fs_ctx,
- struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,
- st_soctx_t *so_ctx, st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx);
+static st_pluginctx_t *st_plugin_init(const st_ctxctorparam_t params[]);
 static void st_plugin_quit(st_pluginctx_t *plugin_ctx);
 
 static bool st_plugin_load(st_pluginctx_t *plugin_ctx, const char *filename,
@@ -51,11 +49,24 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "plugin";
 static const char *st_module_name = "simple";
 
-static st_pluginctx_t *st_plugin_init(st_modsmgr_t *modsmgr, st_fsctx_t *fs_ctx,
- struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx,
- st_soctx_t *so_ctx, st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx) {
-    st_pluginctx_t *plugin_ctx = (st_pluginctx_t *)st_modctx_new("plugin",
-     "simple", sizeof(st_pluginctx_t), NULL, &pluginctx_funcs,
+static st_pluginctx_t *st_plugin_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_fsctx_t            *fs_ctx = (st_fsctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "fs", NULL);
+    st_pathtoolsctx_t     *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "pathtools", NULL);
+    st_soctx_t            *so_ctx = (st_soctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "so", NULL);
+    st_spcpathsctx_t      *spcpaths_ctx = (st_spcpathsctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "spcpaths", NULL);
+    st_zipctx_t           *zip_ctx = (st_zipctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "zip", NULL);
+    st_pluginctx_t        *plugin_ctx = (st_pluginctx_t *)st_modctx_new(
+     "plugin", "simple", sizeof(st_pluginctx_t), NULL, &pluginctx_funcs,
      (st_object_dtor_t)st_plugin_quit);
 
     if (!plugin_ctx) {

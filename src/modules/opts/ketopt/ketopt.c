@@ -17,8 +17,7 @@
 #define OPTS_COLUMNS_MAX            1024
 #define HELP_COLUMNS_MIN               8
 
-static st_optsctx_t *st_opts_init(int argc, char **argv,
- struct st_loggerctx_s *logger_ctx);
+static st_optsctx_t *st_opts_init(const st_ctxctorparam_t params[]);
 static void st_opts_quit(st_optsctx_t *opts_ctx);
 
 static bool st_opts_add_option(st_optsctx_t *opts_ctx, char short_option,
@@ -61,10 +60,16 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "opts";
 static const char *st_module_name = "ketopt";
 
-static st_optsctx_t *st_opts_init(int argc, char **argv,
- struct st_loggerctx_s *logger_ctx) {
-    st_optsctx_t *opts_ctx = (st_optsctx_t *)st_modctx_new("opts", "ketopt",
-     sizeof(st_optsctx_t), NULL, &optsctx_funcs,
+static st_optsctx_t *st_opts_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    int                    argc = st_modctx_get_param_as_int(params, "argc");
+    char                 **argv = st_modctx_get_param_as_ptr(params, "argv");
+    st_optsctx_t          *opts_ctx = (st_optsctx_t *)st_modctx_new("opts",
+     "ketopt", sizeof(st_optsctx_t), NULL, &optsctx_funcs,
      (st_object_dtor_t)st_opts_quit);
 
     if (!opts_ctx) {

@@ -13,7 +13,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx);
+static st_loggerctx_t *st_logger_init(const st_ctxctorparam_t params[]);
 static void st_logger_quit(st_loggerctx_t *logger_ctx);
 
 static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
@@ -71,7 +71,7 @@ static void log_file_destroy(void *plog_file) {
     sir_remfile(log_file->file);
 }
 
-static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
+static st_loggerctx_t *st_logger_init(const st_ctxctorparam_t params[]) {
     st_loggerctx_t *logger_ctx;
     sirinit         init_options = {
         .d_stdout = {
@@ -92,6 +92,10 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         },
         .name = "steroids", /* TODO(edomin): move name management to module */
     };
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+
+    if (!modsmgr)
+        return NULL;
 
     if (sir_isinitialized())
         return NULL;
@@ -113,7 +117,9 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         return NULL;
     }
 
-    logger_ctx->events_ctx = events_ctx;
+    logger_ctx->modsmgr = modsmgr;
+    logger_ctx->events_ctx = (struct st_eventsctx_s *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "events", NULL);
     logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
     if (!logger_ctx->callbacks)
@@ -126,7 +132,8 @@ static st_loggerctx_t *st_logger_init(struct st_eventsctx_s *events_ctx) {
         st_logger_warning(logger_ctx, "logger_libsir: Unable to initialize "
          "dlist for log files. Logging to file is not available on this run");
 
-    if (events_ctx && !st_logger_enable_events(logger_ctx, events_ctx))
+    if (logger_ctx->events_ctx
+     && !st_logger_enable_events(logger_ctx, logger_ctx->events_ctx))
         logger_ctx->events_ctx = NULL;
 
     memset(logger_ctx->postmortem_msg, '\0', ST_POSTMORTEM_MSG_SIZE_MAX);

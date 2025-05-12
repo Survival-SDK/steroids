@@ -11,7 +11,7 @@
 #define OFFSET_BASIS 0x811C9dC5u
 #define PRIME        0x01000193u
 
-static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx);
+static st_fnv1actx_t *st_fnv1a_init(const st_ctxctorparam_t params[]);
 static void st_fnv1a_quit(st_fnv1actx_t *fnv1a_ctx);
 
 static uint32_t st_fnv1a_u32hash_string(st_fnv1actx_t *fnv1a_ctx,
@@ -48,9 +48,14 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static st_fnv1actx_t *st_fnv1a_init(struct st_loggerctx_s *logger_ctx) {
-    st_fnv1actx_t *fnv1a_ctx = (st_fnv1actx_t *)st_modctx_new("fnv1a", "simple",
-     sizeof(st_fnv1actx_t), NULL, &fnv1actx_funcs,
+static st_fnv1actx_t *st_fnv1a_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_fnv1actx_t         *fnv1a_ctx = (st_fnv1actx_t *)st_modctx_new("fnv1a",
+     "simple", sizeof(st_fnv1actx_t), NULL, &fnv1actx_funcs,
      (st_object_dtor_t)st_fnv1a_quit);
 
     if (!fnv1a_ctx) {

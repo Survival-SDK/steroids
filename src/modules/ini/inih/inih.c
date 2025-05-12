@@ -23,8 +23,7 @@ typedef struct {
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
-static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx,
- st_modsmgr_t *modsmgr);
+static st_inictx_t *st_ini_init(const st_ctxctorparam_t params[]);
 static void st_ini_quit(st_inictx_t *ini_ctx);
 static void st_ini_destroy(st_ini_t *ini);
 
@@ -97,30 +96,19 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "ini";
 static const char *st_module_name = "inih";
 
-static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx,
- st_modsmgr_t *modsmgr) {
-    st_inictx_t     *ini_ctx;
-    st_fnv1a_init_t  fnv1a_init;
-    st_htable_init_t htable_init;
+static st_inictx_t *st_ini_init(const st_ctxctorparam_t params[]) {
+    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
+     "modsmgr");
+    struct st_loggerctx_s *logger_ctx = (
+     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    st_fnv1actx_t         *fnv1a_ctx = (st_fnv1actx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "fnv1a", NULL);
+    st_htablectx_t        *htable_ctx = (st_htablectx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "htable", NULL);
+    st_inictx_t           *ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih",
+     sizeof(st_inictx_t), NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
 
-    fnv1a_init = ST_MODSMGR_CALL(modsmgr, get_ctor, "fnv1a", NULL);
-    if (!fnv1a_init) {
-        ST_LOGGERCTX_CALL(logger_ctx, error,
-         "ini_inih: Unable to load function \"init\" from module \"fnv1a\"");
-
-        return NULL;
-    }
-
-    htable_init = ST_MODSMGR_CALL(modsmgr, get_ctor, "htable", NULL);
-    if (!htable_init) {
-        ST_LOGGERCTX_CALL(logger_ctx, error,
-         "ini_inih: Unable to load function \"init\" from module \"htable\"");
-
-        return NULL;
-    }
-
-    ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih", sizeof(st_inictx_t),
-     NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
     if (!ini_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "ini_inih: Unable to create new ini ctx object");
@@ -128,33 +116,17 @@ static st_inictx_t *st_ini_init(struct st_loggerctx_s *logger_ctx,
         return NULL;
     }
 
-    ini_ctx->fnv1a_ctx = fnv1a_init(logger_ctx);
-    if (!ini_ctx->fnv1a_ctx)
-        goto fnv1a_init_fail;
-
-    ini_ctx->htable_ctx = htable_init(logger_ctx);
-    if (!ini_ctx->htable_ctx)
-        goto htable_init_fail;
-
     ini_ctx->logger_ctx = logger_ctx;
+    ini_ctx->fnv1a_ctx = fnv1a_ctx;
+    ini_ctx->htable_ctx = htable_ctx;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "ini_inih: INI-files manipulation module context initialized");
 
     return ini_ctx;
-
-htable_init_fail:
-    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, destroy);
-fnv1a_init_fail:
-    free(ini_ctx);
-
-    return NULL;
 }
 
 static void st_ini_quit(st_inictx_t *ini_ctx) {
-    ST_HTABLECTX_CALL(ini_ctx->htable_ctx, destroy);
-    ST_FNV1ACTX_CALL(ini_ctx->fnv1a_ctx, destroy);
-
     ST_LOGGERCTX_CALL(ini_ctx->logger_ctx, info,
      "ini_inih: INI-files manipulation module context destroyed");
     free(ini_ctx);

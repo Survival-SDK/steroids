@@ -1,10 +1,20 @@
 #pragma once
 
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "steroids/object.h"
 
+#define ST_MODCTX_CALL(object, func, ...) \
+    ((const st_modctx_funcs_t *)object->funcs)->func(object, ## __VA_ARGS__)
+
 struct st_modctx;
+
+typedef struct {
+    const char *key;
+    uintptr_t   value;
+} st_ctxctorparam_t;
 
 typedef const char *(*st_modctx_get_subsystem_t)(
  const struct st_modctx *modctx);
@@ -21,6 +31,8 @@ typedef struct st_modctx {
     const char *st_subsystem;
     const char *st_name;
 } st_modctx_t;
+
+typedef st_modctx_t *(*st_ctx_ctor_t)(const st_ctxctorparam_t params[]);
 
 static const char *st_modctx_get_subsystem(const st_modctx_t *modctx);
 static const char *st_modctx_get_name(const st_modctx_t *modctx);
@@ -48,4 +60,41 @@ static const char *st_modctx_get_subsystem(const st_modctx_t *modctx) {
 
 static const char *st_modctx_get_name(const st_modctx_t *modctx) {
     return modctx->st_name;
+}
+
+static const st_ctxctorparam_t *st_modctx_get_param(
+ const st_ctxctorparam_t params[], const char *key) {
+    const st_ctxctorparam_t *param;
+
+    if (!params || !key)
+        return NULL;
+
+    param = &params[0];
+    while (memcmp(param, &(st_ctxctorparam_t){0},
+     sizeof(st_ctxctorparam_t)) != 0) {
+        if (param->key != NULL && strcmp(param->key, key) == 0)
+            return param;
+
+        param++;
+    }
+
+    return NULL;
+}
+
+static void *st_modctx_get_param_as_ptr(const st_ctxctorparam_t params[],
+ const char *key) {
+    const st_ctxctorparam_t *param = st_modctx_get_param(params, key);
+
+    return param
+        ? (void *)param->value
+        : NULL;
+}
+
+static int st_modctx_get_param_as_int(const st_ctxctorparam_t params[],
+ const char *key) {
+    const st_ctxctorparam_t *param = st_modctx_get_param(params, key);
+
+    return param
+        ? (int)param->value
+        : 0;
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "steroids/modctx.h"
 #include "steroids/object.h"
 
 #define ST_MODDATA_CALL(object, func, ...) \
@@ -18,7 +19,8 @@ typedef const char *(*st_moddata_get_name_t)(const struct st_moddata *moddata);
 typedef const char *(*st_moddata_get_type_t)(const struct st_moddata *moddata);
 typedef const st_modprerq_t *(*st_moddata_get_prereqs_t)(
  const struct st_moddata *moddata);
-typedef void *(*st_moddata_get_ctx_ctor_t)(const struct st_moddata *moddata);
+typedef st_ctx_ctor_t (*st_moddata_get_ctx_ctor_t)(
+ const struct st_moddata *moddata);
 
 typedef struct {
     st_object_funcs_t;
@@ -35,14 +37,15 @@ typedef struct st_moddata {
     const char          *st_name;
     const char          *st_type;
     const st_modprerq_t *st_prereqs;
-    void                *st_ctx_ctor;
+    st_ctx_ctor_t        st_ctx_ctor;
 } st_moddata_t;
 
 static const char *st_moddata_get_subsystem(const struct st_moddata *moddata);
 static const char *st_moddata_get_name(const struct st_moddata *moddata);
 static const char *st_moddata_get_type(const struct st_moddata *moddata);
-static const st_modprerq_t *st_moddata_get_prereqs(const struct st_moddata *moddata);
-static void *st_moddata_get_ctx_ctor(const struct st_moddata *moddata);
+static const st_modprerq_t *st_moddata_get_prereqs(
+ const struct st_moddata *moddata);
+static st_ctx_ctor_t st_moddata_get_ctx_ctor(const struct st_moddata *moddata);
 
 static const st_moddata_funcs_t st_moddata_funcs = {
     st_object_funcs,
@@ -85,6 +88,6 @@ static const st_modprerq_t *st_moddata_get_prereqs(
     return moddata->st_prereqs;
 }
 
-static void *st_moddata_get_ctx_ctor(const st_moddata_t *moddata) {
+static st_ctx_ctor_t st_moddata_get_ctx_ctor(const st_moddata_t *moddata) {
     return moddata->st_ctx_ctor;
 }
