@@ -18,8 +18,8 @@ typedef struct {
 
 typedef struct {
     st_object_t;
-    lwrb_t   handle;
-    uint8_t  data[];
+    lwrb_t  handle;
+    uint8_t data[];
 } st_rbuf_t;
 
 #define ST_RBUFCTX_T_DEFINED

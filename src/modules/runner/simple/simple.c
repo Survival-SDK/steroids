@@ -72,15 +72,16 @@ static st_runnerctx_t *st_runner_init(const st_param_t params[]) {
         return NULL;
     }
 
-    runner_ctx->modsmgr       = modsmgr;
-    runner_ctx->ini_ctx       = ini_ctx;
-    runner_ctx->logger_ctx    = logger_ctx;
-    runner_ctx->opts_ctx      = opts_ctx;
-    runner_ctx->pathtools_ctx = pathtools_ctx;
-    runner_ctx->plugin_ctx    = plugin_ctx;
+    runner_ctx->modsmgr            = modsmgr;
+    runner_ctx->ini_ctx            = ini_ctx;
+    runner_ctx->logger_ctx         = logger_ctx;
+    runner_ctx->opts_ctx           = opts_ctx;
+    runner_ctx->pathtools_ctx      = pathtools_ctx;
+    runner_ctx->plugin_ctx         = plugin_ctx;
     runner_ctx->default_configfile = default_configfile
      ?: DEFAULT_CONFIG_FILENAME;
-    runner_ctx->default_directory = default_directory ?: DEFAULT_DIRECTORY_NAME;
+    runner_ctx->default_directory  = default_directory
+     ?: DEFAULT_DIRECTORY_NAME;
 
     ST_LOGGERCTX_CALL(logger_ctx, info, "runner_simple: Runner initialized");
 

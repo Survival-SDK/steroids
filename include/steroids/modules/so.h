@@ -33,6 +33,8 @@ typedef struct {
 } st_so_funcs_t;
 
 #define ST_SOCTX_CALL(object, func, ...) \
-    ((st_soctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_soctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)
 #define ST_SO_CALL(object, func, ...) \
-    ((st_so_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_so_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

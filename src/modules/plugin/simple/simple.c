@@ -25,12 +25,12 @@ static st_pluginctx_funcs_t pluginctx_funcs = {
 };
 
 static const st_modprerq_t mod_prereqs[] = {
-    { "fs", NULL, },
-    { "logger", NULL, },
+    { "fs",        NULL, },
+    { "logger",    NULL, },
     { "pathtools", NULL, },
-    { "so", NULL, },
-    { "spcpaths", NULL, },
-    { "zip", NULL, },
+    { "so",        NULL, },
+    { "spcpaths",  NULL, },
+    { "zip",       NULL, },
     {0},
 };
 

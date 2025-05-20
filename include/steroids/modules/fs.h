@@ -31,4 +31,5 @@ typedef struct {
 } st_fsctx_funcs_t;
 
 #define ST_FSCTX_CALL(object, func, ...) \
-    ((st_fsctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_fsctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

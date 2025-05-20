@@ -57,4 +57,5 @@ typedef struct {
 } st_loggerctx_funcs_t;
 
 #define ST_LOGGERCTX_CALL(ctx, func, ...) \
-    ((st_loggerctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, ## __VA_ARGS__)
+    ((st_loggerctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)

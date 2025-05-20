@@ -115,7 +115,7 @@ static st_inictx_t *st_ini_init(const st_param_t params[]) {
     }
 
     ini_ctx->logger_ctx = logger_ctx;
-    ini_ctx->fnv1a_ctx = fnv1a_ctx;
+    ini_ctx->fnv1a_ctx  = fnv1a_ctx;
     ini_ctx->htable_ctx = htable_ctx;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,

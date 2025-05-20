@@ -44,8 +44,8 @@ static st_zip_funcs_t zip_funcs = {
 };
 
 static const st_modprerq_t mod_prereqs[] = {
-    { "fs", NULL, },
-    { "logger", NULL, },
+    { "fs",        NULL, },
+    { "logger",    NULL, },
     { "pathtools", NULL, },
     {0},
 };

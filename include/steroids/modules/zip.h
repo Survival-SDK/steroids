@@ -46,6 +46,8 @@ typedef struct {
 } st_zip_funcs_t;
 
 #define ST_ZIPCTX_CALL(object, func, ...) \
-    ((st_zipctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_zipctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)
 #define ST_ZIP_CALL(object, func, ...) \
-    ((st_zip_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_zip_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

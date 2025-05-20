@@ -22,7 +22,7 @@ static st_fsctx_funcs_t fsctx_funcs = {
 };
 
 static const st_modprerq_t mod_prereqs[] = {
-    { "logger", NULL, },
+    { "logger",    NULL, },
     { "pathtools", NULL, },
     {0},
 };

@@ -27,4 +27,5 @@ typedef struct {
 } st_pluginctx_funcs_t;
 
 #define ST_PLUGINCTX_CALL(object, func, ...) \
-    ((st_pluginctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_pluginctx_funcs_t *)((const st_object_t *)object)->funcs)->func( \
+     object, ## __VA_ARGS__)

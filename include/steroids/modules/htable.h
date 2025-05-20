@@ -62,8 +62,11 @@ typedef struct st_htiter_funcs {
 } st_htiter_funcs_t;
 
 #define ST_HTABLECTX_CALL(object, func, ...) \
-    ((st_htablectx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_htablectx_funcs_t *)((const st_object_t *)object)->funcs)->func( \
+     object, ## __VA_ARGS__)
 #define ST_HTABLE_CALL(object, func, ...) \
-    ((st_htable_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_htable_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)
 #define ST_HTITER_CALL(object, func, ...) \
-    ((st_htiter_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_htiter_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

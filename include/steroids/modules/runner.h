@@ -12,4 +12,5 @@ typedef bool (*st_runner_run_t)(st_runnablectx_t *runner_ctx,
 typedef st_runnablectx_funcs_t st_runnerctx_funcs_t;
 
 #define ST_RUNNERCTX_CALL(object, func, ...) \
-    ((st_runnerctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_runnerctx_funcs_t *)((const st_object_t *)object)->funcs)->func( \
+     object, ## __VA_ARGS__)

@@ -60,6 +60,8 @@ typedef struct {
 } st_evq_funcs_t;
 
 #define ST_EVENTSCTX_CALL(ctx, func, ...) \
-    ((st_eventsctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, ## __VA_ARGS__)
+    ((st_eventsctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)
 #define ST_EVQ_CALL(object, func, ...) \
-    ((st_evq_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_evq_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

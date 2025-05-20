@@ -31,4 +31,5 @@ typedef struct {
 } st_fnv1actx_funcs_t;
 
 #define ST_FNV1ACTX_CALL(ctx, func, ...) \
-    ((st_fnv1actx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, ## __VA_ARGS__)
+    ((st_fnv1actx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)
