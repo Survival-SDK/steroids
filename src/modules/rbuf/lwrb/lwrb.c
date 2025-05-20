@@ -53,7 +53,10 @@ static st_moddata_t st_module_rbuf_lwrb_data = {
     .ctor = st_rbuf_init,
 };
 
-ST_MODULE_DEF_INIT_FUNC(rbuf_lwrb)
+st_moddata_t *st_module_rbuf_lwrb_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("rbuf", "lwrb", ST_MODULE_TYPE, mod_prereqs,
+     st_rbuf_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
