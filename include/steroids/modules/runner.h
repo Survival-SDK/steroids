@@ -1,16 +1,15 @@
 #pragma once
 
-#include "steroids/module.h"
+#include "steroids/runnablectx.h"
 
-typedef st_modctx_t *(*st_runner_init_t)(st_modctx_t *ini_ctx,
- st_modctx_t *logger_ctx, st_modctx_t *opts_ctx, st_modctx_t *pathtools_ctx,
- st_modctx_t *plugin_ctx);
-typedef void (*st_runner_quit_t)(st_modctx_t *runner_ctx);
+#ifndef ST_RUNNERCTX_T_DEFINED
+    typedef st_runnablectx_t st_runnerctx_t;
+#endif
 
-typedef void (*st_runner_run_t)(st_modctx_t *runner_ctx, const void *params);
+typedef bool (*st_runner_run_t)(st_runnablectx_t *runner_ctx,
+ const st_param_t params[]);
 
-typedef struct {
-    st_runner_init_t runner_init;
-    st_runner_quit_t runner_quit;
-    st_runner_run_t  runner_run;
-} st_runner_funcs_t;
+typedef st_runnablectx_funcs_t st_runnerctx_funcs_t;
+
+#define ST_RUNNERCTX_CALL(object, func, ...) \
+    ((st_runnerctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)

@@ -5,40 +5,18 @@
 #include "steroids/modules/opts.h"
 #include "steroids/modules/pathtools.h"
 #include "steroids/modules/plugin.h"
+#include "steroids/runnablectx.h"
 
 typedef struct {
-    st_modctx_t  *ctx;
-    st_ini_load_t load;
-} st_runner_simple_ini_t;
+    st_runnablectx_t;
+    st_modsmgr_t          *modsmgr;
+    st_inictx_t           *ini_ctx;
+    struct st_loggerctx_s *logger_ctx;
+    st_optsctx_t          *opts_ctx;
+    st_pathtoolsctx_t     *pathtools_ctx;
+    st_pluginctx_t        *plugin_ctx;
+    const char            *default_configfile;
+    const char            *default_directory;
+} st_runnerctx_t;
 
-typedef struct {
-    st_modctx_t        *ctx;
-    st_logger_debug_t   debug;
-    st_logger_info_t    info;
-    st_logger_warning_t warning;
-    st_logger_error_t   error;
-} st_runner_simple_logger_t;
-
-typedef struct {
-    st_modctx_t         *ctx;
-    st_opts_add_option_t add_option;
-    st_opts_get_str_t    get_str;
-} st_runner_simple_opts_t;
-
-typedef struct {
-    st_modctx_t          *ctx;
-    st_pathtools_concat_t concat;
-} st_runner_simple_pathtools_t;
-
-typedef struct {
-    st_modctx_t         *ctx;
-    st_plugin_load_t load;
-} st_runner_simple_plugin_t;
-
-typedef struct {
-    st_runner_simple_ini_t       ini;
-    st_runner_simple_logger_t    logger;
-    st_runner_simple_opts_t      opts;
-    st_runner_simple_pathtools_t pathtools;
-    st_runner_simple_plugin_t    plugin;
-} st_runner_simple_t;
+#define ST_RUNNERCTX_T_DEFINED
