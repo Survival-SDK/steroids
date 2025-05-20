@@ -151,7 +151,7 @@ foreach(ST_INTERNAL_MODULE ${ST_INTERNAL_MODULES})
     set(INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES
      "${INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES}\
      extern st_moddata_t *st_module_${ST_INTERNAL_MODULE}_init(\
-      st_modsmgr_t *, st_modsmgr_funcs_t *);\n"
+      st_modsmgr_t *);\n"
     )
     set(ST_INTERNAL_MODULES_INIT_FUNCS
      "${ST_INTERNAL_MODULES_INIT_FUNCS}\

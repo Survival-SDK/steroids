@@ -10,7 +10,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_pluginctx_t *st_plugin_init(const st_ctxctorparam_t params[]);
+static st_pluginctx_t *st_plugin_init(const st_param_t params[]);
 static void st_plugin_quit(st_pluginctx_t *plugin_ctx);
 
 static bool st_plugin_load(st_pluginctx_t *plugin_ctx, const char *filename,
@@ -49,7 +49,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "plugin";
 static const char *st_module_name = "simple";
 
-static st_pluginctx_t *st_plugin_init(const st_ctxctorparam_t params[]) {
+static st_pluginctx_t *st_plugin_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (
@@ -71,7 +71,7 @@ static st_pluginctx_t *st_plugin_init(const st_ctxctorparam_t params[]) {
 
     if (!plugin_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "plugin_simple: unable to create new plugin ctx object");
+         "plugin_simple: Unable to create new plugin ctx object");
 
         return NULL;
     }

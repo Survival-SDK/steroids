@@ -15,7 +15,7 @@
 
 #define ERRMSGBUF_SIZE 128
 
-static st_zipctx_t *st_zip_init(const st_ctxctorparam_t params[]);
+static st_zipctx_t *st_zip_init(const st_param_t params[]);
 static void st_zip_quit(st_zipctx_t *zip_ctx);
 static void st_zip_close(st_zip_t *zip);
 
@@ -65,7 +65,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "zip";
 static const char *st_module_name = "zip";
 
-static st_zipctx_t *st_zip_init(const st_ctxctorparam_t params[]) {
+static st_zipctx_t *st_zip_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

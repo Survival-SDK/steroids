@@ -13,7 +13,7 @@
 
 #define ERRMSGBUF_SIZE 128
 
-static st_rbufctx_t *st_rbuf_init(const st_ctxctorparam_t params[]);
+static st_rbufctx_t *st_rbuf_init(const st_param_t params[]);
 static void st_rbuf_quit(st_rbufctx_t *rbuf_ctx);
 
 static st_rbuf_t *st_rbuf_create(st_rbufctx_t *rbuf_ctx, size_t size);
@@ -62,7 +62,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static st_rbufctx_t *st_rbuf_init(const st_ctxctorparam_t params[]) {
+static st_rbufctx_t *st_rbuf_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

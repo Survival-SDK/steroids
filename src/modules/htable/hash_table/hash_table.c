@@ -12,7 +12,7 @@
 
 #define ITERS_COUNT_MAX 128
 
-static st_htablectx_t *st_htable_init(const st_ctxctorparam_t params[]);
+static st_htablectx_t *st_htable_init(const st_param_t params[]);
 static void st_htable_quit(st_htablectx_t *htable_ctx);
 
 static st_htable_t *st_htable_create(st_htablectx_t *htable_ctx,
@@ -72,7 +72,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static st_htablectx_t *st_htable_init(const st_ctxctorparam_t params[]) {
+static st_htablectx_t *st_htable_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

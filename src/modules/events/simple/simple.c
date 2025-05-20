@@ -8,7 +8,7 @@
 static st_modsmgr_t      *global_modsmgr;
 static st_modsmgr_funcs_t global_modsmgr_funcs;
 
-static st_eventsctx_t *st_events_init(const st_ctxctorparam_t params[]);
+static st_eventsctx_t *st_events_init(const st_param_t params[]);
 static void st_events_quit(st_eventsctx_t *events_ctx);
 
 static st_evtypeid_t st_events_register_type(st_eventsctx_t *events_ctx,
@@ -77,7 +77,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "events";
 static const char *st_module_name = "simple";
 
-static st_eventsctx_t *st_events_init(const st_ctxctorparam_t params[]) {
+static st_eventsctx_t *st_events_init(const st_param_t params[]) {
     st_rbuf_init_t         rbuf_init;
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
