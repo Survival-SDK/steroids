@@ -3,8 +3,6 @@
 #include <stddef.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modules/fs.h"
-#include "steroids/modules/pathtools.h"
 #include "steroids/object.h"
 
 #ifndef ST_ZIPCTX_T_DEFINED

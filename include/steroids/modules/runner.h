@@ -1,6 +1,7 @@
 #pragma once
 
 #include "steroids/runnablectx.h"
+#include "steroids/object.h"
 
 #ifndef ST_RUNNERCTX_T_DEFINED
     typedef st_runnablectx_t st_runnerctx_t;

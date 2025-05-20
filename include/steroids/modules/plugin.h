@@ -4,11 +4,6 @@
 #include <stddef.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modules/fs.h"
-#include "steroids/modules/pathtools.h"
-#include "steroids/modules/so.h"
-#include "steroids/modules/spcpaths.h"
-#include "steroids/modules/zip.h"
 #include "steroids/object.h"
 
 #ifndef ST_PLUGINCTX_T_DEFINED

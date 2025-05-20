@@ -3,7 +3,6 @@
 #include <stddef.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modules/logger.h"
 #include "steroids/object.h"
 
 #ifndef ST_SOCTX_T_DEFINED
