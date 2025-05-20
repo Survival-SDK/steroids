@@ -39,9 +39,6 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "fs";
-static const char *st_module_name = "simple";
-
 static st_fsctx_t *st_fs_init(const st_param_t params[]) {
     st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
     st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,

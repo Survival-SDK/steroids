@@ -62,9 +62,6 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "zip";
-static const char *st_module_name = "zip";
-
 static st_zipctx_t *st_zip_init(const st_param_t params[]) {
     st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
     st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,

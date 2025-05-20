@@ -74,9 +74,6 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "events";
-static const char *st_module_name = "simple";
-
 static st_eventsctx_t *st_events_init(const st_param_t params[]) {
     st_rbuf_init_t  rbuf_init;
     st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");

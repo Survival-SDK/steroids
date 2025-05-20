@@ -47,9 +47,6 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static const char *st_module_subsystem = "so";
-static const char *st_module_name = "simple";
-
 static void st_so_free(void *so) {
     st_soctx_t *so_ctx = (st_soctx_t *)st_object_get_owner(so);
 
