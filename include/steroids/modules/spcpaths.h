@@ -9,8 +9,6 @@
     typedef struct st_spcpathsctx_s st_spcpathsctx_t;
 #endif
 
-typedef st_spcpathsctx_t *(*st_spcpaths_init_t)(
- struct st_loggerctx_s *logger_ctx);
 typedef void (*st_spcpaths_get_config_path_t)(st_spcpathsctx_t *spcpaths_ctx,
  char *dst, size_t dstlen, const char *appname);
 typedef void (*st_spcpaths_get_data_path_t)(st_spcpathsctx_t *spcpaths_ctx,

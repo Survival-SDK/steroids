@@ -20,7 +20,6 @@ typedef bool (*st_keyeqfunc_t)(const void *left, const void *right);
     typedef void (*st_freefunc_t)(void *ptr);
 #endif
 
-typedef st_htablectx_t *(*st_htable_init_t)(struct st_loggerctx_s *logger_ctx);
 typedef st_htable_t *(*st_htable_create_t)(st_htablectx_t *htable_ctx,
  st_u32hashfunc_t hashfunc, st_keyeqfunc_t keyeqfunc, st_freefunc_t keydelfunc,
  st_freefunc_t valdelfunc);

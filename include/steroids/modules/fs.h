@@ -20,8 +20,6 @@ typedef enum {
     ST_FT_SOCK,
 } st_filetype_t;
 
-typedef st_fsctx_t *(*st_fs_init_t)(struct st_loggerctx_s *logger_ctx,
- st_pathtoolsctx_t *pathtools_ctx);
 typedef st_filetype_t (*st_fs_get_file_type_t)(st_fsctx_t *fs_ctx,
  const char *filename);
 typedef bool (*st_fs_mkdir_t)(st_fsctx_t *fs_ctx, const char *dirname);

@@ -19,8 +19,6 @@ typedef enum {
     ST_OA_OPTIONAL = 2,
 } st_opt_arg_t;
 
-typedef st_optsctx_t *(*st_opts_init_t)(int argc, char **argv,
- struct st_loggerctx_s *logger_ctx);
 typedef bool (*st_opts_add_option_t)(st_optsctx_t *opts_ctx, char short_option,
  const char *long_option, st_opt_arg_t arg, const char *arg_fmt,
  const char *option_descr);

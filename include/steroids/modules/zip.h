@@ -20,8 +20,6 @@ typedef enum {
     ST_ZET_DIR     = 2,
 } st_zipentrytype_t;
 
-typedef st_zipctx_t *(*st_zip_init_t)(st_fsctx_t *fs_ctx,
- struct st_loggerctx_s *logger_ctx, st_pathtoolsctx_t *pathtools_ctx);
 typedef st_zip_t *(*st_zip_open_t)(st_zipctx_t *zip_ctx, const char *filename);
 typedef st_zip_t *(*st_zip_memopen_t)(st_zipctx_t *zip_ctx, const void *data,
  size_t size);

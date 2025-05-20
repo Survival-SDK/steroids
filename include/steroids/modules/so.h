@@ -13,7 +13,6 @@
     typedef struct st_so_s st_so_t;
 #endif
 
-typedef st_soctx_t *(*st_so_init_t)(struct st_loggerctx_s *logger_ctx);
 typedef void (*st_so_quit_t)(st_soctx_t *so_ctx);
 
 typedef st_so_t *(*st_so_open_t)(st_soctx_t *so_ctx, const char *filename);

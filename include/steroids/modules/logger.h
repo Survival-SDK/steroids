@@ -24,8 +24,6 @@ typedef void (*st_logcbk_t)(const char *msg, void *userdata);
 typedef void (*st_logger_generic_msg_t)(const struct st_loggerctx_s *logger_ctx,
  const char* format, ...);
 
-typedef struct st_loggerctx_s *(*st_logger_init_t)(
- struct st_eventsctx_s *events_ctx);
 
 typedef bool (*st_logger_enable_events_t)(struct st_loggerctx_s *logger_ctx,
  struct st_eventsctx_s *events_ctx);

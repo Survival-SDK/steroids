@@ -13,8 +13,6 @@
     typedef struct st_rbuf_s st_rbuf_t;
 #endif
 
-typedef st_rbufctx_t *(*st_rbuf_init_t)(struct st_loggerctx_s *logger_ctx);
-
 typedef st_rbuf_t *(*st_rbuf_create_t)(st_rbufctx_t *rbuf_ctx, size_t size);
 typedef bool (*st_rbuf_push_t)(st_rbuf_t *rbuf, const void *data, size_t size);
 typedef bool (*st_rbuf_peek_t)(const st_rbuf_t *rbuf, void *data, size_t size);

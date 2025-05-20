@@ -9,9 +9,6 @@
     typedef struct st_pathtoolsctx_s st_pathtoolsctx_t;
 #endif
 
-typedef st_pathtoolsctx_t *(*st_pathtools_init_t)(
- struct st_loggerctx_s *logger_ctx);
-
 typedef bool (*st_pathtools_resolve_t)(st_pathtoolsctx_t *pathtools_ctx,
  char *dst, size_t dstsize, const char *path);
 typedef bool (*st_pathtools_get_parent_dir_t)(st_pathtoolsctx_t *pathtools_ctx,

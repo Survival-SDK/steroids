@@ -15,11 +15,6 @@
     typedef struct st_pluginctx_s st_pluginctx_t;
 #endif
 
-typedef st_pluginctx_t *(*st_plugin_init_t)(st_modsmgr_t *modsmgr,
- st_fsctx_t *fs_ctx, struct st_loggerctx_s *logger_ctx,
- st_pathtoolsctx_t *pathtools_ctx, st_soctx_t *so_ctx,
- st_spcpathsctx_t *spcpaths_ctx, st_zipctx_t *zip_ctx);
-
 typedef bool (*st_plugin_load_t)(st_pluginctx_t *plugin_ctx,
  const char *filename, bool force);
 typedef bool (*st_plugin_memload_t)(st_pluginctx_t *plugin_ctx,
