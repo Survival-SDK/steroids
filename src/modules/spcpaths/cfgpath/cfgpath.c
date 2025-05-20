@@ -11,7 +11,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_spcpathsctx_t *st_spcpaths_init(const st_ctxctorparam_t params[]);
+static st_spcpathsctx_t *st_spcpaths_init(const st_param_t params[]);
 static void st_spcpaths_quit(st_spcpathsctx_t *spcpaths_ctx);
 
 static void st_spcpaths_get_config_path(st_spcpathsctx_t *spcpaths_ctx,
@@ -48,7 +48,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "spcpaths";
 static const char *st_module_name = "cfgpath";
 
-static st_spcpathsctx_t *st_spcpaths_init(const st_ctxctorparam_t params[]) {
+static st_spcpathsctx_t *st_spcpaths_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

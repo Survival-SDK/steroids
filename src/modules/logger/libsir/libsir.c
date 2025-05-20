@@ -13,7 +13,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_loggerctx_t *st_logger_init(const st_ctxctorparam_t params[]);
+static st_loggerctx_t *st_logger_init(const st_param_t params[]);
 static void st_logger_quit(st_loggerctx_t *logger_ctx);
 
 static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
@@ -71,7 +71,7 @@ static void log_file_destroy(void *plog_file) {
     sir_remfile(log_file->file);
 }
 
-static st_loggerctx_t *st_logger_init(const st_ctxctorparam_t params[]) {
+static st_loggerctx_t *st_logger_init(const st_param_t params[]) {
     st_loggerctx_t *logger_ctx;
     sirinit         init_options = {
         .d_stdout = {

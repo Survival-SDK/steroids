@@ -15,7 +15,7 @@ typedef enum {
     ST_PT_NOT_PATH,
 } st_pathtype_t;
 
-static st_pathtoolsctx_t *st_pathtools_init(const st_ctxctorparam_t params[]);
+static st_pathtoolsctx_t *st_pathtools_init(const st_param_t params[]);
 static void st_pathtools_quit(st_pathtoolsctx_t *pathtools_ctx);
 
 static bool st_pathtools_resolve(st_pathtoolsctx_t *pathtools_ctx, char *dst,
@@ -52,7 +52,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "pathtools";
 static const char *st_module_name = "cwalk";
 
-static st_pathtoolsctx_t *st_pathtools_init(const st_ctxctorparam_t params[]) {
+static st_pathtoolsctx_t *st_pathtools_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

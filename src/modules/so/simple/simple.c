@@ -10,7 +10,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_soctx_t *st_so_init(const st_ctxctorparam_t params[]);
+static st_soctx_t *st_so_init(const st_param_t params[]);
 static void st_so_quit(st_soctx_t *so_ctx);
 static void st_so_close(st_so_t *so);
 
@@ -58,7 +58,7 @@ static void st_so_free(void *so) {
          "so_simple: Unable to close so file. %s", dlerror());
 }
 
-static st_soctx_t *st_so_init(const st_ctxctorparam_t params[]) {
+static st_soctx_t *st_so_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

@@ -8,7 +8,7 @@
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-static st_fsctx_t *st_fs_init(const st_ctxctorparam_t params[]);
+static st_fsctx_t *st_fs_init(const st_param_t params[]);
 static void st_fs_quit(st_fsctx_t *fs_ctx);
 
 static st_filetype_t st_fs_get_file_type(st_fsctx_t *fs_ctx,
@@ -42,7 +42,7 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 static const char *st_module_subsystem = "fs";
 static const char *st_module_name = "simple";
 
-static st_fsctx_t *st_fs_init(const st_ctxctorparam_t params[]) {
+static st_fsctx_t *st_fs_init(const st_param_t params[]) {
     st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
      "modsmgr");
     struct st_loggerctx_s *logger_ctx = (

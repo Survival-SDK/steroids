@@ -24,7 +24,7 @@ typedef st_ctx_ctor_t (*st_modsmgr_get_ctor_t)(const st_modsmgr_t *modsmgr,
 
 typedef st_modctx_t *(*st_modsmgr_create_singleton_t)(
  const st_modsmgr_t *modsmgr, const char *subsystem, const char *module_name,
- const st_ctxctorparam_t params[]);
+ const st_param_t params[]);
 typedef bool (*st_modsmgr_have_singleton_t)(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name);
 typedef st_modctx_t *(*st_modsmgr_get_singleton_t)(const st_modsmgr_t *modsmgr,
