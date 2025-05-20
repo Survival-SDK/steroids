@@ -10,7 +10,7 @@
 #define ST_OPTS_LONG_INDEX_UNSPEC  -1
 
 #ifndef ST_OPTSCTX_T_DEFINED
-    typedef struct st_optsctx_s st_optsctx_t;
+    typedef st_modctx_t st_optsctx_t;
 #endif
 
 typedef enum {

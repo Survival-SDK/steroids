@@ -17,7 +17,7 @@ static st_loggerctx_t *st_logger_init(const st_param_t params[]);
 static void st_logger_quit(st_loggerctx_t *logger_ctx);
 
 static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
- struct st_eventsctx_s *events_ctx);
+ st_eventsctx_t *events_ctx);
 static bool st_logger_set_stdout_levels(st_loggerctx_t *logger_ctx,
  st_loglvl_t levels);
 static bool st_logger_set_stderr_levels(st_loggerctx_t *logger_ctx,
@@ -118,7 +118,7 @@ static st_loggerctx_t *st_logger_init(const st_param_t params[]) {
     }
 
     logger_ctx->modsmgr = modsmgr;
-    logger_ctx->events_ctx = (struct st_eventsctx_s *)ST_MODSMGR_CALL(modsmgr,
+    logger_ctx->events_ctx = (st_eventsctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "events", NULL);
     logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
@@ -165,7 +165,7 @@ static void st_logger_quit(st_loggerctx_t *logger_ctx) {
 
 static bool st_logger_enable_events(
  __attribute__((unused)) st_loggerctx_t *logger_ctx,
- struct st_eventsctx_s *events_ctx) {
+ st_eventsctx_t *events_ctx) {
     /* Not implemented */
 
     return false;

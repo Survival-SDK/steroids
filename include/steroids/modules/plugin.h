@@ -12,7 +12,7 @@
 #include "steroids/object.h"
 
 #ifndef ST_PLUGINCTX_T_DEFINED
-    typedef struct st_pluginctx_s st_pluginctx_t;
+    typedef st_modctx_t st_pluginctx_t;
 #endif
 
 typedef bool (*st_plugin_load_t)(st_pluginctx_t *plugin_ctx,

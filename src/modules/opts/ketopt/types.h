@@ -23,11 +23,11 @@ typedef struct {
 
 typedef struct {
     st_modctx_t;
-    struct st_loggerctx_s *logger_ctx;
-    int                    argc;
-    char                 **argv;
-    st_opt_t               opts[ST_OPTS_OPTS_MAX];
-    unsigned               opts_count;
+    st_loggerctx_t *logger_ctx;
+    int             argc;
+    char          **argv;
+    st_opt_t        opts[ST_OPTS_OPTS_MAX];
+    unsigned        opts_count;
 } st_optsctx_t;
 
 #define ST_OPTSCTX_T_DEFINED

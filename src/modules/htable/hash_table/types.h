@@ -8,7 +8,7 @@ typedef void (*st_freefunc_t)(void *ptr);
 
 typedef struct {
     st_modctx_t;
-    struct st_loggerctx_s *logger_ctx;
+    st_loggerctx_t *logger_ctx;
 } st_htablectx_t;
 
 typedef struct {
@@ -21,6 +21,6 @@ typedef struct {
 typedef st_object_t st_htiter_t;
 
 #define ST_HTABLECTX_T_DEFINED
-#define ST_FREEFUNC_T_DEFINED
 #define ST_HTABLE_T_DEFINED
 #define ST_HTITER_T_DEFINED
+#define ST_FREEFUNC_T_DEFINED

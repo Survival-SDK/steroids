@@ -6,7 +6,7 @@
 #include "steroids/object.h"
 
 #ifndef ST_SPCPATHSCTX_T_DEFINED
-    typedef struct st_spcpathsctx_s st_spcpathsctx_t;
+    typedef st_modctx_t st_spcpathsctx_t;
 #endif
 
 typedef void (*st_spcpaths_get_config_path_t)(st_spcpathsctx_t *spcpaths_ctx,

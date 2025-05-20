@@ -12,7 +12,7 @@
 #define EVENT_TYPES_MAX      32
 #define SUBSCRIBERS_MAX      8
 
-typedef struct st_evq_s {
+typedef struct {
     st_object_t;
     st_rbuf_t *handle;
     bool       active;
@@ -25,10 +25,13 @@ typedef struct {
     size_t    subscribers_count;
 } st_evtype_t;
 
-typedef struct st_eventsctx_s {
+typedef struct {
     st_modctx_t;
-    struct st_loggerctx_s *logger_ctx;
-    st_rbufctx_t          *rbuf_ctx;
-    st_evtype_t            types[EVENT_TYPES_MAX];
-    size_t                 types_count;
+    st_loggerctx_t *logger_ctx;
+    st_rbufctx_t   *rbuf_ctx;
+    st_evtype_t     types[EVENT_TYPES_MAX];
+    size_t          types_count;
 } st_eventsctx_t;
+
+#define ST_EVENTSCTX_T_DEFINED
+#define ST_EVQ_T_DEFINED

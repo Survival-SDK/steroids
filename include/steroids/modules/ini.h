@@ -4,15 +4,13 @@
 #include <stddef.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modsmgr.h"
-#include "steroids/modules/logger.h"
 #include "steroids/object.h"
 
 #ifndef ST_INICTX_T_DEFINED
-    typedef struct st_inictx_s st_inictx_t;
+    typedef st_modctx_t st_inictx_t;
 #endif
 #ifndef ST_INI_T_DEFINED
-    typedef struct st_ini_s st_ini_t;
+    typedef st_object_t st_ini_t;
 #endif
 
 typedef st_ini_t *(*st_ini_create_t)(st_inictx_t *ini_ctx);

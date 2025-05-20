@@ -78,16 +78,14 @@ static const char *st_module_subsystem = "events";
 static const char *st_module_name = "simple";
 
 static st_eventsctx_t *st_events_init(const st_param_t params[]) {
-    st_rbuf_init_t         rbuf_init;
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_rbufctx_t          *rbuf_ctx = (st_rbufctx_t *)ST_MODSMGR_CALL(modsmgr,
+    st_rbuf_init_t  rbuf_init;
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_rbufctx_t   *rbuf_ctx = (st_rbufctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "rbuf", NULL);
-    st_eventsctx_t        *events_ctx = (st_eventsctx_t *)st_modctx_new(
-     "events", "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
+    st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events",
+     "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
      (st_object_dtor_t)st_events_quit);
 
     if (!events_ctx) {

@@ -1,14 +1,16 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "steroids/modctx.h"
-#include "steroids/modules/logger.h"
 #include "steroids/object.h"
 
 #ifndef ST_HTABLECTX_T_DEFINED
-    typedef struct st_htablectx_s st_htablectx_t;
+    typedef st_modctx_t st_htablectx_t;
 #endif
 #ifndef ST_HTABLE_T_DEFINED
-    typedef struct st_htable_s st_htable_t;
+    typedef st_object_t st_htable_t;
 #endif
 #ifndef ST_HTITER_T_DEFINED
     typedef st_object_t st_htiter_t;

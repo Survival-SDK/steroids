@@ -59,12 +59,10 @@ static void st_so_free(void *so) {
 }
 
 static st_soctx_t *st_so_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_soctx_t            *so_ctx = (st_soctx_t *)st_modctx_new("so", "simple",
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_soctx_t     *so_ctx = (st_soctx_t *)st_modctx_new("so", "simple",
      sizeof(st_soctx_t), NULL, &soctx_funcs, (st_object_dtor_t)st_so_quit);
 
     if (so_ctx == NULL) {

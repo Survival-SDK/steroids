@@ -46,25 +46,23 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 #endif
 
 static st_runnerctx_t *st_runner_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    const char            *default_configfile = st_modctx_get_param_as_ptr(
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    const char        *default_configfile = st_modctx_get_param_as_ptr(
      params, "default-configfile");
-    const char            *default_directory = st_modctx_get_param_as_ptr(
+    const char        *default_directory = st_modctx_get_param_as_ptr(
      params, "default-directory");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_inictx_t           *ini_ctx = (st_inictx_t *)ST_MODSMGR_CALL(modsmgr,
+    st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_inictx_t       *ini_ctx = (st_inictx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "ini", NULL);
-    st_optsctx_t          *opts_ctx = (st_optsctx_t *)ST_MODSMGR_CALL(modsmgr,
+    st_optsctx_t      *opts_ctx = (st_optsctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "opts", NULL);
-    st_pathtoolsctx_t     *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+    st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
      modsmgr, get_singleton, "pathtools", NULL);
-    st_pluginctx_t        *plugin_ctx = (st_pluginctx_t *)ST_MODSMGR_CALL(
-     modsmgr, get_singleton, "plugin", NULL);
-    st_runnerctx_t        *runner_ctx = (st_runnerctx_t *)st_modctx_new(
-     "runner", "simple", sizeof(st_runnerctx_t), NULL, &runnerctx_funcs,
+    st_pluginctx_t    *plugin_ctx = (st_pluginctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "plugin", NULL);
+    st_runnerctx_t    *runner_ctx = (st_runnerctx_t *)st_modctx_new("runner",
+     "simple", sizeof(st_runnerctx_t), NULL, &runnerctx_funcs,
      (st_object_dtor_t)st_runner_quit);
 
     if (!runner_ctx) {

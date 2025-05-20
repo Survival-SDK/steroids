@@ -7,10 +7,10 @@
 #include "steroids/object.h"
 
 #ifndef ST_RBUFCTX_T_DEFINED
-    typedef struct st_rbufctx_s st_rbufctx_t;
+    typedef st_modctx_t st_rbufctx_t;
 #endif
 #ifndef ST_RBUF_T_DEFINED
-    typedef struct st_rbuf_s st_rbuf_t;
+    typedef st_object_t st_rbuf_t;
 #endif
 
 typedef st_rbuf_t *(*st_rbuf_create_t)(st_rbufctx_t *rbuf_ctx, size_t size);

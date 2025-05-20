@@ -7,10 +7,10 @@
 #include "steroids/object.h"
 
 #ifndef ST_SOCTX_T_DEFINED
-    typedef struct st_soctx_s st_soctx_t;
+    typedef st_modctx_t st_soctx_t;
 #endif
 #ifndef ST_SO_T_DEFINED
-    typedef struct st_so_s st_so_t;
+    typedef st_object_t st_so_t;
 #endif
 
 typedef void (*st_so_quit_t)(st_soctx_t *so_ctx);

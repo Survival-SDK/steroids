@@ -13,7 +13,7 @@
 
 typedef struct {
     st_modctx_t;
-    struct st_loggerctx_s *logger_ctx;
+    st_loggerctx_t *logger_ctx;
 } st_rbufctx_t;
 
 typedef struct {

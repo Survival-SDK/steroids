@@ -15,9 +15,9 @@ typedef enum {
 
 typedef struct {
     st_modctx_t;
-    st_fsctx_t            *fs_ctx;
-    struct st_loggerctx_s *logger_ctx;
-    st_pathtoolsctx_t     *pathtools_ctx;
+    st_fsctx_t        *fs_ctx;
+    st_loggerctx_t    *logger_ctx;
+    st_pathtoolsctx_t *pathtools_ctx;
 } st_zipctx_t;
 
 typedef struct {

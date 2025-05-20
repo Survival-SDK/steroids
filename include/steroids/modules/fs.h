@@ -1,12 +1,12 @@
 #pragma once
 
+#include <stdbool.h>
+
 #include "steroids/modctx.h"
-#include "steroids/modules/logger.h"
-#include "steroids/modules/pathtools.h"
 #include "steroids/object.h"
 
 #ifndef ST_FSCTX_T_DEFINED
-    typedef struct st_fsctx_s st_fsctx_t;
+    typedef st_modctx_t st_fsctx_t;
 #endif
 
 typedef enum {

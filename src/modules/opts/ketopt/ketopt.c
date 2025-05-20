@@ -61,15 +61,13 @@ static const char *st_module_subsystem = "opts";
 static const char *st_module_name = "ketopt";
 
 static st_optsctx_t *st_opts_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    int                    argc = st_modctx_get_param_as_int(params, "argc");
-    char                 **argv = st_modctx_get_param_as_ptr(params, "argv");
-    st_optsctx_t          *opts_ctx = (st_optsctx_t *)st_modctx_new("opts",
-     "ketopt", sizeof(st_optsctx_t), NULL, &optsctx_funcs,
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    int             argc = st_modctx_get_param_as_int(params, "argc");
+    char          **argv = st_modctx_get_param_as_ptr(params, "argv");
+    st_optsctx_t   *opts_ctx = (st_optsctx_t *)st_modctx_new("opts", "ketopt",
+     sizeof(st_optsctx_t), NULL, &optsctx_funcs,
      (st_object_dtor_t)st_opts_quit);
 
     if (!opts_ctx) {

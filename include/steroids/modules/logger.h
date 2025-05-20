@@ -8,8 +8,9 @@
 
 #define ST_EV_LOG_MSG_SIZE 1000
 
-struct st_loggerctx_s;
-struct st_eventsctx_s;
+#ifndef ST_LOGGERCTX_T_DEFINED
+    typedef st_modctx_t st_loggerctx_t;
+#endif
 
 typedef enum {
     ST_LL_NONE    = 0x0,
@@ -21,26 +22,25 @@ typedef enum {
 } st_loglvl_t;
 
 typedef void (*st_logcbk_t)(const char *msg, void *userdata);
-typedef void (*st_logger_generic_msg_t)(const struct st_loggerctx_s *logger_ctx,
+typedef void (*st_logger_generic_msg_t)(const st_loggerctx_t *logger_ctx,
  const char* format, ...);
 
-
-typedef bool (*st_logger_enable_events_t)(struct st_loggerctx_s *logger_ctx,
- struct st_eventsctx_s *events_ctx);
-typedef bool (*st_logger_set_stdout_levels_t)(struct st_loggerctx_s *logger_ctx,
+typedef bool (*st_logger_enable_events_t)(st_loggerctx_t *logger_ctx,
+ st_eventsctx_t *events_ctx);
+typedef bool (*st_logger_set_stdout_levels_t)(st_loggerctx_t *logger_ctx,
  st_loglvl_t levels);
-typedef bool (*st_logger_set_stderr_levels_t)(struct st_loggerctx_s *logger_ctx,
+typedef bool (*st_logger_set_stderr_levels_t)(st_loggerctx_t *logger_ctx,
  st_loglvl_t levels);
-typedef bool (*st_logger_set_log_file_t)(struct st_loggerctx_s *logger_ctx,
+typedef bool (*st_logger_set_log_file_t)(st_loggerctx_t *logger_ctx,
  const char *filename, st_loglvl_t levels);
-typedef bool (*st_logger_set_callback_t)(struct st_loggerctx_s *logger_ctx,
+typedef bool (*st_logger_set_callback_t)(st_loggerctx_t *logger_ctx,
  st_logcbk_t callback, void *userdata, st_loglvl_t levels);
 typedef st_logger_generic_msg_t st_logger_debug_t;
 typedef st_logger_generic_msg_t st_logger_info_t;
 typedef st_logger_generic_msg_t st_logger_warning_t;
 typedef st_logger_generic_msg_t st_logger_error_t;
-typedef void (*st_logger_set_postmortem_msg_t)(
- struct st_loggerctx_s *logger_ctx, const char *msg);
+typedef void (*st_logger_set_postmortem_msg_t)(st_loggerctx_t *logger_ctx,
+ const char *msg);
 
 typedef struct {
     st_modctx_funcs_t;

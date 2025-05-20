@@ -49,12 +49,10 @@ static const char *st_module_subsystem = "spcpaths";
 static const char *st_module_name = "cfgpath";
 
 static st_spcpathsctx_t *st_spcpaths_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_spcpathsctx_t      *spcpaths_ctx = (st_spcpathsctx_t *)st_modctx_new(
+    st_modsmgr_t     *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t   *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_spcpathsctx_t *spcpaths_ctx = (st_spcpathsctx_t *)st_modctx_new(
      "spcpaths", "cfgpath", sizeof(st_spcpathsctx_t), NULL, &spcpathsctx_funcs,
      (st_object_dtor_t)st_spcpaths_quit);
 

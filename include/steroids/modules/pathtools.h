@@ -6,7 +6,7 @@
 #include "steroids/object.h"
 
 #ifndef ST_PATHTOOLSCTX_T_DEFINED
-    typedef struct st_pathtoolsctx_s st_pathtoolsctx_t;
+    typedef st_modctx_t st_pathtoolsctx_t;
 #endif
 
 typedef bool (*st_pathtools_resolve_t)(st_pathtoolsctx_t *pathtools_ctx,

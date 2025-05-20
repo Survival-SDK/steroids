@@ -8,8 +8,8 @@
 
 typedef struct {
     st_modctx_t;
-    struct st_loggerctx_s *logger_ctx;
-    st_dlist_t            *opened_handles;
+    st_loggerctx_t *logger_ctx;
+    st_dlist_t     *opened_handles;
 } st_soctx_t;
 
 typedef struct {

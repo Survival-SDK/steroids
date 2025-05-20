@@ -43,14 +43,12 @@ static const char *st_module_subsystem = "fs";
 static const char *st_module_name = "simple";
 
 static st_fsctx_t *st_fs_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_pathtoolsctx_t     *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
      modsmgr, get_singleton, "pathtools", NULL);
-    st_fsctx_t            *fs_ctx = (st_fsctx_t *)st_modctx_new("fs", "simple",
+    st_fsctx_t        *fs_ctx = (st_fsctx_t *)st_modctx_new("fs", "simple",
     sizeof(st_fsctx_t), NULL, &fsctx_funcs, (st_object_dtor_t)st_fs_quit);
 
     if (!fs_ctx) {

@@ -63,13 +63,11 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 #endif
 
 static st_rbufctx_t *st_rbuf_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_rbufctx_t          *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf",
-     "lwrb", sizeof(st_rbufctx_t), NULL, &rbufctx_funcs,
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_rbufctx_t   *rbuf_ctx = (st_rbufctx_t *)st_modctx_new("rbuf", "lwrb",
+     sizeof(st_rbufctx_t), NULL, &rbufctx_funcs,
      (st_object_dtor_t)st_rbuf_quit);
 
     if (!rbuf_ctx) {

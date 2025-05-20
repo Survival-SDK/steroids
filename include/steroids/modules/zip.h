@@ -8,10 +8,10 @@
 #include "steroids/object.h"
 
 #ifndef ST_ZIPCTX_T_DEFINED
-    typedef struct st_zipctx_s st_zipctx_t;
+    typedef st_modctx_t st_zipctx_t;
 #endif
 #ifndef ST_ZIP_T_DEFINED
-    typedef struct st_zip_s st_zip_t;
+    typedef st_object_t st_zip_t;
 #endif
 
 typedef enum {

@@ -97,16 +97,14 @@ static const char *st_module_subsystem = "ini";
 static const char *st_module_name = "inih";
 
 static st_inictx_t *st_ini_init(const st_param_t params[]) {
-    st_modsmgr_t          *modsmgr = st_modctx_get_param_as_ptr(params,
-     "modsmgr");
-    struct st_loggerctx_s *logger_ctx = (
-     struct st_loggerctx_s *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "logger", NULL);
-    st_fnv1actx_t         *fnv1a_ctx = (st_fnv1actx_t *)ST_MODSMGR_CALL(modsmgr,
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_fnv1actx_t  *fnv1a_ctx = (st_fnv1actx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "fnv1a", NULL);
-    st_htablectx_t        *htable_ctx = (st_htablectx_t *)ST_MODSMGR_CALL(
-     modsmgr, get_singleton, "htable", NULL);
-    st_inictx_t           *ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih",
+    st_htablectx_t *htable_ctx = (st_htablectx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "htable", NULL);
+    st_inictx_t    *ini_ctx = (st_inictx_t *)st_modctx_new("ini", "inih",
      sizeof(st_inictx_t), NULL, &inictx_funcs, (st_object_dtor_t)st_ini_quit);
 
     if (!ini_ctx) {
@@ -187,7 +185,7 @@ static int st_ini_parse_handler(void *userdata, const char *section,
 }
 
 static void st_process_error(int parse_result, const char *filename,
- struct st_loggerctx_s *logger_ctx) {
+ st_loggerctx_t *logger_ctx) {
     switch (parse_result) {
         case 0:
             break;
