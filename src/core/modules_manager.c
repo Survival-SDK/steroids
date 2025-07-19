@@ -75,7 +75,7 @@ static st_moddata_t *st_modsmgr_find_module(const st_modsmgr_t *modsmgr,
     return found_count > 0 ? found_modules[0] : NULL;
 }
 
-static inline bool st_modsmgr_have_module(const st_modsmgr_t *modsmgr,
+static bool st_modsmgr_have_module(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name) {
     return !!st_modsmgr_find_module(modsmgr, subsystem, module_name);
 }
