@@ -11,6 +11,8 @@
 #include <lwrb.h>
 #pragma GCC diagnostic pop
 
+#include "steroids/modsmgr.h"
+
 #define ERRMSGBUF_SIZE 128
 
 static st_rbufctx_t *st_rbuf_init(const st_param_t params[]);
