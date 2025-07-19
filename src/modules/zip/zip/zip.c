@@ -248,7 +248,9 @@ static st_zipentrytype_t st_zip_get_entry_type(st_zip_t *zip, size_t entrynum) {
 
     zip_entry_close(zip->handle);
 
-    return ret < 0 ? ST_ZET_UNKNOWN : (ret ? ST_ZET_DIR : ST_ZET_FILE);
+    return ret < 0
+        ? ST_ZET_UNKNOWN
+        : (ret ? ST_ZET_DIR : ST_ZET_FILE);
 }
 
 static bool st_zip_extract_entry(st_zip_t *zip, size_t entrynum,
