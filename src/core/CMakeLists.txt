@@ -40,6 +40,6 @@ target_link_libraries(steroids PRIVATE
 file(WRITE ${CMAKE_BINARY_DIR}/steroids.ini
 "[steroids.runner]
 plugin_path=cmake_build/plugins
-run_module=lua:luajit
-script=main.lua"
+run_module=luajit:luajit
+script=main.luajit"
 )

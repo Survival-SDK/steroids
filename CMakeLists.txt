@@ -64,8 +64,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/ini/inih"
 #  "${CMAKE_BINARY_DIR}/src/modules/keyboard/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/logger/libsir"
  "${CMAKE_BINARY_DIR}/src/modules/logger/libsir")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/lua/luajit"
-#  "${CMAKE_BINARY_DIR}/src/modules/lua/luajit")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
+ "${CMAKE_BINARY_DIR}/src/modules/lua/luajit")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/angle"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/angle")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/bitmap"
