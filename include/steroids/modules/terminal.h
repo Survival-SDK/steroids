@@ -1,6 +1,10 @@
 #pragma once
 
-#include "steroids/module.h"
+#include "steroids/modctx.h"
+
+#ifndef ST_TERMINALCTX_T_DEFINED
+    typedef st_modctx_t st_terminalctx_t;
+#endif
 
 typedef st_modctx_t *(*st_terminal_init_t)(st_modctx_t *logger_ctx);
 typedef void (*st_terminal_quit_t)(st_modctx_t *terminal_ctx);
