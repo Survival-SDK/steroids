@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modules/logger.h"
 #include "steroids/modules/rbuf.h"
 #include "steroids/object.h"
 
@@ -27,10 +26,10 @@ typedef struct {
 
 typedef struct {
     st_modctx_t;
-    st_loggerctx_t *logger_ctx;
-    st_rbufctx_t   *rbuf_ctx;
-    st_evtype_t     types[EVENT_TYPES_MAX];
-    size_t          types_count;
+    st_modctx_t  *logger_ctx;
+    st_rbufctx_t *rbuf_ctx;
+    st_evtype_t   types[EVENT_TYPES_MAX];
+    size_t        types_count;
 } st_eventsctx_t;
 
 #define ST_EVENTSCTX_T_DEFINED

@@ -3,10 +3,10 @@
 #include <errno.h>
 #include <stdio.h>
 
-#define ERRMSGBUF_SIZE 128
+#include "steroids/modsmgr.h"
+#include "steroids/modules/logger.h"
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#define ERRMSGBUF_SIZE 128
 
 static st_eventsctx_t *st_events_init(const st_param_t params[]);
 static void st_events_quit(st_eventsctx_t *events_ctx);
@@ -53,29 +53,24 @@ static st_evq_funcs_t evq_funcs = {
     .clear           = st_events_clear,
 };
 
-static st_moddata_t st_module_events_simple_data = {
-    .name = "simple",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "events",
-    .prereqs = (st_modprerq_t[]){
-        { "logger", NULL, },
-        { "rbuf", NULL, },
-        {0},
-    },
-    .ctor = st_events_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    { "rbuf", NULL, },
+    {0},
 };
 
-ST_MODULE_DEF_INIT_FUNC(events_simple)
+st_moddata_t *st_module_events_simple_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("events", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_events_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_events_simple_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_events_simple_init(modsmgr);
 }
 #endif
 
 static st_eventsctx_t *st_events_init(const st_param_t params[]) {
-    st_rbuf_init_t  rbuf_init;
     st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
     st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "logger", NULL);
