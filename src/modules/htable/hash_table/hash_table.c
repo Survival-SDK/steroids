@@ -141,7 +141,7 @@ static void st_htable_destroy(st_htable_t *htable) {
 
 static bool st_htable_insert(st_htable_t *htable, st_htiter_t *iter,
  const void *key, void *value) {
-    bool               delete_old;
+    bool               delete_old = false;
     const void        *old_key;
     void              *old_value;
     struct hash_entry *entry = hash_table_search(htable->handle, key);
