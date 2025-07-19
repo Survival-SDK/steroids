@@ -189,7 +189,7 @@ static bool st_modsmgr_load_module(st_modsmgr_t *modsmgr,
     if (!force && !st_modsmgr_module_have_deps(modsmgr, module_data))
         return false;
 
-    return st_dlist_push_back(modsmgr->modsdata, module_data);
+    return st_dlist_push_back(modsmgr->modsdata, &module_data);
 }
 
 st_modsmgr_t *st_modsmgr_init(void) {
