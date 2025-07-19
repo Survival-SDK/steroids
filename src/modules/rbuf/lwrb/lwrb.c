@@ -42,15 +42,9 @@ static st_rbuf_funcs_t rbuf_funcs = {
     .is_empty       = st_rbuf_is_empty,
 };
 
-static st_moddata_t st_module_rbuf_lwrb_data = {
-    .name = "lwrb",
-    .type = ST_MODULE_TYPE,
-    .subsystem = "rbuf",
-    .prereqs = (st_modprerq_t[]){
-        { "logger", NULL, },
-        {0},
-    },
-    .ctor = st_rbuf_init,
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    {0},
 };
 
 st_moddata_t *st_module_rbuf_lwrb_init(st_modsmgr_t *modsmgr) {
