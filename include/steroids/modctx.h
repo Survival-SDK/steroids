@@ -5,16 +5,12 @@
 #include <string.h>
 
 #include "steroids/object.h"
+#include "steroids/params.h"
 
 #define ST_MODCTX_CALL(object, func, ...) \
     ((const st_modctx_funcs_t *)object->funcs)->func(object, ## __VA_ARGS__)
 
 struct st_modctx;
-
-typedef struct {
-    const char *key;
-    uintptr_t   value;
-} st_param_t;
 
 typedef const char *(*st_modctx_get_subsystem_t)(
  const struct st_modctx *modctx);

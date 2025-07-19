@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,7 @@
 #include "internal_modules.h"
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
+#include "steroids/params.h"
 #include "utils.h"
 
 #define FOUND_MODULES_MAX    8
@@ -23,7 +25,7 @@ static void st_modsmgr_get_module_names(st_modsmgr_t *modsmgr, char **dst,
 static st_ctx_ctor_t st_modsmgr_get_ctor(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name);
 static st_modctx_t *st_modsmgr_create_singleton(const st_modsmgr_t *modsmgr,
- const char *subsystem, const char *module_name, const st_param_t params[]);
+ const char *subsystem, const char *module_name, st_params_t params);
 static bool st_modsmgr_have_singleton(const st_modsmgr_t *modsmgr,
  const char *subsystem, const char *module_name);
 static st_modctx_t *st_modsmgr_get_singleton(const st_modsmgr_t *modsmgr,
@@ -291,14 +293,19 @@ static bool st_modsmgr_have_singleton(const st_modsmgr_t *modsmgr,
 }
 
 static st_modctx_t *st_modsmgr_create_singleton(const st_modsmgr_t *modsmgr,
- const char *subsystem, const char *module_name, const st_param_t params[]) {
+ const char *subsystem, const char *module_name, st_param_t params[]) {
     if (!st_modsmgr_have_singleton(modsmgr, subsystem, module_name)) {
         st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
         module_name);
         st_ctx_ctor_t ctx_ctor = module_data
             ? ST_MODDATA_CALL(module_data, get_ctx_ctor)
             : NULL;
-        st_modctx_t  *ctx = ctx_ctor
+        st_modctx_t  *ctx;
+
+        if (!st_params_add(params, "modsmgr", (uintptr_t)modsmgr))
+            return NULL;
+
+        ctx = ctx_ctor
             ? ctx_ctor(params)
             : NULL;
 
