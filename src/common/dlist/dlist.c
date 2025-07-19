@@ -160,7 +160,6 @@ st_dlnode_t *st_dlist_push_back(st_dlist_t *list, const void *data) {
 
 void st_dlist_remove(st_dlnode_t *node) {
     st_dlist_t  *list;
-    st_dlnode_t *cur_node;
     st_dlnode_t *prev;
     st_dlnode_t *next;
 
