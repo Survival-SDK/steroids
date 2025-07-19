@@ -193,7 +193,7 @@ bool st_dlist_clear(st_dlist_t *list) {
         return false;
 
     while (list->head)
-        st_dlist_remove(list->head);
+        st_dlist_remove(list->head); // NOLINT(clang-analyzer-unix.Malloc)
 
     return true;
 }
