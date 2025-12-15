@@ -76,8 +76,8 @@ def GenerateDockerfile(target):
 
     with open(dockerfileName, "w") as dockerfile:
         dockerfile.write(
-            "FROM {baseImageName} as build \n"
-            "MAINTAINER Vasiliy Edomin <Vasiliy.Edomin@gmail.com> \n"
+            "FROM {baseImageName} AS build \n"
+            "LABEL org.opencontainers.image.authors=\"Vasiliy Edomin <Vasiliy.Edomin@gmail.com>\" \n"
             "ARG USER_ID \n"
             "ARG GROUP_ID \n"
             "RUN {preInstallCmds} \\\n"
