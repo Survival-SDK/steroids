@@ -55,6 +55,7 @@ package.preload["Logger"] = function()
     local Object  = require "Object"
     local ModsMgr = require "ModsMgr"
     local M = {
+        __ctype = "st_loggerctx_t *",
         ll_none = ffi.C.ST_LL_NONE,
         ll_error = ffi.C.ST_LL_ERROR,
         ll_warning = ffi.C.ST_LL_WARNING,

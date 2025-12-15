@@ -25,6 +25,7 @@ ffi.cdef[[
 
 package.preload["Object"] = function()
     local M = {
+        __ctype = "st_object_t *",
         __mtnew = function(metatype, handle, owned)
             if handle == nil then
                 return nil
@@ -107,6 +108,7 @@ ffi.cdef[[
 
 package.preload["ModCtx"] = function()
     local M = {
+        __ctype = "st_modctx_t *",
         new = function()
             return error("luajit_luajit: Instantiation of class 'st_modctx_t' via LuaJIT is forbidden")
         end,
@@ -122,6 +124,33 @@ package.preload["ModCtx"] = function()
             return ffi.cast("const st_modctx_funcs_t *",
                 ffi.cast("st_object_t *", self.handle).funcs
             ).get_name(self.handle)
+        end,
+        as = function(self, target)
+            local mt
+            local ctype
+            
+            if type(target) == "string" then
+                -- String - load module by name
+                local module = require(target)
+                mt = module.__mt
+                ctype = module.__ctype
+            elseif type(target) == "table" then
+                -- Table - either module (with __mt field) or metatable itself
+                mt = target.__mt or target
+                ctype = target.__ctype
+                
+                if not ctype then
+                    error("ModCtx:as() target module must have __ctype field")
+                end
+            else
+                error("ModCtx:as() expects module table, metatable, or module name string")
+            end
+            
+            -- Move semantics: transfer ownership to the new object
+            local new_obj = Object.__mtnew(mt, ffi.cast(ctype, self.handle), self.owned)
+            self.owned = false  -- Original object no longer owns the memory
+            
+            return new_obj
         end,
     }, { __index = Object.methods })
 
@@ -236,6 +265,7 @@ local ModCtx = require "ModCtx"
 
 package.preload["ModsMgr"] = function()
     local M = {
+        __ctype = "st_modsmgr_t *",
         new = function()
             return error("luajit_luajit: Instantiation of class 'st_modsmgr_t' is forbidden")
         end,
