@@ -1,6 +1,7 @@
 #include "luajit.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,14 +10,19 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "embedded_luajit.h"
 #include "lua_utils.h"
 #include "steroids/modsmgr.h"
+#include "steroids/modules/luajitbind.h"
 
 #define ERRMSGBUF_SIZE   128
 #define BINDING_NAME_SIZE 32
 #define BINDINGS_COUNT   256
 
-// static void st_lua_bind_all(st_modctx_t *lua_ctx);
+typedef struct {
+    const char *code;
+    const char *name;
+} st_luajit_named_string_t;
 
 static st_luajitctx_t *st_luajit_init(const st_param_t params[]);
 static void st_luajit_quit(st_luajitctx_t *luajit_ctx);
@@ -33,6 +39,8 @@ static st_luajitstate_t *st_luajit_getstate(st_luajitctx_t *luajit_ctx,
 
 static st_luajitstate_t *st_luajit_newthread(st_luajitstate_t *luajit_state,
  const char *name);
+static bool st_luajit_run_named_string(st_luajitstate_t *state,
+ const char *chunkname, const char *string);
 static bool st_luajit_run_string(st_luajitstate_t *state, const char *string);
 static bool st_luajit_run_file(st_luajitstate_t *state, const char *filename);
 
@@ -45,9 +53,10 @@ static st_luajitctx_funcs_t luajitctx_funcs = {
 
 static st_luajitstate_funcs_t luajitstate_funcs = {
     st_object_funcs,
-    .new_thread = st_luajit_newthread,
-    .run_string = st_luajit_run_string,
-    .run_file   = st_luajit_run_file,
+    .new_thread       = st_luajit_newthread,
+    .run_named_string = st_luajit_run_named_string,
+    .run_string       = st_luajit_run_string,
+    .run_file         = st_luajit_run_file,
 };
 
 static const st_modprerq_t mod_prereqs[] = {
@@ -72,93 +81,67 @@ static bool st_keyeqfunc(const void *left, const void *right) {
     return strcmp(left, right) == 0;
 }
 
-// static void st_lua_init_bindings(st_modctx_t *logger_ctx,
-//  st_modctx_t *lua_ctx) {
-//     st_lua_luajit_t *module = lua_ctx->data;
-//     char             bindings_names[BINDING_NAME_SIZE][BINDINGS_COUNT] = {0};
-//     char            *pbindingsnames[BINDINGS_COUNT];
-//     char            *binding_name;
+static void st_luajit_init_bindings(st_luajitctx_t *luajit_ctx) {
+    char             bindings_names[BINDING_NAME_SIZE][BINDINGS_COUNT] = {0};
+    char            *pbindingsnames[BINDINGS_COUNT];
 
-//     for (size_t i = 0; i < BINDINGS_COUNT; i++)
-//         pbindingsnames[i] = bindings_names[i];
+    for (size_t i = 0; i < BINDINGS_COUNT; i++)
+        pbindingsnames[i] = bindings_names[i];
 
-//     module->bindings = st_slist_create(sizeof(st_lua_luajit_binding_t));
-//     if (!module->bindings) {
-//         module->logger.info(module->logger.ctx,
-//          "lua_luajit: Unable to create list of luabind modules");
+    luajit_ctx->bindings = st_dlist_create(sizeof(st_luajitbindctx_t *), 
+     st_object_free_by_ptr);
+    if (!luajit_ctx->bindings) {
+        ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, error,
+         "luajit_luajit: Unable to create list of luabind contexts");
 
-//         return;
-//     }
+        return;
+    }
 
-//     module->logger.info(module->logger.ctx,
-//      "lua_luajit: Searching luabind modules");
+    ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, info,
+     "luajit_luajit: Searching luabind modules");
 
-//     global_modsmgr_funcs.get_module_names(global_modsmgr, pbindingsnames,
-//      BINDINGS_COUNT, BINDING_NAME_SIZE, "luabind");
+    ST_MODSMGR_CALL(luajit_ctx->modsmgr, get_module_names, pbindingsnames,
+     BINDINGS_COUNT, BINDING_NAME_SIZE, "luajitbind");
 
-//     for (size_t i = 0; i < BINDINGS_COUNT; i++) {
-//         st_luabind_init_t        init_func;
-//         st_luabind_quit_t        quit_func;
-//         st_modctx_t             *ctx;
-//         st_lua_luajit_binding_t *binding;
+    for (size_t i = 0; i < BINDINGS_COUNT; i++) {
+        st_ctx_ctor_t       ctx_ctor;
+        st_luajitbindctx_t *ctx;
+        char               *binding_name = pbindingsnames[i];
 
-//         binding_name = pbindingsnames[i];
+        if (!*binding_name)
+            break;
 
-//         if (!*binding_name)
-//             break;
+        ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, info,
+         "luajit_luajit: Found module \"luajitbind_%s\"", binding_name);
 
-//         module->logger.info(module->logger.ctx,
-//          "lua_luajit: Found module \"luabind_%s\"", binding_name);
+        ctx_ctor = ST_MODSMGR_CALL(luajit_ctx->modsmgr, get_ctor,
+         "luajitbind", binding_name);
 
-//         init_func = global_modsmgr_funcs.get_function(global_modsmgr,
-//          "luabind", binding_name, "init");
-//         if (!init_func) {
-//             module->logger.error(module->logger.ctx,
-//              "lua_luajit: Unable to get function \"init\" from module "
-//              "\"luabind_%s\"", binding_name);
+        if (!ctx_ctor) {
+            ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, error,
+             "luajit_luajit: Unable to get ctor from module \"luajitbind_%s\"",
+             binding_name);
 
-//             continue;
-//         }
+            continue;
+        }
 
-//         quit_func = global_modsmgr_funcs.get_function(global_modsmgr,
-//          "luabind", binding_name, "quit");
-//         if (!quit_func) {
-//             module->logger.error(module->logger.ctx,
-//              "lua_luajit: Unable to get function \"quit\" from module "
-//              "\"luabind_%s\"", binding_name);
+        ctx = ctx_ctor((st_params_t){
+            {"modsmgr", (uintptr_t)luajit_ctx->modsmgr},
+            {"luajit_ctx", (uintptr_t)luajit_ctx}
+        });
+        if (!ctx)
+            continue;
 
-//             continue;
-//         }
+        if (!st_dlist_push_back(luajit_ctx->bindings, &ctx)) {
+            ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, error,
+             "luajit_luajit: Unable to create entry node for module "
+             "\"luajitbind_%s\"", binding_name);
+            ST_LUAJITBINDCTX_CALL(ctx, destroy);
 
-//         ctx = init_func(logger_ctx, lua_ctx);
-
-//         binding = malloc(sizeof(st_lua_luajit_binding_t));
-//         if (!binding) {
-//             char errbuf[ERRMSGBUF_SIZE];
-
-//             if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-//                 module->logger.error(module->logger.ctx,
-//                  "lua_luajit: Unable to allocate memory for binding entry of "
-//                  "module \"luabind_%s\": %s", binding_name, errbuf);
-
-//             quit_func(ctx);
-
-//             continue;
-//         }
-//         binding->ctx = ctx;
-//         binding->quit = quit_func;
-
-//         if (!st_slist_insert_head(module->bindings, binding)) {
-//             module->logger.error(module->logger.ctx,
-//              "lua_luajit: Unable to create entry node for module "
-//              "\"luabind_%s\"", binding_name);
-//             free(binding);
-//             quit_func(ctx);
-
-//             continue;
-//         }
-//     }
-// }
+            continue;
+        }
+    }
+}
 
 static st_luajitctx_t *st_luajit_init(const st_param_t params[]) {
     st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
@@ -179,6 +162,7 @@ static st_luajitctx_t *st_luajit_init(const st_param_t params[]) {
         return NULL;
     }
 
+    luajit_ctx->modsmgr    = modsmgr;
     luajit_ctx->logger_ctx = logger_ctx;
     luajit_ctx->fnv1a_ctx  = fnv1a_ctx;
     luajit_ctx->htable_ctx = htable_ctx;
@@ -195,8 +179,7 @@ static st_luajitctx_t *st_luajit_init(const st_param_t params[]) {
         return NULL;
     }
 
-    // st_lua_bind_all(lua_ctx);
-    // st_lua_init_bindings(logger_ctx, lua_ctx);
+    st_luajit_init_bindings(luajit_ctx);
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "luajit_luajit: LuaJIT VM initialized.");
@@ -205,22 +188,32 @@ static st_luajitctx_t *st_luajit_init(const st_param_t params[]) {
 }
 
 static void st_luajit_quit(st_luajitctx_t *luajit_ctx) {
-    // lua_close(module->state);
+    st_dlist_destroy(luajit_ctx->bindings);
 
-    // while (!st_slist_empty(module->bindings)) {
-    //     st_slnode_t             *node = st_slist_get_first(module->bindings);
-    //     st_lua_luajit_binding_t *binding = st_slist_get_data(node);
-
-    //     st_slist_remove_head(module->bindings);
-    //     binding->quit(binding->ctx);
-    //     free(binding);
-    // }
-
-    // st_slist_destroy(module->bindings);
+    ST_HTABLE_CALL(luajit_ctx->states, destroy);
 
     ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, info,
      "luajit_luajit: LuaJIT VM destroyed.");
     free(luajit_ctx);
+}
+
+static bool st_luajit_state_import_basic_ffi_cdefs(st_luajitstate_t *state) {
+    st_luajitctx_t *luajit_ctx = (st_luajitctx_t *)ST_OBJECT_CALL(state,
+     get_owner);
+
+    if  (!ST_LUAJITSTATE_CALL(state, run_named_string, 
+     "src/modules/luajit/luajit/embedded.luajit", EMBEDDED_LUAJIT))
+        return false;
+
+    /* Now call require("ModsMgr") and set __instance */
+    lua_getfield(state->handle, LUA_GLOBALSINDEX, "require");
+    lua_pushstring(state->handle, "ModsMgr");
+    lua_call(state->handle, 1, 1);  /* Module is on stack */
+    st_lua_set_pointer_to_field(state->handle, "__instance",
+     luajit_ctx->modsmgr);
+    lua_pop(state->handle, 1);
+
+    return true;
 }
 
 static st_luajitstate_t *st_luajit_newstate(st_luajitctx_t *luajit_ctx,
@@ -255,6 +248,27 @@ static st_luajitstate_t *st_luajit_newstate(st_luajitctx_t *luajit_ctx,
     new_state->name = namedup;
 
     st_lua_save_ptr_in_registry_by_ptr(handle, handle, new_state);
+
+    if (!st_luajit_state_import_basic_ffi_cdefs(new_state)) {
+        ST_LUAJITSTATE_CALL(new_state, destroy);
+
+        return NULL;
+    }
+
+    if (luajit_ctx->bindings) {
+        st_dlnode_t *node = st_dlist_get_head(luajit_ctx->bindings);
+
+        while (node) {
+            st_luajitbindctx_t *bind_ctx = st_dlist_export_ptr(node);
+
+            if (!ST_LUAJITBINDCTX_CALL(bind_ctx, bind, name)) {
+                ST_LOGGERCTX_CALL(luajit_ctx->logger_ctx, error,
+                 "luajit_luajit: Unable to bind module to state \"%s\"", name);
+            }
+
+            node = st_dlist_get_next(node);
+        }
+    }
 
     return new_state;
 
@@ -297,15 +311,23 @@ static void st_luajit_state_destroy(st_luajitstate_t *luajit_state) {
     ST_HTABLE_CALL(luajit_ctx->states, remove, luajit_state->name);
 }
 
-// static void st_lua_bind_all(st_modctx_t *lua_ctx) {
-//     st_lua_luajit_t *module = lua_ctx->data;
+int lua_load_named_string_wrapper(lua_State *L, const void *arg) {
+    const st_luajit_named_string_t *named_string = arg;
 
-//     lua_pushlightuserdata(module->state, lua_ctx);
-//     lua_setglobal(module->state, "__st_lua_ctx");
-// }
+    return luaL_loadbuffer(L, named_string->code, strlen(named_string->code), 
+     named_string->name);
+}
+
+int lua_load_string_wrapper(lua_State *L, const void *arg) {
+    return luaL_loadstring(L, arg);
+}
+
+int lua_load_file_wrapper(lua_State *L, const void *arg) {
+    return luaL_loadfile(L, arg);
+}
 
 static bool st_luajit_run_impl(st_luajitstate_t *state,
- int (*func)(lua_State *, const char *), const char *arg) {
+ int (*func)(lua_State *, const void *), const void *arg) {
     int             pcall_result;
     st_luajitctx_t *luajit_ctx = (st_luajitctx_t *)ST_OBJECT_CALL(state,
      get_owner);
@@ -336,12 +358,22 @@ static bool st_luajit_run_impl(st_luajitstate_t *state,
     return pcall_result == LUA_OK;
 }
 
+static bool st_luajit_run_named_string(st_luajitstate_t *state,
+ const char *chunkname, const char *string) {
+    st_luajit_named_string_t named_string = {
+        .code = string,
+        .name = chunkname
+    };
+    return st_luajit_run_impl(state, lua_load_named_string_wrapper,
+     &named_string);
+}
+
 static bool st_luajit_run_string(st_luajitstate_t *state, const char *string) {
-    return st_luajit_run_impl(state, luaL_loadstring, string);
+    return st_luajit_run_impl(state, lua_load_string_wrapper, string);
 }
 
 static bool st_luajit_run_file(st_luajitstate_t *state, const char *filename) {
-    return st_luajit_run_impl(state, luaL_loadfile, filename);
+    return st_luajit_run_impl(state, lua_load_file_wrapper, filename);
 }
 
 static bool st_luajit_run(st_runnablectx_t *luajit_ctx,

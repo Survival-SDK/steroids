@@ -23,6 +23,8 @@ typedef st_luajitstate_t *(*st_luajit_getstate_t)(st_luajitctx_t *luajit_ctx,
 
 typedef st_luajitstate_t *(*st_luajit_newthread_t)(
  st_luajitstate_t *luajit_state, const char *name);
+typedef bool (*st_luajit_run_named_string_t)(st_luajitstate_t *state,
+ const char *chunkname, const char *string);
 typedef bool (*st_luajit_run_string_t)(st_luajitstate_t *state,
  const char *string);
 typedef bool (*st_luajit_run_file_t)(st_luajitstate_t *state,
@@ -37,9 +39,10 @@ typedef struct {
 
 typedef struct {
     st_object_funcs_t;
-    st_luajit_newthread_t  new_thread;
-    st_luajit_run_string_t run_string;
-    st_luajit_run_file_t   run_file;
+    st_luajit_newthread_t        new_thread;
+    st_luajit_run_named_string_t run_named_string;
+    st_luajit_run_string_t       run_string;
+    st_luajit_run_file_t         run_file;
 } st_luajitstate_funcs_t;
 
 #define ST_LUAJITCTX_CALL(object, func, ...) \

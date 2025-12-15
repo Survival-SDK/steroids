@@ -6,23 +6,19 @@
 #include "steroids/modules/htable.h"
 #include "steroids/modules/logger.h"
 #include "steroids/object.h"
+#include "steroids/modsmgr.h"
 #include "steroids/runnablectx.h"
-// #include "steroids/modules/luabind.h"
 
-// #include "slist.h"
-
-// typedef struct {
-//     st_modctx_t      *ctx;
-//     st_luabind_quit_t quit;
-// } st_lua_luajit_binding_t;
+#include "dlist.h"
 
 typedef struct {
     st_runnablectx_t;
+    st_modsmgr_t   *modsmgr;
     st_fnv1actx_t  *fnv1a_ctx;
     st_htablectx_t *htable_ctx;
     st_loggerctx_t *logger_ctx;
     st_htable_t    *states;
-    // st_slist_t            *bindings;
+    st_dlist_t     *bindings;
 } st_luajitctx_t;
 
 typedef struct {

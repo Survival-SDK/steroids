@@ -1,9 +1,11 @@
-if (${ST_MODULE_LUA_LUAJIT} STREQUAL "no")
+include(embed)
+
+if (${ST_MODULE_LUAJIT_LUAJIT} STREQUAL "no")
     return()
 endif()
 
 set(ST_MODULE_NAME "luajit")
-set(ST_MODULE_TYPE ${ST_MODULE_LUA_LUAJIT})
+set(ST_MODULE_TYPE ${ST_MODULE_LUAJIT_LUAJIT})
 set(ST_MODULE_SUBSYSTEM "luajit")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
@@ -25,7 +27,7 @@ bb_add_more_warnings(
     OPTIONS C_COMPILE_OPTIONS
 )
 
-st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_LUA_LUAJIT})
+st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_LUAJIT_LUAJIT})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
 find_package(PkgConfig REQUIRED)
@@ -35,6 +37,9 @@ target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-ext
 target_sources(${ST_MODULE_TARGET} PRIVATE
     luajit.c
 )
+
+embed(${ST_MODULE_TARGET} "embedded.luajit" "embedded_luajit.h" 
+    "EMBEDDED_LUAJIT")
 
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
@@ -46,6 +51,6 @@ target_include_directories(${ST_MODULE_TARGET} PRIVATE
 )
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-    slist
+    dlist
     ${LUAJIT_STATIC_LDFLAGS}
 )

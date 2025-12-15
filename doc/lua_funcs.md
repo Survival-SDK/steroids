@@ -1,3 +1,41 @@
+## Object
+```luau
+Object = require "Object"
+
+object:destroy()
+object:get_owner(): object
+object:get_owner_unsafe(): object
+```
+
+## ModCtx
+```luau
+ModCtx = require "ModCtx"
+
+modctx:get_subsystem(): string
+modctx:get_name(): string
+-- inherited from object
+modctx:destroy()
+modctx:get_owner(): object
+modctx:get_owner_unsafe(): object
+```
+
+## ModsMgr
+```luau
+ModsMgr = require "ModsMgr"
+
+ModsMgr.get_instance(): modsmgr
+
+-- modsmgr:get_module_names(dst: table, mods_count: integer, modname_size: integer, subsystem: string)
+modsmgr:get_ctor(subsystem: string, module_name: string): cfunction
+modsmgr:create_singleton(subsystem: string, module_name: string, params: params): modctx
+modsmgr:have_singleton(subsystem: string, module_name: string): bool
+modsmgr:get_singleton(subsystem: string, module_name: string): modctx
+-- inherited from object
+modsmgr:destroy()
+modsmgr:get_owner(): object
+modsmgr:get_owner_unsafe(): object
+```
+
 ## angle
 ```luau
 Angle = require "Angle"
