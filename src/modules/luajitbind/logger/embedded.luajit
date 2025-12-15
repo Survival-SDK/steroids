@@ -135,14 +135,20 @@ package.preload["Logger"] = function()
 
         local logger_ctor = modsmgr:get_ctor("logger", name)
         if not logger_ctor then
-            return nil
+            error(string.format(
+                "Logger.new_by_name: constructor not found for logger '%s'", 
+                name or "nil")
+            )
         end
     
         local params = ModCtx.__create_modctx_params(modsmgr, ...)
         local logger_ctx = logger_ctor(params)
 
         if not logger_ctx then
-            return nil
+            error(string.format(
+                "Logger.new_by_name: failed to create logger instance '%s'", 
+                name or "nil")
+            )
         end
     
         return Object.__mtnew(M.__mt, ffi.cast("st_loggerctx_t *", 
