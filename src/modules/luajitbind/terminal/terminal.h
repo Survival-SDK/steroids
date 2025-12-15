@@ -2,4 +2,4 @@
 
 #include "config.h" // IWYU pragma: keep
 #include "types.h"
-#include "steroids/modules/terminal.h"
+#include "steroids/modules/luajitbind.h"
