@@ -90,8 +90,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/monitor")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/mouse"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/mouse")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/opts"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/opts")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/opts")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/pathtools"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/render"

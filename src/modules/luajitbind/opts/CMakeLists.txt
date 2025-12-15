@@ -1,27 +1,13 @@
-if (${ST_MODULE_LUABIND_OPTS} STREQUAL "no")
+include(embed)
+
+if (${ST_MODULE_LUAJITBIND_OPTS} STREQUAL "no")
     return()
 endif()
 
+set(ST_MODULE_TYPE ${ST_MODULE_LUAJITBIND_OPTS})
+set(ST_MODULE_SUBSYSTEM "luajitbind")
 set(ST_MODULE_NAME "opts")
-set(ST_MODULE_TYPE ${ST_MODULE_LUABIND_OPTS})
-set(ST_MODULE_SUBSYSTEM "luabind")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
-
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-    {
-        .subsystem = "lua",
-        .name = NULL,
-    },
-    {
-        .subsystem = "opts",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 3)
 
 configure_file(
     "config.h.in"
@@ -41,17 +27,29 @@ bb_add_more_warnings(
     OPTIONS C_COMPILE_OPTIONS
 )
 
-st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_LUABIND_OPTS})
+st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_LUAJITBIND_OPTS})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LUAJIT REQUIRED luajit)
+
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "opts.c"
 )
+
+embed(${ST_MODULE_TARGET} "embedded.luajit" "embedded_luajit.h"
+    "EMBEDDED_LUAJIT")
 
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/src"
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${LUAJIT_INCLUDE_DIRS}
+)
+
+target_link_libraries(${ST_MODULE_TARGET} PRIVATE
+    ${LUAJIT_STATIC_LDFLAGS}
 )

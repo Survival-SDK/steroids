@@ -1,0 +1,129 @@
+local ffi = require "ffi"
+local ModCtx = require "ModCtx"
+
+ffi.cdef[[
+    typedef enum {
+        ST_OA_NO       = 0,
+        ST_OA_REQUIRED = 1,
+        ST_OA_OPTIONAL = 2,
+    } st_opt_arg_t;
+
+    typedef struct st_optsctx {
+        st_modctx_t __st_parent;
+    } st_optsctx_t;
+
+    typedef bool (*st_opts_add_option_t)(st_optsctx_t *opts_ctx,
+        char short_option, const char *long_option, st_opt_arg_t arg,
+        const char *arg_fmt, const char *option_descr);
+    typedef bool (*st_opts_get_str_t)(st_optsctx_t *opts_ctx,
+        const char *opt, char *dst, size_t dstsize);
+    typedef bool (*st_opts_get_help_t)(st_optsctx_t *opts_ctx,
+        char *dst, size_t dstsize, size_t columns);
+
+    typedef struct {
+        st_modctx_funcs_t    __st_parent_funcs;
+        st_opts_add_option_t add_option;
+        st_opts_get_str_t    get_str;
+        st_opts_get_help_t   get_help;
+    } st_optsctx_funcs_t;
+]]
+
+package.preload["Opts"] = function()
+    local Object  = require "Object"
+    local ModsMgr = require "ModsMgr"
+    local M = {
+        __ctype = "st_optsctx_t *",
+        oa_no = ffi.C.ST_OA_NO,
+        oa_required = ffi.C.ST_OA_REQUIRED,
+        oa_optional = ffi.C.ST_OA_OPTIONAL,
+    }
+
+    M.methods = setmetatable({
+        add_option = function(self, short_option, long_option, arg, arg_fmt, 
+         option_descr)
+            local short_option_char
+
+            if short_option and short_option ~= "" then
+                short_option_char = string.byte(short_option, 1)
+            else
+                short_option_char = 0 -- ST_OPTS_SHORT_UNSPEC
+            end
+
+            return ffi.cast("const st_optsctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).add_option(self.handle, short_option_char, long_option, 
+             arg, arg_fmt, option_descr)
+        end,
+        get_str = function(self, opt)
+            local buffer = ffi.new("char[256]")
+            if ffi.cast("const st_optsctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_str(self.handle, opt, buffer, 256) then
+                return ffi.string(buffer)
+            else
+                return nil
+            end
+        end,
+        get_help = function(self, columns)
+            local buffer = ffi.new("char[131072]")
+            if ffi.cast("const st_optsctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_help(self.handle, buffer, 131072, columns) then
+                return ffi.string(buffer)
+            else
+                return nil
+            end
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_optsctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local opts_ctor = modsmgr:get_ctor("opts", name)
+        if not opts_ctor then
+            error(string.format(
+                "Opts.new_by_name: constructor not found for opts '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local opts_ctx = opts_ctor(params)
+
+        if not opts_ctx then
+            error(string.format(
+                "Opts.new_by_name: failed to create opts instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_optsctx_t *",
+            opts_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("opts", module_name):as("Opts")
+    end
+
+    return M
+end
+
