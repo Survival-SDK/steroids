@@ -2,14 +2,12 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
 
 #include "embedded_luajit.h"
 #include "lua_utils.h"
+#include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 #include "steroids/modules/luajitbind.h"
-#include "types.h"
-
 
 static st_luajitbindctx_t *st_luajitbind_init(const st_param_t params[]);
 static void st_luajitbind_quit(st_luajitbindctx_t *luajitbind_ctx);

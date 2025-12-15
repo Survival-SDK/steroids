@@ -12,6 +12,7 @@
 
 #include "embedded_luajit.h"
 #include "lua_utils.h"
+#include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 #include "steroids/modules/luajitbind.h"
 
