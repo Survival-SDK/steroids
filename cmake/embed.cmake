@@ -30,8 +30,6 @@ if(CMAKE_SCRIPT_MODE_FILE)
     file(READ "${SRC_FILE}" CONTENT)
     file(WRITE "${DST_FILE}"
         "#pragma once\n\n"
-        "#define ${CONST_NAME} R\"\"\"\"(\n"
-        "${CONTENT}"
-        ")\"\"\"\"\n"
+        "#define ${CONST_NAME} R\"\"\"\"(${CONTENT})\"\"\"\"\n"
     )
 endif()
