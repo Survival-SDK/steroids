@@ -82,10 +82,8 @@ package.preload["Terminal"] = function()
 
     M.get_instance = function(module_name)
         local modsmgr = ModsMgr.get_instance()
-        local terminal_modctx = modsmgr:get_singleton("terminal",
-            module_name)
-        return Object.__mtnew(M.__mt, ffi.cast("st_terminalctx_t *",
-            terminal_modctx.handle), false)
+        
+        return modsmgr:get_singleton("terminal", module_name):as("Terminal")
     end
 
     return M

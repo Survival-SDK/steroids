@@ -160,10 +160,8 @@ package.preload["Logger"] = function()
     end
     M.get_instance = function(module_name)
         local modsmgr = ModsMgr.get_instance()
-        local logger_modctx = modsmgr:get_singleton("logger", 
-            module_name)
-        return Object.__mtnew(M.__mt, ffi.cast("st_loggerctx_t *",
-            logger_modctx.handle), false)
+        
+        return modsmgr:get_singleton("logger", module_name):as("Logger")
     end
 
     return M
