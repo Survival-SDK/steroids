@@ -1,0 +1,4 @@
+#pragma once
+
+#define ST_MODULE_TYPE_@ST_MODULE_TYPE@
+#define ST_MODULE_TYPE "@ST_MODULE_TYPE@"

@@ -405,8 +405,6 @@ keyboard_ctx:get_input(): ?string
 ```luau
 Logger = require "Logger"
 
-Logger.new_ctx(): logger_ctx
-Logger.get_ctx(): logger_ctx
 Logger.ll_none: integer
 Logger.ll_error: integer
 Logger.ll_warning: integer
@@ -414,16 +412,27 @@ Logger.ll_info: integer
 Logger.ll_debug: integer
 Logger.ll_all: integer
 
-logger_ctx:destroy()
+Logger.new(...): logger_ctx
+Logger.new_by_name(module_name: string, ...): logger_ctx
+Logger.get_instance(module_name: ?string): logger_ctx
+
+-- logger_ctx:enable_events(events_ctx: events_ctx): bool
 logger_ctx:set_stdout_levels(levels: integer): bool
 logger_ctx:set_stderr_levels(levels: integer): bool
 logger_ctx:set_log_file(filename: string, levels: integer): bool
-logger_ctx:set_callback(): bool
-logger_ctx:debug(msg: string)
-logger_ctx:info(msg: string)
-logger_ctx:warning(msg: string)
-logger_ctx:error(msg: string)
+-- logger_ctx:set_callback(callback: function, userdata: ?any, levels: integer): bool
+logger_ctx:debug(format: string, ...)
+logger_ctx:info(format: string, ...)
+logger_ctx:warning(format: string, ...)
+logger_ctx:error(format: string, ...)
 logger_ctx:set_postmortem_msg(msg: string)
+-- inherited from modctx
+logger_ctx:get_subsystem(): string
+logger_ctx:get_name(): string
+-- inherited from object
+logger_ctx:destroy()
+logger_ctx:get_owner(): object
+logger_ctx:get_owner_unsafe(): object
 ```
 
 ## matrix3x3

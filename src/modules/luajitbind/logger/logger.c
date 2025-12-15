@@ -1,0 +1,84 @@
+#include "logger.h"
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "embedded_luajit.h"
+#include "lua_utils.h"
+#include "steroids/modsmgr.h"
+#include "steroids/modules/luajitbind.h"
+#include "types.h"
+
+
+static st_luajitbindctx_t *st_luajitbind_init(const st_param_t params[]);
+static void st_luajitbind_quit(st_luajitbindctx_t *luajitbind_ctx);
+
+static bool st_luajitbind_bind(st_luajitbindctx_t *luajitbind_ctx,
+ const char *state_name);
+
+static st_luajitbindctx_funcs_t luajitbindctx_funcs = {
+    st_modctx_funcs,
+    .bind = st_luajitbind_bind,
+};
+
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    { "luajit", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_luajitbind_logger_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("luajitbind", "logger", ST_MODULE_TYPE, mod_prereqs,
+     st_luajitbind_init, modsmgr);
+}
+
+#ifdef ST_MODULE_TYPE_shared
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_luajitbind_logger_init(modsmgr);
+}
+#endif
+
+static bool st_luajitbind_bind(st_luajitbindctx_t *luajitbind_ctx,
+ const char *state_name) {
+    st_luajitstate_t *state = ST_LUAJITCTX_CALL(luajitbind_ctx->luajit_ctx,
+     get_state, state_name);
+
+    if (!state)
+        return false;
+
+    return ST_LUAJITSTATE_CALL(state, run_named_string, 
+     "src/modules/luajitbind/logger/embedded.luajit", EMBEDDED_LUAJIT);
+}
+
+static st_luajitbindctx_t *st_luajitbind_init(const st_param_t params[]) {
+    st_modsmgr_t       *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t     *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_luajitctx_t     *luajit_ctx = st_modctx_get_param_as_ptr(params, 
+     "luajit_ctx");
+    st_luajitbindctx_t *luajitbind_ctx = (st_luajitbindctx_t *)st_modctx_new(
+     "luajitbind", "logger", sizeof(st_luajitbindctx_t), NULL,
+     &luajitbindctx_funcs, (st_object_dtor_t)st_luajitbind_quit);
+
+    if (!luajitbind_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "luajitbind_logger: unable to create new luajitbind ctx object");
+
+        return NULL;
+    }
+
+    luajitbind_ctx->logger_ctx = logger_ctx;
+    luajitbind_ctx->luajit_ctx = luajit_ctx;
+
+    ST_LOGGERCTX_CALL(logger_ctx, info,
+     "luajitbind_logger: Logger binding initialized");
+
+    return luajitbind_ctx;
+}
+
+static void st_luajitbind_quit(st_luajitbindctx_t *luajitbind_ctx) {
+    ST_LOGGERCTX_CALL(luajitbind_ctx->logger_ctx, info,
+     "luajitbind_logger: Logger binding destroyed.");
+    free(luajitbind_ctx);
+}

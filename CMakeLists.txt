@@ -82,8 +82,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/gfxctx")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/keyboard"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/keyboard")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/logger"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/logger")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/logger")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/matrix3x3"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/matrix3x3")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/monitor"
