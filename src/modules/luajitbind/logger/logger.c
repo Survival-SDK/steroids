@@ -61,7 +61,8 @@ static st_luajitbindctx_t *st_luajitbind_init(const st_param_t params[]) {
 
     if (!luajitbind_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "luajitbind_logger: unable to create new luajitbind ctx object");
+         "luajitbind_logger: unable to create new binding context of logger "
+         "for luajit");
 
         return NULL;
     }
@@ -70,13 +71,13 @@ static st_luajitbindctx_t *st_luajitbind_init(const st_param_t params[]) {
     luajitbind_ctx->luajit_ctx = luajit_ctx;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
-     "luajitbind_logger: Logger binding initialized");
+     "luajitbind_logger: Logger binding for luajit initialized");
 
     return luajitbind_ctx;
 }
 
 static void st_luajitbind_quit(st_luajitbindctx_t *luajitbind_ctx) {
     ST_LOGGERCTX_CALL(luajitbind_ctx->logger_ctx, info,
-     "luajitbind_logger: Logger binding destroyed.");
+     "luajitbind_logger: Logger binding for luajit destroyed");
     free(luajitbind_ctx);
 }
