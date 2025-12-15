@@ -258,7 +258,7 @@ package.preload["ModsMgr"] = function()
                 "const st_modsmgr_funcs_t *",
                 ffi.cast("st_object_t *", self.handle).funcs
             ).create_singleton(self.handle, subsystem, module_name, 
-                ModCtx.create_params(params_table)
+                ModCtx.__create_modctx_params(self, params)
             ), false)
         end,
         have_singleton = function(self, subsystem, module_name)
