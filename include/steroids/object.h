@@ -51,7 +51,7 @@ static st_object_t *st_object_init(st_object_t *obj, const void *funcs,
 
 static st_object_t *st_object_new(size_t size, const void *funcs,
  st_object_dtor_t dtor, st_object_t *owner) {
-    st_object_t *obj = malloc(size);
+    st_object_t *obj = malloc(size ?: sizeof(st_object_t));
 
     return st_object_init(obj, funcs, dtor, owner);
 }
