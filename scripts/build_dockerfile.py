@@ -12,7 +12,7 @@ def GetDockefrileName(target):
 
 def GetBaseImageName(target):
     return {
-        "any-any-any": "fedora:40",
+        "any-any-any": "fedora:43",
         "x86_64-linux-gnu": "amazonlinux:2",
         "x86_64-steamrt-scout":
             "registry.gitlab.steamos.cloud/steamrt/scout/sdk:"
