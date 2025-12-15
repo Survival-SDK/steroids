@@ -6,6 +6,7 @@
 #    include <luajit.h>
 #  endif
 #endif
+#include <lauxlib.h>
 
 static int st_lua_traceback(lua_State *lua_state) {
     lua_getfield(lua_state, LUA_GLOBALSINDEX, "debug");
@@ -81,6 +82,17 @@ static void st_lua_set_cfunction_to_field(lua_State *lua_state,
  const char *name, void *cfunction) {
     lua_pushcfunction(lua_state, cfunction);
     lua_setfield(lua_state, -2, name);
+}
+
+static void st_lua_set_pointer_to_field(lua_State *lua_state,
+ const char *name, void *pointer) {
+    lua_pushlightuserdata(lua_state, pointer);
+    lua_setfield(lua_state, -2, name);
+}
+
+static void st_lua_set_ffifunction_to_field(lua_State *lua_state,
+ const char *name, void *ffifunction) {
+    st_lua_set_pointer_to_field(lua_state, name, ffifunction);
 }
 
 static void st_lua_set_copy_to_field(lua_State *lua_state,
