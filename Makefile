@@ -81,6 +81,6 @@ run-debug-shell:
 	distrobox enter --root steroids-deps-$(TRIPLET)
 
 valgrind:
-	DEBUGINFOD_URLS="https://debuginfod.archlinux.org" distrobox enter --root \
+	distrobox enter --root \
      steroids-deps-$(TRIPLET) -- valgrind --tool=memcheck ./cmake_build/steroids \
      --cfg=./cmake_build/steroids.ini
