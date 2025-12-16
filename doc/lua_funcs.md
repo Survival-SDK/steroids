@@ -13,6 +13,7 @@ ModCtx = require "ModCtx"
 
 modctx:get_subsystem(): string
 modctx:get_name(): string
+modctx:as(target: string | table): any
 -- inherited from object
 modctx:destroy()
 modctx:get_owner(): object
@@ -25,9 +26,11 @@ ModsMgr = require "ModsMgr"
 
 ModsMgr.get_instance(): modsmgr
 
--- modsmgr:get_module_names(dst: table, mods_count: integer, modname_size: integer, subsystem: string)
+-- modsmgr:get_module_names(dst: table, mods_count: integer, 
+--  modname_size: integer, subsystem: string)
 modsmgr:get_ctor(subsystem: string, module_name: string): cfunction
-modsmgr:create_singleton(subsystem: string, module_name: string, params: params): modctx
+modsmgr:create_singleton(subsystem: string, module_name: string, 
+ params: params): modctx
 modsmgr:have_singleton(subsystem: string, module_name: string): bool
 modsmgr:get_singleton(subsystem: string, module_name: string): modctx
 -- inherited from object
@@ -420,7 +423,8 @@ Logger.get_instance(module_name: ?string): logger_ctx
 logger_ctx:set_stdout_levels(levels: integer): bool
 logger_ctx:set_stderr_levels(levels: integer): bool
 logger_ctx:set_log_file(filename: string, levels: integer): bool
--- logger_ctx:set_callback(callback: function, userdata: ?any, levels: integer): bool
+-- logger_ctx:set_callback(callback: function, userdata: ?any, 
+--  levels: integer): bool
 logger_ctx:debug(format: string, ...)
 logger_ctx:info(format: string, ...)
 logger_ctx:warning(format: string, ...)
@@ -429,6 +433,7 @@ logger_ctx:set_postmortem_msg(msg: string)
 -- inherited from modctx
 logger_ctx:get_subsystem(): string
 logger_ctx:get_name(): string
+logger_ctx:as(target: string | table): any
 -- inherited from object
 logger_ctx:destroy()
 logger_ctx:get_owner(): object
@@ -508,16 +513,26 @@ mouse_ctx:get_window(): ?window
 ```luau
 Opts = require "Opts"
 
-Opts.new_ctx(logger_ctx: logger_ctx): nil
-Opts.get_ctx(): opts_ctx
 Opts.oa_no: integer
 Opts.oa_required: integer
 Opts.oa_optional: integer
 
-opts_ctx:destroy()
-opts_ctx:add_option(shortopt: string, longopt: ?string, argreq: integer, argfmt: ?string, optdescr: ?string): bool
+Opts.new(...): opts_ctx
+Opts.new_by_name(module_name: string, ...): opts_ctx
+Opts.get_instance(module_name: ?string): opts_ctx
+
+opts_ctx:add_option(short_option: ?string, long_option: ?string, arg: integer, 
+ arg_fmt: ?string, option_descr: ?string): bool
 opts_ctx:get_str(opt: string): ?string
 opts_ctx:get_help(columns: integer): ?string
+-- inherited from modctx
+opts_ctx:get_subsystem(): string
+opts_ctx:get_name(): string
+opts_ctx:as(target: string | table): any
+-- inherited from object
+opts_ctx:destroy()
+opts_ctx:get_owner(): object
+opts_ctx:get_owner_unsafe(): object
 ```
 
 ## pathtools
@@ -578,11 +593,20 @@ timer_ctx:sleep_for_fps(fps: integer)
 ```luau
 Terminal = require "Terminal"
 
-Terminal.new_ctx(logger_ctx: logger_ctx): terminal_ctx
+Terminal.new(...): terminal_ctx
+Terminal.new_by_name(module_name: string, ...): terminal_ctx
+Terminal.get_instance(module_name: ?string): terminal_ctx
 
-terminal_ctx:destroy()
 terminal_ctx:get_rows_count(): integer
 terminal_ctx:get_cols_count(): integer
+-- inherited from modctx
+terminal_ctx:get_subsystem(): string
+terminal_ctx:get_name(): string
+terminal_ctx:as(target: string | table): any
+-- inherited from object
+terminal_ctx:destroy()
+terminal_ctx:get_owner(): object
+terminal_ctx:get_owner_unsafe(): object
 ```
 
 ## texture
