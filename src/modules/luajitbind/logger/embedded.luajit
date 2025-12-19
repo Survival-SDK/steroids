@@ -51,7 +51,7 @@ ffi.cdef[[
     } st_loggerctx_funcs_t;
 ]]
 
-package.preload["Logger"] = function()
+package.preload["LoggerCtx"] = function()
     local Object  = require "Object"
     local ModsMgr = require "ModsMgr"
     local M = {
@@ -136,7 +136,7 @@ package.preload["Logger"] = function()
         local logger_ctor = modsmgr:get_ctor("logger", name)
         if not logger_ctor then
             error(string.format(
-                "Logger.new_by_name: constructor not found for logger '%s'", 
+                "LoggerCtx.new_by_name: constructor not found for logger '%s'", 
                 name or "nil")
             )
         end
@@ -146,7 +146,7 @@ package.preload["Logger"] = function()
 
         if not logger_ctx then
             error(string.format(
-                "Logger.new_by_name: failed to create logger instance '%s'", 
+                "LoggerCtx.new_by_name: failed to create logger instance '%s'", 
                 name or "nil")
             )
         end
@@ -161,7 +161,7 @@ package.preload["Logger"] = function()
     M.get_instance = function(module_name)
         local modsmgr = ModsMgr.get_instance()
         
-        return modsmgr:get_singleton("logger", module_name):as("Logger")
+        return modsmgr:get_singleton("logger", module_name):as("LoggerCtx")
     end
 
     return M

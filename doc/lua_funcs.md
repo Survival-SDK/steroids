@@ -406,18 +406,18 @@ keyboard_ctx:get_input(): ?string
 
 ## logger
 ```luau
-Logger = require "Logger"
+LoggerCtx = require "LoggerCtx"
 
-Logger.ll_none: integer
-Logger.ll_error: integer
-Logger.ll_warning: integer
-Logger.ll_info: integer
-Logger.ll_debug: integer
-Logger.ll_all: integer
+LoggerCtx.ll_none: integer
+LoggerCtx.ll_error: integer
+LoggerCtx.ll_warning: integer
+LoggerCtx.ll_info: integer
+LoggerCtx.ll_debug: integer
+LoggerCtx.ll_all: integer
 
-Logger.new(...): logger_ctx
-Logger.new_by_name(module_name: string, ...): logger_ctx
-Logger.get_instance(module_name: ?string): logger_ctx
+LoggerCtx.new(...): logger_ctx
+LoggerCtx.new_by_name(module_name: string, ...): logger_ctx
+LoggerCtx.get_instance(module_name: ?string): logger_ctx
 
 -- logger_ctx:enable_events(events_ctx: events_ctx): bool
 logger_ctx:set_stdout_levels(levels: integer): bool
@@ -511,15 +511,15 @@ mouse_ctx:get_window(): ?window
 
 ## opts
 ```luau
-Opts = require "Opts"
+OptsCtx = require "OptsCtx"
 
-Opts.oa_no: integer
-Opts.oa_required: integer
-Opts.oa_optional: integer
+OptsCtx.oa_no: integer
+OptsCtx.oa_required: integer
+OptsCtx.oa_optional: integer
 
-Opts.new(...): opts_ctx
-Opts.new_by_name(module_name: string, ...): opts_ctx
-Opts.get_instance(module_name: ?string): opts_ctx
+OptsCtx.new(...): opts_ctx
+OptsCtx.new_by_name(module_name: string, ...): opts_ctx
+OptsCtx.get_instance(module_name: ?string): opts_ctx
 
 opts_ctx:add_option(short_option: ?string, long_option: ?string, arg: integer, 
  arg_fmt: ?string, option_descr: ?string): bool
@@ -591,11 +591,11 @@ timer_ctx:sleep_for_fps(fps: integer)
 
 ## terminal
 ```luau
-Terminal = require "Terminal"
+TerminalCtx = require "TerminalCtx"
 
-Terminal.new(...): terminal_ctx
-Terminal.new_by_name(module_name: string, ...): terminal_ctx
-Terminal.get_instance(module_name: ?string): terminal_ctx
+TerminalCtx.new(...): terminal_ctx
+TerminalCtx.new_by_name(module_name: string, ...): terminal_ctx
+TerminalCtx.get_instance(module_name: ?string): terminal_ctx
 
 terminal_ctx:get_rows_count(): integer
 terminal_ctx:get_cols_count(): integer

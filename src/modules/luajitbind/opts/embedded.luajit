@@ -28,7 +28,7 @@ ffi.cdef[[
     } st_optsctx_funcs_t;
 ]]
 
-package.preload["Opts"] = function()
+package.preload["OptsCtx"] = function()
     local Object  = require "Object"
     local ModsMgr = require "ModsMgr"
     local M = {
@@ -95,7 +95,7 @@ package.preload["Opts"] = function()
         local opts_ctor = modsmgr:get_ctor("opts", name)
         if not opts_ctor then
             error(string.format(
-                "Opts.new_by_name: constructor not found for opts '%s'",
+                "OptsCtx.new_by_name: constructor not found for opts '%s'",
                 name or "nil")
             )
         end
@@ -105,7 +105,7 @@ package.preload["Opts"] = function()
 
         if not opts_ctx then
             error(string.format(
-                "Opts.new_by_name: failed to create opts instance '%s'",
+                "OptsCtx.new_by_name: failed to create opts instance '%s'",
                 name or "nil")
             )
         end
@@ -121,7 +121,7 @@ package.preload["Opts"] = function()
     M.get_instance = function(module_name)
         local modsmgr = ModsMgr.get_instance()
         
-        return modsmgr:get_singleton("opts", module_name):as("Opts")
+        return modsmgr:get_singleton("opts", module_name):as("OptsCtx")
     end
 
     return M

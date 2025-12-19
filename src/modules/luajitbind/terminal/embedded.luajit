@@ -18,7 +18,7 @@ ffi.cdef[[
     } st_terminalctx_funcs_t;
 ]]
 
-package.preload["Terminal"] = function()
+package.preload["TerminalCtx"] = function()
     local Object  = require "Object"
     local ModsMgr = require "ModsMgr"
     local M = {
@@ -57,7 +57,7 @@ package.preload["Terminal"] = function()
         local terminal_ctor = modsmgr:get_ctor("terminal", name)
         if not terminal_ctor then
             error(string.format(
-                "Terminal.new_by_name: constructor not found for terminal '%s'", 
+                "TerminalCtx.new_by_name: constructor not found for terminal '%s'", 
                 name or "nil")
             )
         end
@@ -67,7 +67,7 @@ package.preload["Terminal"] = function()
 
         if not terminal_ctx then
             error(string.format(
-                "Terminal.new_by_name: failed to create terminal instance '%s'", 
+                "TerminalCtx.new_by_name: failed to create terminal instance '%s'", 
                 name or "nil")
             )
         end
@@ -83,7 +83,7 @@ package.preload["Terminal"] = function()
     M.get_instance = function(module_name)
         local modsmgr = ModsMgr.get_instance()
         
-        return modsmgr:get_singleton("terminal", module_name):as("Terminal")
+        return modsmgr:get_singleton("terminal", module_name):as("TerminalCtx")
     end
 
     return M
