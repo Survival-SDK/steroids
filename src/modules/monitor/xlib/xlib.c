@@ -1,18 +1,43 @@
 #include "xlib.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <X11/Xlib.h>
+
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE        128
 #define DISPLAY_NAME_SIZE_MAX 128
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_monitorctx_t *st_monitor_init(const st_param_t params[]);
+static void st_monitor_quit(st_monitorctx_t *monitor_ctx);
+static void st_monitor_destroy(st_monitor_t *monitor);
+
+static unsigned st_monitor_get_monitors_count(
+ const st_monitorctx_t *monitor_ctx);
+static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
+ unsigned index);
+static unsigned st_monitor_get_width(const st_monitor_t *monitor);
+static unsigned st_monitor_get_height(const st_monitor_t *monitor);
+static void *st_monitor_get_handle(const st_monitor_t *monitor);
+static void st_monitor_set_userdata(const st_monitor_t *monitor,
+ const char *key, uintptr_t value);
+static bool st_monitor_get_userdata(const st_monitor_t *monitor, uintptr_t *dst,
+ const char *key);
+
+static st_monitorctx_funcs_t monitorctx_funcs = {
+    st_modctx_funcs,
+    .get_monitors_count = st_monitor_get_monitors_count,
+    .open               = st_monitor_open,
+};
 
 static st_monitor_funcs_t monitor_funcs = {
-    .release      = st_monitor_release,
+    st_object_funcs,
     .get_width    = st_monitor_get_width,
     .get_height   = st_monitor_get_height,
     .get_handle   = st_monitor_get_handle,
@@ -20,129 +45,135 @@ static st_monitor_funcs_t monitor_funcs = {
     .get_userdata = st_monitor_get_userdata,
 };
 
-ST_MODULE_DEF_GET_FUNC(monitor_xlib)
-ST_MODULE_DEF_INIT_FUNC(monitor_xlib)
+static const st_modprerq_t mod_prereqs[] = {
+    { "fnv1a", NULL, },
+    { "htable", NULL, },
+    { "logger", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_monitor_xlib_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("monitor", "xlib", ST_MODULE_TYPE, mod_prereqs,
+     st_monitor_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_monitor_xlib_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_monitor_xlib_init(modsmgr);
 }
 #endif
 
-static bool st_monitor_import_functions(st_modctx_t *monitor_ctx,
- st_modctx_t *logger_ctx) {
-    st_monitor_xlib_t *module = monitor_ctx->data;
-
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "monitor_xlib: Unable to load function \"error\" from module "
-         "\"logger\"\n");
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION("monitor_xlib", fnv1a, NULL, get_u32hashstr_func);
-
-    ST_LOAD_FUNCTION("monitor_xlib", htable, NULL, create);
-    ST_LOAD_FUNCTION("monitor_xlib", htable, NULL, init);
-    ST_LOAD_FUNCTION("monitor_xlib", htable, NULL, quit);
-
-    ST_LOAD_FUNCTION_FROM_CTX("monitor_xlib", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("monitor_xlib", logger, info);
-
-    return true;
-}
+static const char *st_module_subsystem = "monitor";
+static const char *st_module_name = "xlib";
 
 static bool st_keyeqfunc(const void *left, const void *right) {
     return left && right && strcmp(left, right) == 0;
 }
 
-static st_modctx_t *st_monitor_init(st_modctx_t *logger_ctx) {
-    st_modctx_t       *monitor_ctx;
-    st_monitor_xlib_t *module;
+static st_monitorctx_t *st_monitor_init(const st_param_t params[]) {
+    st_modsmgr_t     *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_fnv1actx_t    *fnv1a_ctx = (st_fnv1actx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "fnv1a", NULL);
+    st_htablectx_t   *htable_ctx = (st_htablectx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "htable", NULL);
+    st_loggerctx_t   *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_monitorctx_t  *monitor_ctx;
 
-    monitor_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_monitor_xlib_data, sizeof(st_monitor_xlib_t));
+    if (!fnv1a_ctx || !htable_ctx || !logger_ctx) {
+        if (logger_ctx)
+            ST_LOGGERCTX_CALL(logger_ctx, error,
+             "%s_%s: Unable to get required module contexts", 
+             st_module_subsystem, st_module_name);
+        else
+            fprintf(stderr,
+             "%s_%s: Unable to get logger context\n", st_module_subsystem,
+             st_module_name);
 
-    if (!monitor_ctx)
         return NULL;
+    }
 
-    monitor_ctx->funcs = &st_monitor_xlib_funcs;
+    monitor_ctx = (st_monitorctx_t *)st_modctx_new(st_module_subsystem,
+     st_module_name, sizeof(st_monitorctx_t), NULL, &monitorctx_funcs,
+     (st_object_dtor_t)st_monitor_quit);
 
-    module = monitor_ctx->data;
-    module->logger.ctx = logger_ctx;
+    if (!monitor_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to create monitor context", st_module_subsystem,
+         st_module_name);
 
-    if (!st_monitor_import_functions(monitor_ctx, logger_ctx))
-        goto import_fail;
+        return NULL;
+    }
 
-    module->htable.ctx = module->htable.init(module->logger.ctx);
-    if (!module->htable.ctx)
-        goto ht_ctx_init_fail;
+    monitor_ctx->fnv1a_ctx = fnv1a_ctx;
+    monitor_ctx->htable_ctx = htable_ctx;
+    monitor_ctx->logger_ctx = logger_ctx;
 
-    module->logger.info(module->logger.ctx,
-     "monitor_xlib: Monitors mgr initialized.");
+    ST_LOGGERCTX_CALL(logger_ctx, info,
+     "%s_%s: Monitor manager context initialized", st_module_subsystem, 
+     st_module_name);
 
     return monitor_ctx;
-
-ht_ctx_init_fail:
-import_fail:
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, monitor_ctx);
-
-    return NULL;
 }
 
-static void st_monitor_quit(st_modctx_t *monitor_ctx) {
-    st_monitor_xlib_t *module = monitor_ctx->data;
-
-    module->logger.info(module->logger.ctx,
-     "monitor_xlib: Monitors mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, monitor_ctx);
+static void st_monitor_quit(st_monitorctx_t *monitor_ctx) {
+    ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, info,
+     "%s_%s: Monitor manager context destroyed", st_module_subsystem, 
+     st_module_name);
+    free(monitor_ctx);
 }
 
-static unsigned st_monitor_get_monitors_count(st_modctx_t *monitor_ctx) {
-    st_monitor_xlib_t *module = monitor_ctx->data;
-    unsigned           monitors_count;
-    Display           *display = XOpenDisplay(NULL);
+static void st_monitor_destroy(st_monitor_t *monitor) {
+    if (monitor->handle)
+        XCloseDisplay(monitor->handle);
+    if (monitor->userdata)
+        ST_HTABLE_CALL(monitor->userdata, destroy);
+    free(monitor);
+}
+
+static unsigned st_monitor_get_monitors_count(
+ const st_monitorctx_t *monitor_ctx) {
+    unsigned monitors_count;
+    Display *display = XOpenDisplay(NULL);
 
     if (!display) {
-        module->logger.error(module->logger.ctx,
-         "monitor_xlib: Unable to open default display");
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Unable to open default display", st_module_subsystem,
+         st_module_name);
 
         return 0;
     }
 
     monitors_count = (unsigned)ScreenCount(display);
     XCloseDisplay(display);
+
     return monitors_count;
 }
 
-static st_monitor_t *st_monitor_open(st_modctx_t *monitor_ctx, unsigned index) {
-    st_monitor_xlib_t *module = monitor_ctx->data;
-    char               display_name[DISPLAY_NAME_SIZE_MAX];
-    st_monitor_t      *monitor;
-    Window             root_window;
-    int                ret = snprintf(display_name, DISPLAY_NAME_SIZE_MAX,
-     ":0.%u", index);
+static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
+ unsigned index) {
+    char          display_name[DISPLAY_NAME_SIZE_MAX];
+    st_monitor_t *monitor;
+    Window        root_window;
+    int           ret = snprintf(display_name, DISPLAY_NAME_SIZE_MAX, ":0.%u", 
+     index);
 
     if (ret < 0 || ret == DISPLAY_NAME_SIZE_MAX) {
-        module->logger.error(module->logger.ctx,
-         "monitor_xlib: Unable to construct display name for display with "
-         "index %u", index);
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Unable to construct display name for display with index %u",
+         st_module_subsystem, st_module_name, index);
 
         return NULL;
     }
 
-    monitor = malloc(sizeof(st_monitor_t));
-    if (!monitor) {
-        char errbuf[ERRMSGBUF_SIZE];
+    monitor = (st_monitor_t *)st_object_new(sizeof(st_monitor_t), 
+     &monitor_funcs, (st_object_dtor_t)st_monitor_destroy, 
+     (st_object_t *)monitor_ctx);
 
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "monitor_xlib: Unable to allocate memory for monitor structure: "
-             "%s", errbuf);
+    if (!monitor) {
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Unable to allocate memory for monitor structure",
+         st_module_subsystem, st_module_name);
 
         return NULL;
     }
@@ -150,24 +181,27 @@ static st_monitor_t *st_monitor_open(st_modctx_t *monitor_ctx, unsigned index) {
     monitor->handle = XOpenDisplay(display_name);
 
     if (!monitor->handle) {
-        module->logger.error(module->logger.ctx,
-         "monitor_xlib: Unable to open display");
-        free(monitor);
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Unable to open display", st_module_subsystem, st_module_name);
+        st_object_destroy((st_object_t *)monitor);
 
         return NULL;
     }
 
-
     root_window = DefaultRootWindow(monitor->handle);
-
     monitor->index = index;
-    st_object_make(monitor, monitor_ctx, &monitor_funcs);
 
-    monitor->userdata = module->htable.create(module->htable.ctx,
-     (unsigned int (*)(const void *))module->fnv1a.get_u32hashstr_func(NULL),
+    monitor->userdata = ST_HTABLECTX_CALL(monitor_ctx->htable_ctx, create,
+     (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(
+        monitor_ctx->fnv1a_ctx, 
+        get_u32hashstr_func
+     ),
      st_keyeqfunc, free, NULL);
     if (!monitor->userdata) {
-        free(monitor);
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Unable to create userdata hashtable", st_module_subsystem,
+         st_module_name);
+        st_object_destroy((st_object_t *)monitor);
 
         return NULL;
     }
@@ -176,32 +210,27 @@ static st_monitor_t *st_monitor_open(st_modctx_t *monitor_ctx, unsigned index) {
     return monitor;
 }
 
-static void st_monitor_release(st_monitor_t *monitor) {
-    XCloseDisplay(monitor->handle);
-    free(monitor);
-}
-
-static unsigned st_monitor_get_width(st_monitor_t *monitor) {
+static unsigned st_monitor_get_width(const st_monitor_t *monitor) {
     int width = XDisplayWidth(monitor->handle, (int)monitor->index);
 
     return width > 0 ? (unsigned)width : 0u;
 }
 
-static unsigned st_monitor_get_height(st_monitor_t *monitor) {
+static unsigned st_monitor_get_height(const st_monitor_t *monitor) {
     int height = XDisplayHeight(monitor->handle, (int)monitor->index);
 
     return height > 0 ? (unsigned)height : 0u;
 }
 
-static void *st_monitor_get_handle(st_monitor_t *monitor) {
+static void *st_monitor_get_handle(const st_monitor_t *monitor) {
     return monitor->handle;
 }
 
 static void st_monitor_set_userdata(const st_monitor_t *monitor,
  const char *key, uintptr_t value) {
-    st_monitor_xlib_t *module = ((st_modctx_t *)st_object_get_owner(monitor)
-     )->data;
-    char              *keydup = strdup(key);
+    st_monitorctx_t *monitor_ctx = (st_monitorctx_t *)st_object_get_owner(
+     (const st_object_t *)monitor);
+    char            *keydup = strdup(key);
 
     if (keydup) {
         ST_HTABLE_CALL(monitor->userdata, insert, NULL, keydup, (void *)value);
@@ -209,18 +238,16 @@ static void st_monitor_set_userdata(const st_monitor_t *monitor,
         char errbuf[ERRMSGBUF_SIZE];
 
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "monitor_xlib: Unable to allocate memory for userdata of monitor "
-             "\"%s\": %s", key, errbuf);
+            ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+             "%s_%s: Unable to allocate memory for userdata key \"%s\": %s",
+             st_module_subsystem, st_module_name, key, errbuf);
     }
 }
 
 static bool st_monitor_get_userdata(const st_monitor_t *monitor, uintptr_t *dst,
  const char *key) {
-    st_monitor_xlib_t *module = ((st_modctx_t *)st_object_get_owner(monitor)
-     )->data;
-    st_htiter_t        it;
-    void              *userdata;
+    st_htiter_t it;
+    void       *userdata;
 
     if (!ST_HTABLE_CALL(monitor->userdata, find, &it, key))
         return false;

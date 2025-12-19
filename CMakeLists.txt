@@ -86,8 +86,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/logger")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/matrix3x3"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/matrix3x3")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/monitor"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/monitor")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/monitor"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/monitor")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/mouse"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/mouse")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
@@ -110,8 +110,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/terminal"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/window")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/matrix3x3/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/matrix3x3/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/monitor/xlib"
-#  "${CMAKE_BINARY_DIR}/src/modules/monitor/xlib")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/monitor/xlib"
+ "${CMAKE_BINARY_DIR}/src/modules/monitor/xlib")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mouse/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/mouse/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mpool/simple"

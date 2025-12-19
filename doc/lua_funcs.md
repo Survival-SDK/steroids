@@ -473,17 +473,29 @@ matrix3x3:get_data(): double, double, double, double, double, double
 
 ## monitor
 ```luau
-Monitor = require "Monitor"
+MonitorCtx = require "MonitorCtx"
 
-Monitor.new_ctx(logger_ctx: logger_ctx): monitor_ctx
+MonitorCtx.new(...): monitor_ctx
+MonitorCtx.new_by_name(module_name: string, ...): monitor_ctx
+MonitorCtx.get_instance(module_name: ?string): monitor_ctx
 
-monitor_ctx:destroy()
 monitor_ctx:get_monitors_count(): integer
 monitor_ctx:open(index: integer): monitor
+-- inherited from modctx
+monitor_ctx:get_subsystem(): string
+monitor_ctx:get_name(): string
+monitor_ctx:as(target: string | table): any
+-- inherited from object
+monitor_ctx:destroy()
+monitor_ctx:get_owner(): object
+monitor_ctx:get_owner_unsafe(): object
 
-monitor:release()
 monitor:get_width(): integer
 monitor:get_height(): integer
+-- inherited from object
+monitor:destroy()
+monitor:get_owner(): object
+monitor:get_owner_unsafe(): object
 ```
 
 ## mouse
