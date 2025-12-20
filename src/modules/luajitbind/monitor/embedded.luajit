@@ -20,8 +20,8 @@ ffi.cdef[[
     // typedef void *(*st_monitor_get_handle_t)(const st_monitor_t *monitor);
     // typedef void (*st_monitor_set_userdata_t)(const st_monitor_t *monitor,
     //  const char *key, uintptr_t value);
-    // typedef bool (*st_monitor_get_userdata_t)(const st_monitor_t *monitor,
-    //  uintptr_t *dst, const char *key);
+    typedef bool (*st_monitor_get_userdata_t)(const st_monitor_t *monitor,
+     uintptr_t *dst, const char *key);
 
     typedef struct {
         st_modctx_funcs_t             __st_parent_funcs;
@@ -35,7 +35,7 @@ ffi.cdef[[
         st_monitor_get_height_t     get_height;
         void                       *__get_handle;
         void                       *__set_userdata;
-        void                       *__get_userdata;
+        st_monitor_get_userdata_t   __get_userdata;
     } st_monitor_funcs_t;
 ]]
 
@@ -74,16 +74,16 @@ package.preload["MonitorCtx"] = function()
         --     ).set_userdata(self.handle, key, value)
         -- end,
 
-        -- get_userdata = function(self, key)
-        --     local result = ffi.new("uintptr_t[1]")
-        --     if ffi.cast("const st_monitor_funcs_t *",
-        --         ffi.cast("st_object_t *", self.handle).funcs
-        --     ).get_userdata(self.handle, result, key) then
-        --         return tonumber(result[0])
-        --     else
-        --         return nil
-        --     end
-        -- end,
+        __get_userdata = function(self, key)
+            local result = ffi.new("uintptr_t[1]")
+            if ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).__get_userdata(self.handle, result, key) then
+                return tonumber(result[0])
+            else
+                return nil
+            end
+        end,
     }, { __index = Object.methods })
 
     M.__monitor.__mt = ffi.metatype(
