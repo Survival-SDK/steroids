@@ -52,19 +52,19 @@ static const st_modprerq_t mod_prereqs[] = {
     {0},
 };
 
-st_moddata_t *st_module_monitor_xlib_init(st_modsmgr_t *modsmgr) {
-    return st_moddata_new("monitor", "xlib", ST_MODULE_TYPE, mod_prereqs,
+st_moddata_t *st_module_monitor_libxrandr_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("monitor", "libxrandr", ST_MODULE_TYPE, mod_prereqs,
      st_monitor_init, modsmgr);
 }
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
-    return st_module_monitor_xlib_init(modsmgr);
+    return st_module_monitor_libxrandr_init(modsmgr);
 }
 #endif
 
 static const char *st_module_subsystem = "monitor";
-static const char *st_module_name = "xlib";
+static const char *st_module_name = "libxrandr";
 
 static bool st_keyeqfunc(const void *left, const void *right) {
     return left && right && strcmp(left, right) == 0;

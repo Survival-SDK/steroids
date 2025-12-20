@@ -132,5 +132,5 @@ static const st_modprerq_t mod_prereqs[] = {
 
 - **Без зависимости от logger:** `src/modules/logger/libsir/`
 - **Простой модуль (только контекст):** `src/modules/terminal/simple/`
-- **Модуль с объектами:** `src/modules/ini/inih/`, `src/modules/monitor/xlib/`
+- **Модуль с объектами:** `src/modules/ini/inih/`, `src/modules/monitor/libxrandr/`
 

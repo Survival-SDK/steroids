@@ -1,9 +1,9 @@
-if (${ST_MODULE_MONITOR_XLIB} STREQUAL "no")
+if (${ST_MODULE_MONITOR_LIBXRANDR} STREQUAL "no")
     return()
 endif()
 
-set(ST_MODULE_NAME "xlib")
-set(ST_MODULE_TYPE ${ST_MODULE_MONITOR_XLIB})
+set(ST_MODULE_NAME "libxrandr")
+set(ST_MODULE_TYPE ${ST_MODULE_MONITOR_LIBXRANDR})
 set(ST_MODULE_SUBSYSTEM "monitor")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
@@ -25,7 +25,7 @@ bb_add_more_warnings(
     OPTIONS C_COMPILE_OPTIONS
 )
 
-st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_MONITOR_XLIB})
+st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_MONITOR_LIBXRANDR})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
 find_package(X11 REQUIRED)
