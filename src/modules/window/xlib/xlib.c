@@ -7,15 +7,34 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#include "steroids/modules/monitor.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ATOM_BITS 32
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_windowctx_t *st_window_init(const st_param_t params[]);
+static void st_window_quit(st_windowctx_t *window_ctx);
+
+static st_window_t *st_window_create(st_windowctx_t *window_ctx,
+ st_monitor_t *monitor, int x, int y, unsigned width, unsigned height,
+ bool fullscreen, const char *title);
+static void st_window_process(st_windowctx_t *window_ctx);
+
+static void st_window_destroy(st_window_t *window);
+static bool st_window_xed(const st_window_t *window);
+static st_monitor_t *st_window_get_monitor(const st_window_t *window);
+static void *st_window_get_handle(const st_window_t *window);
+static unsigned st_window_get_width(const st_window_t *window);
+static unsigned st_window_get_height(const st_window_t *window);
+
+static st_windowctx_funcs_t windowctx_funcs = {
+    st_modctx_funcs,
+    .create  = st_window_create,
+    .process = st_window_process,
+};
 
 static st_window_funcs_t window_funcs = {
-    .destroy     = st_window_destroy,
+    st_object_funcs,
     .xed         = st_window_xed,
     .get_monitor = st_window_get_monitor,
     .get_handle  = st_window_get_handle,
@@ -23,144 +42,171 @@ static st_window_funcs_t window_funcs = {
     .get_height  = st_window_get_height,
 };
 
-ST_MODULE_DEF_GET_FUNC(window_xlib)
-ST_MODULE_DEF_INIT_FUNC(window_xlib)
+static const st_modprerq_t mod_prereqs[] = {
+    {"events", NULL},
+    {"logger", NULL},
+    {"monitor", NULL},
+    {0}
+};
+
+st_moddata_t *st_module_window_xlib_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("window", "xlib", ST_MODULE_TYPE, mod_prereqs,
+     st_window_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_window_xlib_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_window_xlib_init(modsmgr);
 }
 #endif
 
-static bool st_window_import_functions(st_modctx_t *window_ctx,
- st_modctx_t *events_ctx, st_modctx_t *logger_ctx) {
-    st_window_xlib_t *module = window_ctx->data;
-
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "window_xlib: Unable to load function \"error\" from module "
-         "\"logger\"\n");
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION_FROM_CTX("window_xlib", events, register_type);
-    ST_LOAD_FUNCTION_FROM_CTX("window_xlib", events, push);
-
-    ST_LOAD_FUNCTION_FROM_CTX("window_xlib", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("window_xlib", logger, info);
-    ST_LOAD_FUNCTION_FROM_CTX("window_xlib", logger, warning);
-
-    return true;
-}
-
 static void st_window_free(void *window) {
-    XCloseIM(((st_window_t *)window)->input_method);
-    XDestroyWindow(
-     ST_MONITOR_CALL(((st_window_t *)window)->monitor, get_handle),
-     ((st_window_t *)window)->handle);
+    st_window_t *win = (st_window_t *)window;
+
+    XCloseIM(win->input_method);
+    XDestroyWindow((Display *)ST_MONITOR_CALL(win->monitor, get_handle),
+     win->handle);
+    // ST_OBJECT_CALL(win->monitor, destroy);
+    // ST_OBJECT_CALL(win, destroy);
 }
 
-static st_modctx_t *st_window_init(st_modctx_t *events_ctx,
- st_modctx_t *logger_ctx, st_modctx_t *monitor_ctx) {
-    st_modctx_t      *window_ctx;
-    st_window_xlib_t *module;
+static st_windowctx_t *st_window_init(const st_param_t params[]) {
+    st_windowctx_t *window_ctx;
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t *logger_ctx;
 
-    window_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_window_xlib_data, sizeof(st_window_xlib_t));
-
-    if (!window_ctx)
+    if (!modsmgr)
         return NULL;
 
-    window_ctx->funcs = &st_window_xlib_funcs;
+    logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton, 
+     "logger", NULL);
+    if (!logger_ctx)
+        return NULL;
 
-    module = window_ctx->data;
-    module->events.ctx = events_ctx;
-    module->logger.ctx = logger_ctx;
-    module->monitor.ctx = monitor_ctx;
+    window_ctx = (st_windowctx_t *)st_modctx_new("window", "xlib",
+     sizeof(st_windowctx_t), NULL, &windowctx_funcs,
+     (st_object_dtor_t)st_window_quit);
+    if (!window_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "window_xlib: Unable to create new window ctx object");
 
-    if (!st_window_import_functions(window_ctx, events_ctx, logger_ctx))
-        goto fail;
-
-    module->windows = st_dlist_create(sizeof(st_window_t), st_window_free);
-    if (!module->windows) {
-        module->logger.error(module->logger.ctx,
-         "window_xlib: Unable to create list for windows entries");
-
-        goto fail;
+        return NULL;
     }
 
-    module->evtypes[EV_MOUSE_PRESS] = module->events.register_type(events_ctx,
-     "window_mouse_press", sizeof(st_evwinunsigned_t));
-    module->evtypes[EV_MOUSE_RELEASE] = module->events.register_type(events_ctx,
-     "window_mouse_release", sizeof(st_evwinunsigned_t));
-    module->evtypes[EV_MOUSE_WHEEL] = module->events.register_type(events_ctx,
-     "window_mouse_wheel", sizeof(st_evwininteger_t));
-    module->evtypes[EV_MOUSE_MOVE] = module->events.register_type(events_ctx,
-     "window_mouse_move", sizeof(st_evwinuvec2_t));
-    module->evtypes[EV_MOUSE_ENTER] = module->events.register_type(events_ctx,
-     "window_mouse_enter", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_MOUSE_LEAVE] = module->events.register_type(events_ctx,
-     "window_mouse_leave", sizeof(st_evwinnoargs_t));
+    window_ctx->modsmgr = modsmgr;
+    window_ctx->logger_ctx = logger_ctx;
+    window_ctx->events_ctx = (st_eventsctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "events", NULL);
+    if (!window_ctx->events_ctx) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to get events context");
 
-    module->evtypes[EV_KEY_PRESS] = module->events.register_type(events_ctx,
-     "window_key_press", sizeof(st_evwinu64_t));
-    module->evtypes[EV_KEY_RELEASE] = module->events.register_type(events_ctx,
-     "window_key_release", sizeof(st_evwinu64_t));
-    module->evtypes[EV_KEY_INPUT] = module->events.register_type(events_ctx,
-     "window_key_input", sizeof(st_evwinsymbol_t));
+        goto get_events_ctx_fail;
+    }
 
-    module->evtypes[EV_FOCUS_IN] = module->events.register_type(events_ctx,
-     "window_focus_in", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_FOCUS_OUT] = module->events.register_type(events_ctx,
-     "window_focus_in", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_RESIZE] = module->events.register_type(events_ctx,
-     "window_resize", sizeof(st_evwinuvec2_t));
-    module->evtypes[EV_PLACE_ON_TOP] = module->events.register_type(events_ctx,
-     "window_place_on_top", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_PLACE_ON_BOTTOM] = module->events.register_type(
-     events_ctx, "window_place_on_bottom", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_CREATE] = module->events.register_type(events_ctx,
-     "window_create", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_DESTROY] = module->events.register_type(events_ctx,
-     "window_destroy", sizeof(st_evwinnoargs_t));
-    // module->evtypes[EV_MOVE] = module->events.register_type(events_ctx,
-    //  "window_move", sizeof(st_evwinmove_t));
-    module->evtypes[EV_SHOW] = module->events.register_type(events_ctx,
-     "window_show", sizeof(st_evwinnoargs_t));
-    module->evtypes[EV_HIDE] = module->events.register_type(events_ctx,
-     "window_hide", sizeof(st_evwinnoargs_t));
+    window_ctx->monitor_ctx = (st_monitorctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "monitor", NULL);
+    if (!window_ctx->monitor_ctx) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to get monitor context");
 
-    module->logger.info(module->logger.ctx,
+        goto get_monitor_ctx_fail;
+    }
+
+    window_ctx->windows = st_dlist_create(sizeof(st_window_t), st_window_free);
+    if (!window_ctx->windows) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to create list for windows entries");
+
+        goto create_windows_list_fail;
+    }
+
+    /* Register event types */
+    window_ctx->evtypes[EV_MOUSE_PRESS] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_press",
+     sizeof(st_evwinunsigned_t));
+    window_ctx->evtypes[EV_MOUSE_RELEASE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_release",
+     sizeof(st_evwinunsigned_t));
+    window_ctx->evtypes[EV_MOUSE_WHEEL] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_wheel",
+     sizeof(st_evwininteger_t));
+    window_ctx->evtypes[EV_MOUSE_MOVE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_move",
+     sizeof(st_evwinuvec2_t));
+    window_ctx->evtypes[EV_MOUSE_ENTER] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_enter",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_MOUSE_LEAVE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_mouse_leave",
+     sizeof(st_evwinnoargs_t));
+
+    window_ctx->evtypes[EV_KEY_PRESS] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_key_press",
+     sizeof(st_evwinu64_t));
+    window_ctx->evtypes[EV_KEY_RELEASE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_key_release",
+     sizeof(st_evwinu64_t));
+    window_ctx->evtypes[EV_KEY_INPUT] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_key_input",
+     sizeof(st_evwinsymbol_t));
+
+    window_ctx->evtypes[EV_FOCUS_IN] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_focus_in",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_FOCUS_OUT] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_focus_out",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_RESIZE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_resize",
+     sizeof(st_evwinuvec2_t));
+    window_ctx->evtypes[EV_PLACE_ON_TOP] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_place_on_top",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_PLACE_ON_BOTTOM] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_place_on_bottom",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_CREATE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_create",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_DESTROY] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_destroy",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_SHOW] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_show",
+     sizeof(st_evwinnoargs_t));
+    window_ctx->evtypes[EV_HIDE] = ST_EVENTSCTX_CALL(
+     window_ctx->events_ctx, register_type, "window_hide",
+     sizeof(st_evwinnoargs_t));
+
+    ST_LOGGERCTX_CALL(window_ctx->logger_ctx, info,
      "window_xlib: Windows mgr initialized");
 
     return window_ctx;
 
-fail:
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, window_ctx);
+create_windows_list_fail:
+get_monitor_ctx_fail:
+get_events_ctx_fail:
+    free(window_ctx);
 
-    return NULL;
+    return NULL;   
 }
 
-static void st_window_quit(st_modctx_t *window_ctx) {
-    st_window_xlib_t *module = window_ctx->data;
+static void st_window_quit(st_windowctx_t *window_ctx) {
+    if (window_ctx->windows)
+        st_dlist_destroy(window_ctx->windows);
 
-    st_dlist_destroy(module->windows);
-    module->windows = NULL;
-
-    module->logger.info(module->logger.ctx,
+    ST_LOGGERCTX_CALL(window_ctx->logger_ctx, info,
      "window_xlib: Windows mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, window_ctx);
+
+    free(window_ctx);
 }
 
-void fullscreen_window(Display* display, Window window) {
+static void fullscreen_window(Display *display, Window window) {
     XWindowAttributes attrs;
     XEvent            event = {0};
-    XGetWindowAttributes(display, window, &attrs);
 
+    XGetWindowAttributes(display, window, &attrs);
 
     event.xclient.type = ClientMessage;
     event.xclient.message_type = XInternAtom(display, "_NET_WM_STATE", false);
@@ -174,10 +220,9 @@ void fullscreen_window(Display* display, Window window) {
      SubstructureNotifyMask | SubstructureRedirectMask, &event); // NOLINT(hicpp-signed-bitwise)
 }
 
-static st_window_t *st_window_create(st_modctx_t *window_ctx,
+static st_window_t *st_window_create(st_windowctx_t *window_ctx,
  st_monitor_t *monitor, int x, int y, unsigned width, unsigned height,
  bool fullscreen, const char *title) {
-    st_window_xlib_t    *module = window_ctx->data;
     XSetWindowAttributes event_attrs = {
         .event_mask = KeyPressMask | KeyReleaseMask | ButtonPressMask | // NOLINT(hicpp-signed-bitwise)
          ButtonReleaseMask | EnterWindowMask | LeaveWindowMask | // NOLINT(hicpp-signed-bitwise)
@@ -190,62 +235,79 @@ static st_window_t *st_window_create(st_modctx_t *window_ctx,
     XWMHints             hints = { .input = True, .flags = InputHint }; // NOLINT(hicpp-signed-bitwise)
     XIMStyles           *im_styles = NULL;
     XIMStyle             im_best_match_style = 0;
-    st_window_t          window;
+    st_window_t         *window;
     st_dlnode_t         *node;
     uintptr_t            root_window;
+    Display             *display = (Display *)ST_MONITOR_CALL(monitor,
+     get_handle);
+    uintptr_t            monitor_x;
+    uintptr_t            monitor_y;
 
     if (!ST_MONITOR_CALL(monitor, get_userdata, &root_window, "root_window")) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to get root window from monitor");
 
         return NULL;
     }
 
-    window.handle = XCreateWindow(ST_MONITOR_CALL(monitor, get_handle),
-     root_window, x, y, width, height, 0, CopyFromParent, InputOutput,
-     CopyFromParent, CWEventMask, &event_attrs); // NOLINT(hicpp-signed-bitwise)
-    if (!window.handle) {
-        module->logger.error(module->logger.ctx,
-         "window_xlib: Unable to create window");
+    if (!ST_MONITOR_CALL(monitor, get_userdata, &monitor_x, "x") ||
+     !ST_MONITOR_CALL(monitor, get_userdata, &monitor_y, "y")) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to get monitor coordinates in display space");
 
         return NULL;
     }
 
-    XChangeWindowAttributes(ST_MONITOR_CALL(monitor, get_handle), window.handle,
-     CWOverrideRedirect, &override_redirect_attrs);  // NOLINT(hicpp-signed-bitwise)
+    window = (st_window_t *)st_object_new(sizeof(st_window_t), &window_funcs, 
+     (st_object_dtor_t)st_window_destroy, (st_object_t *)window_ctx);
+    if (!window) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to create new window object");
 
-    window.wm_delete_msg = XInternAtom(ST_MONITOR_CALL(monitor, get_handle),
-     "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(ST_MONITOR_CALL(monitor, get_handle), window.handle,
-     &window.wm_delete_msg, 1);
-    window.xed = false;
+        return NULL;
+    }
 
-    XSetWMHints(ST_MONITOR_CALL(monitor, get_handle), window.handle, &hints);
-    XMapWindow(ST_MONITOR_CALL(monitor, get_handle), window.handle);
-    XStoreName(ST_MONITOR_CALL(monitor, get_handle), window.handle, title);
+    window->handle = XCreateWindow(display, root_window, monitor_x + x, 
+     monitor_y + y, width, height, 0, CopyFromParent, InputOutput, 
+     CopyFromParent, CWEventMask, &event_attrs); // NOLINT(hicpp-signed-bitwise)
+    if (!window->handle) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to create window");
+
+        goto create_window_fail;
+    }
+
+    XChangeWindowAttributes(display, window->handle, CWOverrideRedirect,
+     &override_redirect_attrs);  // NOLINT(hicpp-signed-bitwise)
+
+    window->wm_delete_msg = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(display, window->handle, &window->wm_delete_msg, 1);
+    window->xed = false;
+
+    XSetWMHints(display, window->handle, &hints);
+    XMapWindow(display, window->handle);
+    XStoreName(display, window->handle, title);
 
     if (fullscreen) {
-        fullscreen_window(ST_MONITOR_CALL(monitor, get_handle), window.handle);
+        fullscreen_window(display, window->handle);
     } else {
-        XChangeProperty(ST_MONITOR_CALL(monitor, get_handle), window.handle,
-         XInternAtom(ST_MONITOR_CALL(monitor, get_handle),
-         "_HILDON_NON_COMPOSITED_WINDOW", False),
+        XChangeProperty(display, window->handle,
+         XInternAtom(display, "_HILDON_NON_COMPOSITED_WINDOW", False),
          XA_INTEGER, ATOM_BITS, PropModeReplace, (unsigned char*)(int[]){1}, 1);
     }
 
-    window.input_method = XOpenIM(ST_MONITOR_CALL(monitor, get_handle), NULL,
-     NULL, NULL);
-    if (!window.input_method) {
-        module->logger.error(module->logger.ctx,
+    window->input_method = XOpenIM(display, NULL, NULL, NULL);
+    if (!window->input_method) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to open X input method");
 
         goto open_im_fail;
     }
 
-    if (XGetIMValues(window.input_method, XNQueryInputStyle, &im_styles, NULL)
+    if (XGetIMValues(window->input_method, XNQueryInputStyle, &im_styles, NULL)
      != NULL || !im_styles) {
-        module->logger.error(module->logger.ctx,
-         "window_xlib: Unable to open X input method");
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
+         "window_xlib: Unable to get input method styles");
 
         goto get_im_values_fail;
     }
@@ -262,53 +324,55 @@ static st_window_t *st_window_create(st_modctx_t *window_ctx,
     XFree(im_styles);
 
     if (!im_best_match_style) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to get best input method style");
 
         goto best_match_fail;
     }
 
-    window.input_context = XCreateIC(window.input_method, XNInputStyle,
-     im_best_match_style, XNClientWindow, window.handle, XNFocusWindow,
-     window.handle, NULL);
-    if (!window.input_context) {
-        module->logger.error(module->logger.ctx,
+    window->input_context = XCreateIC(window->input_method, XNInputStyle,
+     im_best_match_style, XNClientWindow, window->handle, XNFocusWindow,
+     window->handle, NULL);
+    if (!window->input_context) {
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to create input context");
 
-        goto create_ic_fail;;
+        goto create_ic_fail;
     }
 
-    XkbSetDetectableAutoRepeat(ST_MONITOR_CALL(monitor, get_handle), true,
-     NULL);
+    XkbSetDetectableAutoRepeat(display, true, NULL);
 
-    st_object_make(&window, window_ctx, &window_funcs);
-    window.monitor = monitor;
-    window.width = width;
-    window.height = height;
-    node = st_dlist_push_back(module->windows, &window);
+    window->monitor = monitor;
+    window->width = width;
+    window->height = height;
+
+    node = st_dlist_push_back(window_ctx->windows, window);
     if (!node) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to create list entry for window");
 
         goto dlist_push_back_fail;
     }
 
-    return st_dlist_get_data(node);
+    return window;
 
 dlist_push_back_fail:
 create_ic_fail:
 best_match_fail:
 get_im_values_fail:
-    XCloseIM(window.input_method);
+    XCloseIM(window->input_method);
 open_im_fail:
-    XDestroyWindow(ST_MONITOR_CALL(window.monitor, get_handle), window.handle);
+    XDestroyWindow(display, window->handle);
+create_window_fail:
+    ST_OBJECT_CALL(window, destroy);
 
     return NULL;
 }
 
 static void st_window_destroy(st_window_t *window) {
-    st_window_xlib_t *module = ((st_modctx_t *)st_object_get_owner(window))->data;
-    st_dlnode_t      *node = st_dlist_get_head(module->windows);
+    st_windowctx_t *window_ctx = (st_windowctx_t *)st_object_get_owner(
+     (st_object_t *)window);
+    st_dlnode_t    *node = st_dlist_get_head(window_ctx->windows);
 
     while (node) {
         if (st_dlist_get_data(node) == window) {
@@ -321,10 +385,9 @@ static void st_window_destroy(st_window_t *window) {
     }
 }
 
-static st_window_t *get_window_by_xwindow(st_modctx_t *window_ctx,
+static st_window_t *get_window_by_xwindow(st_windowctx_t *window_ctx,
  Window xwindow) {
-    st_window_xlib_t *module = window_ctx->data;
-    st_dlnode_t      *node = st_dlist_get_head(module->windows);
+    st_dlnode_t *node = st_dlist_get_head(window_ctx->windows);
 
     while (node) {
         st_window_t *window = st_dlist_get_data(node);
@@ -338,17 +401,18 @@ static st_window_t *get_window_by_xwindow(st_modctx_t *window_ctx,
     return NULL;
 }
 
-static void st_window_process(st_modctx_t *window_ctx) {
-    st_window_xlib_t *module = window_ctx->data;
-    st_dlnode_t      *node = st_dlist_get_head(module->windows);
+static void st_window_process(st_windowctx_t *window_ctx) {
+    st_dlnode_t *node = st_dlist_get_head(window_ctx->windows);
 
     while (node) {
         st_window_t *window = st_dlist_get_data(node);
+        Display     *display = (Display *)ST_MONITOR_CALL(window->monitor,
+         get_handle);
 
-        while (XPending(ST_MONITOR_CALL(window->monitor, get_handle))) {
+        while (XPending(display)) {
             XEvent xevent;
 
-            XNextEvent(ST_MONITOR_CALL(window->monitor, get_handle), &xevent);
+            XNextEvent(display, &xevent);
             switch (xevent.type) {
                 case ClientMessage: {
                     st_window_t *event_window = get_window_by_xwindow(
@@ -370,16 +434,16 @@ static void st_window_process(st_modctx_t *window_ctx) {
                                 ? 1
                                 : -1,
                         };
-                        module->events.push(module->events.ctx,
-                         module->evtypes[EV_MOUSE_WHEEL], &event);
+                        ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                         window_ctx->evtypes[EV_MOUSE_WHEEL], &event);
                     } else {
                         st_evwinunsigned_t event = {
                             .window = get_window_by_xwindow(window_ctx,
                              xevent.xbutton.window),
                             .value = xevent.xbutton.button - 1,
                         };
-                        module->events.push(module->events.ctx,
-                         module->evtypes[EV_MOUSE_PRESS], &event);
+                        ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                         window_ctx->evtypes[EV_MOUSE_PRESS], &event);
                     }
 
                     break;
@@ -390,8 +454,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                          xevent.xbutton.window),
                         .value = xevent.xbutton.button - 1,
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_MOUSE_RELEASE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_MOUSE_RELEASE], &event);
 
                     break;
                 }
@@ -402,8 +466,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .hvalue = (unsigned)xevent.xmotion.x,
                         .vvalue = (unsigned)xevent.xmotion.y,
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_MOUSE_MOVE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_MOUSE_MOVE], &event);
                     break;
                 }
                 case EnterNotify: {
@@ -411,8 +475,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xcrossing.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_MOUSE_ENTER], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_MOUSE_ENTER], &event);
                     break;
                 }
                 case LeaveNotify: {
@@ -420,8 +484,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xcrossing.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_MOUSE_LEAVE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_MOUSE_LEAVE], &event);
                     break;
                 }
                 case KeyPress: {
@@ -434,22 +498,21 @@ static void st_window_process(st_modctx_t *window_ctx) {
                     st_evwinu64_t    press_event = {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xkey.window),
-                        .value = XkbKeycodeToKeysym(
-                         ST_MONITOR_CALL(window->monitor, get_handle),
+                        .value = XkbKeycodeToKeysym(display,
                          (unsigned char)xevent.xkey.keycode, 0, 0),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_KEY_PRESS], &press_event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_KEY_PRESS], &press_event);
 
                     Xutf8LookupString(window->input_context, &xevent.xkey,
                      input_event.value, 4, 0, &status);
                     if (status == XBufferOverflow)
-                        module->logger.warning(module->logger.ctx,
-                         "window_xlib: Buffer owerflow on lookup inputted "
+                        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+                         "window_xlib: Buffer overflow on lookup inputted "
                          "UTF-8 character");
                     else if(status == XLookupChars)
-                        module->events.push(module->events.ctx,
-                         module->evtypes[EV_KEY_INPUT], &input_event);
+                        ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                         window_ctx->evtypes[EV_KEY_INPUT], &input_event);
 
                     break;
                 }
@@ -457,12 +520,11 @@ static void st_window_process(st_modctx_t *window_ctx) {
                     st_evwinu64_t event = {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xkey.window),
-                        .value = XkbKeycodeToKeysym(
-                         ST_MONITOR_CALL(window->monitor, get_handle),
+                        .value = XkbKeycodeToKeysym(display,
                          (unsigned char)xevent.xkey.keycode, 0, 0),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_KEY_RELEASE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_KEY_RELEASE], &event);
 
                     break;
                 }
@@ -471,8 +533,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xfocus.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_FOCUS_IN], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_FOCUS_IN], &event);
                     break;
                 }
                 case FocusOut: {
@@ -480,8 +542,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xfocus.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_FOCUS_OUT], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_FOCUS_OUT], &event);
                     break;
                 }
                 case ResizeRequest: {
@@ -491,8 +553,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .hvalue = (unsigned)xevent.xresizerequest.width,
                         .vvalue = (unsigned)xevent.xresizerequest.height,
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_RESIZE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_RESIZE], &event);
                     break;
                 }
                 case CirculateNotify: {
@@ -501,11 +563,11 @@ static void st_window_process(st_modctx_t *window_ctx) {
                          xevent.xcirculate.window),
                     };
                     if (xevent.xcirculate.place == PlaceOnTop)
-                        module->events.push(module->events.ctx,
-                         module->evtypes[EV_PLACE_ON_TOP], &event);
+                        ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                         window_ctx->evtypes[EV_PLACE_ON_TOP], &event);
                     else
-                        module->events.push(module->events.ctx,
-                         module->evtypes[EV_PLACE_ON_BOTTOM], &event);
+                        ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                         window_ctx->evtypes[EV_PLACE_ON_BOTTOM], &event);
                     break;
                 }
                 case CreateNotify: {
@@ -513,8 +575,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xcreatewindow.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_CREATE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_CREATE], &event);
                     break;
                 }
                 case DestroyNotify: {
@@ -522,8 +584,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xdestroywindow.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_DESTROY], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_DESTROY], &event);
                     break;
                 }
                 case MapNotify: {
@@ -531,8 +593,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xmap.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_SHOW], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_SHOW], &event);
                     break;
                 }
                 case UnmapNotify: {
@@ -540,8 +602,8 @@ static void st_window_process(st_modctx_t *window_ctx) {
                         .window = get_window_by_xwindow(window_ctx,
                          xevent.xunmap.window),
                     };
-                    module->events.push(module->events.ctx,
-                     module->evtypes[EV_HIDE], &event);
+                    ST_EVENTSCTX_CALL(window_ctx->events_ctx, push,
+                     window_ctx->evtypes[EV_HIDE], &event);
                     break;
                 }
                 case ConfigureNotify:
@@ -559,11 +621,11 @@ static bool st_window_xed(const st_window_t *window) {
     return window->xed;
 }
 
-static st_monitor_t *st_window_get_monitor(st_window_t *window) {
+static st_monitor_t *st_window_get_monitor(const st_window_t *window) {
     return window->monitor;
 }
 
-static void *st_window_get_handle(st_window_t *window) {
+static void *st_window_get_handle(const st_window_t *window) {
     return (void *)(uintptr_t)window->handle;
 }
 

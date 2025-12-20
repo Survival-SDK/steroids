@@ -104,8 +104,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/terminal"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/timer")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/vec2"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/vec2")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/window"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/window")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/window"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/window")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/matrix3x3/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/matrix3x3/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/monitor/libxrandr"
@@ -140,8 +140,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/terminal/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/timer/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/vec2/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/vec2/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/window/xlib"
-#  "${CMAKE_BINARY_DIR}/src/modules/window/xlib")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/window/xlib"
+ "${CMAKE_BINARY_DIR}/src/modules/window/xlib")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
  "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
 
