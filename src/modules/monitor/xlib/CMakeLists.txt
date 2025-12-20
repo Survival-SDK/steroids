@@ -30,6 +30,10 @@ st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
 find_package(X11 REQUIRED)
 
+if(NOT X11_Xrandr_FOUND)
+    message(FATAL_ERROR "XRandR (libXrandr) not found.")
+endif()
+
 target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "xlib.c"
@@ -46,4 +50,5 @@ target_include_directories(${ST_MODULE_TARGET} PRIVATE
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
     ${X11_LIBRARIES}
+    ${X11_Xrandr_LIB}
 )

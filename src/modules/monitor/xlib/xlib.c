@@ -6,13 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <X11/extensions/Xrandr.h>
 #include <X11/Xlib.h>
 
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 
-#define ERRMSGBUF_SIZE        128
-#define DISPLAY_NAME_SIZE_MAX 128
+#define ERRMSGBUF_SIZE 128
 
 static st_monitorctx_t *st_monitor_init(const st_param_t params[]);
 static void st_monitor_quit(st_monitorctx_t *monitor_ctx);
@@ -79,6 +79,7 @@ static st_monitorctx_t *st_monitor_init(const st_param_t params[]) {
     st_loggerctx_t   *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "logger", NULL);
     st_monitorctx_t  *monitor_ctx;
+    Display         *display;
 
     if (!fnv1a_ctx || !htable_ctx || !logger_ctx) {
         if (logger_ctx)
@@ -93,14 +94,24 @@ static st_monitorctx_t *st_monitor_init(const st_param_t params[]) {
         return NULL;
     }
 
+    display = XOpenDisplay(NULL);
+    if (!display) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to open default display", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+    
     monitor_ctx = (st_monitorctx_t *)st_modctx_new(st_module_subsystem,
      st_module_name, sizeof(st_monitorctx_t), NULL, &monitorctx_funcs,
      (st_object_dtor_t)st_monitor_quit);
-
     if (!monitor_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
          "%s_%s: Unable to create monitor context", st_module_subsystem,
          st_module_name);
+
+        XCloseDisplay(display);
 
         return NULL;
     }
@@ -108,6 +119,7 @@ static st_monitorctx_t *st_monitor_init(const st_param_t params[]) {
     monitor_ctx->fnv1a_ctx = fnv1a_ctx;
     monitor_ctx->htable_ctx = htable_ctx;
     monitor_ctx->logger_ctx = logger_ctx;
+    monitor_ctx->display = display;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "%s_%s: Monitor manager context initialized", st_module_subsystem, 
@@ -120,52 +132,65 @@ static void st_monitor_quit(st_monitorctx_t *monitor_ctx) {
     ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, info,
      "%s_%s: Monitor manager context destroyed", st_module_subsystem, 
      st_module_name);
+    XCloseDisplay(monitor_ctx->display);
     free(monitor_ctx);
 }
 
 static void st_monitor_destroy(st_monitor_t *monitor) {
-    if (monitor->handle)
-        XCloseDisplay(monitor->handle);
     if (monitor->userdata)
         ST_HTABLE_CALL(monitor->userdata, destroy);
     free(monitor);
 }
 
+static XRRMonitorInfo *get_monitors_info(const st_monitorctx_t *monitor_ctx, unsigned *monitors_count) {
+    int            monitors_count_int;
+    Window          root_window;
+    XRRMonitorInfo *monitors_info;
+
+    root_window = DefaultRootWindow(monitor_ctx->display);
+    monitors_info = XRRGetMonitors(monitor_ctx->display, root_window, True, 
+     &monitors_count_int);
+
+    if (monitors_count)
+        *monitors_count = monitors_info ? monitors_count_int : 0;
+
+    return monitors_info;
+}
+
 static unsigned st_monitor_get_monitors_count(
  const st_monitorctx_t *monitor_ctx) {
-    unsigned monitors_count;
-    Display *display = XOpenDisplay(NULL);
+    unsigned monitors_count = 0;
+    XRRMonitorInfo *monitors_info = get_monitors_info(monitor_ctx, &monitors_count);
 
-    if (!display) {
-        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
-         "%s_%s: Unable to open default display", st_module_subsystem,
-         st_module_name);
-
-        return 0;
-    }
-
-    monitors_count = (unsigned)ScreenCount(display);
-    XCloseDisplay(display);
+    if (monitors_info)
+        XRRFreeMonitors(monitors_info);
 
     return monitors_count;
 }
 
 static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
  unsigned index) {
-    char          display_name[DISPLAY_NAME_SIZE_MAX];
-    st_monitor_t *monitor;
-    Window        root_window;
-    int           ret = snprintf(display_name, DISPLAY_NAME_SIZE_MAX, ":0.%u", 
-     index);
+    st_monitor_t   *monitor;
+    unsigned        monitors_count = 0;
+    XRRMonitorInfo *monitors_info;
 
-    if (ret < 0 || ret == DISPLAY_NAME_SIZE_MAX) {
+    monitors_info = get_monitors_info(monitor_ctx, &monitors_count);
+    if (!monitors_info) {
         ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
-         "%s_%s: Unable to construct display name for display with index %u",
-         st_module_subsystem, st_module_name, index);
+         "%s_%s: Unable to get monitors information", st_module_subsystem,
+         st_module_name);
 
         return NULL;
     }
+    
+    if (index >= monitors_count) {
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: Monitor index %u is out of range", st_module_subsystem,
+         st_module_name, index);
 
+        goto monitor_index_out_of_range;
+    }
+    
     monitor = (st_monitor_t *)st_object_new(sizeof(st_monitor_t), 
      &monitor_funcs, (st_object_dtor_t)st_monitor_destroy, 
      (st_object_t *)monitor_ctx);
@@ -175,21 +200,18 @@ static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
          "%s_%s: Unable to allocate memory for monitor structure",
          st_module_subsystem, st_module_name);
 
-        return NULL;
+        goto monitor_creation_failed;
     }
 
-    monitor->handle = XOpenDisplay(display_name);
-
-    if (!monitor->handle) {
-        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
-         "%s_%s: Unable to open display", st_module_subsystem, st_module_name);
-        st_object_destroy((st_object_t *)monitor);
-
-        return NULL;
-    }
-
-    root_window = DefaultRootWindow(monitor->handle);
+    monitor->handle = monitor_ctx->display;
     monitor->index = index;
+    /* TODO(edomin): Add monitor name. We need get it from name Atom - 
+     * monitors_info[index].name 
+     * TODO(edomin): Add monitor is_primary flag. We need get it from 
+     * monitors_info[index].primary with !! cast to bool.
+     */
+    monitor->width = monitors_info[index].width;
+    monitor->height = monitors_info[index].height;
 
     monitor->userdata = ST_HTABLECTX_CALL(monitor_ctx->htable_ctx, create,
      (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(
@@ -201,25 +223,34 @@ static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
         ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
          "%s_%s: Unable to create userdata hashtable", st_module_subsystem,
          st_module_name);
-        st_object_destroy((st_object_t *)monitor);
 
-        return NULL;
+        goto userdata_creation_failed;
     }
-    st_monitor_set_userdata(monitor, "root_window", root_window);
+    st_monitor_set_userdata(monitor, "root_window", 
+     DefaultRootWindow(monitor_ctx->display));
+    st_monitor_set_userdata(monitor, "x", monitors_info[index].x);
+    st_monitor_set_userdata(monitor, "y", monitors_info[index].y);
+
+    XRRFreeMonitors(monitors_info);
 
     return monitor;
+
+userdata_creation_failed:
+    st_object_destroy((st_object_t *)monitor);
+
+monitor_creation_failed:
+monitor_index_out_of_range:
+    XRRFreeMonitors(monitors_info);
+
+    return NULL;
 }
 
 static unsigned st_monitor_get_width(const st_monitor_t *monitor) {
-    int width = XDisplayWidth(monitor->handle, (int)monitor->index);
-
-    return width > 0 ? (unsigned)width : 0u;
+    return monitor->width;
 }
 
 static unsigned st_monitor_get_height(const st_monitor_t *monitor) {
-    int height = XDisplayHeight(monitor->handle, (int)monitor->index);
-
-    return height > 0 ? (unsigned)height : 0u;
+    return monitor->height;
 }
 
 static void *st_monitor_get_handle(const st_monitor_t *monitor) {
