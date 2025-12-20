@@ -25,9 +25,9 @@ ffi.cdef[[
     typedef bool (*st_logger_set_stderr_levels_t)(st_loggerctx_t *logger_ctx,
      st_loglvl_t levels);
     typedef bool (*st_logger_set_log_file_t)(st_loggerctx_t *logger_ctx,
-        const char *filename, st_loglvl_t levels);
-    typedef bool (*st_logger_set_callback_t)(st_loggerctx_t *logger_ctx,
-        st_logcbk_t callback, void *userdata, st_loglvl_t levels);
+     const char *filename, st_loglvl_t levels);
+    //typedef bool (*st_logger_set_callback_t)(st_loggerctx_t *logger_ctx,
+    //  st_logcbk_t callback, void *userdata, st_loglvl_t levels);
     typedef st_logger_generic_msg_t st_logger_debug_t;
     typedef st_logger_generic_msg_t st_logger_info_t;
     typedef st_logger_generic_msg_t st_logger_warning_t;
@@ -41,7 +41,7 @@ ffi.cdef[[
         st_logger_set_stdout_levels_t  set_stdout_levels;
         st_logger_set_stderr_levels_t  set_stderr_levels;
         st_logger_set_log_file_t       set_log_file;
-        st_logger_set_callback_t       set_callback;
+        void                          *__set_callback;
         st_logger_debug_t              debug;
         st_logger_info_t               info;
         st_logger_warning_t            warning;
@@ -84,11 +84,11 @@ package.preload["LoggerCtx"] = function()
                 ffi.cast("st_object_t *", self.handle).funcs
             ).set_log_file(self.handle, filename, levels)
         end,
-        set_callback = function(self, callback, userdata, levels)
-            return ffi.cast("const st_loggerctx_funcs_t *",
-                ffi.cast("st_object_t *", self.handle).funcs
-            ).set_callback(self.handle, callback, userdata, levels)
-        end,
+        -- set_callback = function(self, callback, userdata, levels)
+        --     return ffi.cast("const st_loggerctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).set_callback(self.handle, callback, userdata, levels)
+        -- end,
         debug = function(self, format, ...)
             ffi.cast("const st_loggerctx_funcs_t *",
                 ffi.cast("st_object_t *", self.handle).funcs
