@@ -21,12 +21,15 @@ typedef enum {
     ST_LL_ALL     = 0xFF,
 } st_loglvl_t;
 
+typedef struct {
+    char message[ST_EV_LOG_MSG_SIZE];
+} st_evlogmsg_t;
+
 typedef void (*st_logcbk_t)(const char *msg, void *userdata);
 typedef void (*st_logger_generic_msg_t)(const st_loggerctx_t *logger_ctx,
  const char* format, ...);
 
-typedef bool (*st_logger_enable_events_t)(st_loggerctx_t *logger_ctx,
- st_eventsctx_t *events_ctx);
+typedef bool (*st_logger_enable_events_t)(st_loggerctx_t *logger_ctx);
 typedef bool (*st_logger_set_stdout_levels_t)(st_loggerctx_t *logger_ctx,
  st_loglvl_t levels);
 typedef bool (*st_logger_set_stderr_levels_t)(st_loggerctx_t *logger_ctx,

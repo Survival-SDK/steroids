@@ -17,12 +17,6 @@
 typedef void (*st_logcbk_t)(const char *msg, void *userdata);
 
 typedef struct {
-    st_modctx_t              *ctx;
-    st_events_register_type_t register_type;
-    st_events_push_t          push;
-} st_logger_libsir_events_t;
-
-typedef struct {
     char      filename[PATH_MAX];
     sirfileid file;
 } st_logger_libsir_log_file_t;

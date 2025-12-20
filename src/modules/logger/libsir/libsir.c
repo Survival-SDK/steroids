@@ -16,8 +16,7 @@
 static st_loggerctx_t *st_logger_init(const st_param_t params[]);
 static void st_logger_quit(st_loggerctx_t *logger_ctx);
 
-static bool st_logger_enable_events(st_loggerctx_t *logger_ctx,
- st_eventsctx_t *events_ctx);
+static bool st_logger_enable_events(st_loggerctx_t *logger_ctx);
 static bool st_logger_set_stdout_levels(st_loggerctx_t *logger_ctx,
  st_loglvl_t levels);
 static bool st_logger_set_stderr_levels(st_loggerctx_t *logger_ctx,
@@ -118,8 +117,11 @@ static st_loggerctx_t *st_logger_init(const st_param_t params[]) {
     }
 
     logger_ctx->modsmgr = modsmgr;
-    logger_ctx->events_ctx = (st_eventsctx_t *)ST_MODSMGR_CALL(modsmgr,
-     get_singleton, "events", NULL);
+
+    if (!st_logger_enable_events(logger_ctx))
+        st_logger_info(logger_ctx, "logger_libsir: Events subsystem context is "
+         "not created yet. Logging events is not enabled");
+
     logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
     if (!logger_ctx->callbacks)
@@ -131,10 +133,6 @@ static st_loggerctx_t *st_logger_init(const st_param_t params[]) {
     if (!logger_ctx->log_files)
         st_logger_warning(logger_ctx, "logger_libsir: Unable to initialize "
          "dlist for log files. Logging to file is not available on this run");
-
-    if (logger_ctx->events_ctx
-     && !st_logger_enable_events(logger_ctx, logger_ctx->events_ctx))
-        logger_ctx->events_ctx = NULL;
 
     memset(logger_ctx->postmortem_msg, '\0', ST_POSTMORTEM_MSG_SIZE_MAX);
 
@@ -163,10 +161,31 @@ static void st_logger_quit(st_loggerctx_t *logger_ctx) {
     fprintf(stderr, "logger_libsir: Logger destroyed\n");
 }
 
-static bool st_logger_enable_events(
- __attribute__((unused)) st_loggerctx_t *logger_ctx,
- st_eventsctx_t *events_ctx) {
-    /* Not implemented */
+static bool st_logger_enable_events(st_loggerctx_t *logger_ctx) {
+    logger_ctx->events_ctx = (st_eventsctx_t *)ST_MODSMGR_CALL(
+     logger_ctx->modsmgr, get_singleton, "events", NULL);
+
+    if (logger_ctx->events_ctx) {
+        logger_ctx->ev_log_output_debug = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_debug",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_info = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_info",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_warning = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_warning",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_error = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_error",
+            sizeof(st_evlogmsg_t));
+
+        return true;
+    }
+
+    logger_ctx->ev_log_output_debug = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_info = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_warning = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_error = ST_EVTYPE_ID_NONE;
 
     return false;
 }
@@ -331,12 +350,12 @@ static bool st_logger_set_callback(st_loggerctx_t *logger_ctx, st_logcbk_t func,
 #define ST_LOGGER_MESSAGE_LEN_MAX 4096
 #define ST_LOGGER_OUTPUT_FUNC(st_func, sir_func, log_level, evtype_id_field) \
     static __attribute__ ((format (printf, 2, 0))) void st_func(             \
-     const st_loggerctx_t *logger_ctx, const char* format, va_list args) {      \
+     const st_loggerctx_t *logger_ctx, const char* format, va_list args) {   \
         char                message[ST_LOGGER_MESSAGE_LEN_MAX];              \
         vsnprintf(message, ST_LOGGER_MESSAGE_LEN_MAX, format, args);         \
         sir_func("%s", message);                                             \
-        if (logger_ctx->callbacks) {                                             \
-            st_dlnode_t *node = st_dlist_get_head(logger_ctx->callbacks);        \
+        if (logger_ctx->callbacks) {                                         \
+            st_dlnode_t *node = st_dlist_get_head(logger_ctx->callbacks);    \
             while (node) {                                                   \
                 st_logger_libsir_callback_t *callback = st_dlist_get_data(   \
                  node);                                                      \
@@ -345,23 +364,17 @@ static bool st_logger_set_callback(st_loggerctx_t *logger_ctx, st_logcbk_t func,
                 node = st_dlist_get_next(node);                              \
             }                                                                \
         }                                                                    \
-        if (logger_ctx->events_ctx) {                                            \
+        if (logger_ctx->events_ctx) {                                        \
+            st_evlogmsg_t event_data;                                        \
             size_t min_size = ST_EV_LOG_MSG_SIZE < ST_LOGGER_MESSAGE_LEN_MAX \
                 ? ST_EV_LOG_MSG_SIZE                                         \
                 : ST_LOGGER_MESSAGE_LEN_MAX;                                 \
-            message[min_size - 1] = '\0';                                    \
+            strncpy(event_data.message, message, ST_EV_LOG_MSG_SIZE - 1);    \
+            event_data.message[min_size - 1] = '\0';                         \
+            ST_EVENTSCTX_CALL(logger_ctx->events_ctx, push,                  \
+             logger_ctx->evtype_id_field, &event_data);                      \
         }                                                                    \
     }
-
-    //     if (logger_ctx->events_ctx) {                                            \
-    //         size_t min_size = ST_EV_LOG_MSG_SIZE < ST_LOGGER_MESSAGE_LEN_MAX \
-    //             ? ST_EV_LOG_MSG_SIZE                                         \
-    //             : ST_LOGGER_MESSAGE_LEN_MAX;                                 \
-    //         message[min_size - 1] = '\0';                                    \
-    // >>>     logger_ctx->events.push(logger_ctx->events_ctx, logger_ctx->evtype_id_field, \
-    // >>>      message);                                                       \
-    //     }                                                                    \
-    // }
 
 ST_LOGGER_OUTPUT_FUNC(st_logger_debug_output, sir_debug, ST_LL_DEBUG, // NOLINT(cert-err33-c)
  ev_log_output_debug);

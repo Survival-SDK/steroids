@@ -419,7 +419,7 @@ LoggerCtx.new(...): logger_ctx
 LoggerCtx.new_by_name(module_name: string, ...): logger_ctx
 LoggerCtx.get_instance(module_name: ?string): logger_ctx
 
--- logger_ctx:enable_events(events_ctx: events_ctx): bool
+logger_ctx:enable_events(): bool
 logger_ctx:set_stdout_levels(levels: integer): bool
 logger_ctx:set_stderr_levels(levels: integer): bool
 logger_ctx:set_log_file(filename: string, levels: integer): bool
