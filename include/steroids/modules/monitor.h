@@ -15,8 +15,12 @@
 
 typedef unsigned (*st_monitor_get_monitors_count_t)(
  const st_monitorctx_t *monitor_ctx);
+typedef int (*st_monitor_get_primary_index_t)(
+ const st_monitorctx_t *monitor_ctx);
 typedef st_monitor_t *(*st_monitor_open_t)(st_monitorctx_t *monitor_ctx,
  unsigned index);
+typedef st_monitor_t *(*st_monitor_open_primary_t)(
+ st_monitorctx_t *monitor_ctx);
 typedef unsigned (*st_monitor_get_width_t)(const st_monitor_t *monitor);
 typedef unsigned (*st_monitor_get_height_t)(const st_monitor_t *monitor);
 typedef unsigned (*st_monitor_get_index_t)(const st_monitor_t *monitor);
@@ -31,7 +35,9 @@ typedef bool (*st_monitor_get_userdata_t)(const st_monitor_t *monitor,
 typedef struct {
     st_modctx_funcs_t;
     st_monitor_get_monitors_count_t get_monitors_count;
+    st_monitor_get_primary_index_t  get_primary_index;
     st_monitor_open_t               open;
+    st_monitor_open_primary_t       open_primary;
 } st_monitorctx_funcs_t;
 
 typedef struct {

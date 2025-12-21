@@ -20,8 +20,10 @@ static void st_monitor_destroy(st_monitor_t *monitor);
 
 static unsigned st_monitor_get_monitors_count(
  const st_monitorctx_t *monitor_ctx);
+static int st_monitor_get_primary_index(const st_monitorctx_t *monitor_ctx);
 static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
  unsigned index);
+static st_monitor_t *st_monitor_open_primary(st_monitorctx_t *monitor_ctx);
 static unsigned st_monitor_get_width(const st_monitor_t *monitor);
 static unsigned st_monitor_get_height(const st_monitor_t *monitor);
 static unsigned st_monitor_get_index(const st_monitor_t *monitor);
@@ -36,7 +38,9 @@ static bool st_monitor_get_userdata(const st_monitor_t *monitor, uintptr_t *dst,
 static st_monitorctx_funcs_t monitorctx_funcs = {
     st_modctx_funcs,
     .get_monitors_count = st_monitor_get_monitors_count,
+    .get_primary_index  = st_monitor_get_primary_index,
     .open               = st_monitor_open,
+    .open_primary       = st_monitor_open_primary,
 };
 
 static st_monitor_funcs_t monitor_funcs = {
@@ -177,6 +181,28 @@ static unsigned st_monitor_get_monitors_count(
     return monitors_count;
 }
 
+static int st_monitor_get_primary_index(
+ const st_monitorctx_t *monitor_ctx) {
+    int             primary_index = -1;
+    unsigned        monitors_count = 0;
+    XRRMonitorInfo *monitors_info = get_monitors_info(monitor_ctx, 
+     &monitors_count);
+    
+    if (!monitors_info)
+        return -1;
+    
+    for (unsigned i = 0; i < monitors_count; i++) {
+        if (monitors_info[i].primary) {
+            primary_index = i;
+            break;
+        }
+    }
+    
+    XRRFreeMonitors(monitors_info);
+
+    return primary_index;
+}
+
 static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
  unsigned index) {
     st_monitor_t   *monitor;
@@ -255,6 +281,20 @@ monitor_index_out_of_range:
     XRRFreeMonitors(monitors_info);
 
     return NULL;
+}
+
+static st_monitor_t *st_monitor_open_primary(st_monitorctx_t *monitor_ctx) {
+    int primary_index = st_monitor_get_primary_index(monitor_ctx);
+
+    if (primary_index == -1) {
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, error,
+         "%s_%s: No primary monitor found", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+
+    return st_monitor_open(monitor_ctx, primary_index);
 }
 
 static unsigned st_monitor_get_width(const st_monitor_t *monitor) {

@@ -480,7 +480,9 @@ MonitorCtx.new_by_name(module_name: string, ...): monitor_ctx
 MonitorCtx.get_instance(module_name: ?string): monitor_ctx
 
 monitor_ctx:get_monitors_count(): integer
+monitor_ctx:get_primary_index(): integer
 monitor_ctx:open(index: integer): monitor
+monitor_ctx:open_primary(): monitor
 -- inherited from modctx
 monitor_ctx:get_subsystem(): string
 monitor_ctx:get_name(): string

@@ -13,8 +13,12 @@ ffi.cdef[[
 
     typedef unsigned (*st_monitor_get_monitors_count_t)(
      const st_monitorctx_t *monitor_ctx);
+    typedef int (*st_monitor_get_primary_index_t)(
+     const st_monitorctx_t *monitor_ctx);
     typedef st_monitor_t *(*st_monitor_open_t)(
      st_monitorctx_t *monitor_ctx, unsigned index);
+    typedef st_monitor_t *(*st_monitor_open_primary_t)(
+     st_monitorctx_t *monitor_ctx);
     typedef unsigned (*st_monitor_get_width_t)(const st_monitor_t *monitor);
     typedef unsigned (*st_monitor_get_height_t)(const st_monitor_t *monitor);
     typedef unsigned (*st_monitor_get_index_t)(const st_monitor_t *monitor);
@@ -29,7 +33,9 @@ ffi.cdef[[
     typedef struct {
         st_modctx_funcs_t             __st_parent_funcs;
         st_monitor_get_monitors_count_t get_monitors_count;
+        st_monitor_get_primary_index_t  get_primary_index;
         st_monitor_open_t               open;
+        st_monitor_open_primary_t       open_primary;
     } st_monitorctx_funcs_t;
 
     typedef struct {
@@ -135,6 +141,12 @@ package.preload["MonitorCtx"] = function()
             ).get_monitors_count(self.handle)
         end,
 
+        get_primary_index = function(self)
+            return ffi.cast("const st_monitorctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_primary_index(self.handle)
+        end,
+
         open = function(self, index)
             local monitor_handle = ffi.cast("const st_monitorctx_funcs_t *",
                 ffi.cast("st_object_t *", self.handle).funcs
@@ -145,6 +157,18 @@ package.preload["MonitorCtx"] = function()
                     "MonitorCtx.open: failed to open monitor with index %d",
                     index)
                 )
+            end
+
+            return Object.__mtnew(M.__monitor.__mt, monitor_handle, true)
+        end,
+
+        open_primary = function(self)
+            local monitor_handle = ffi.cast("const st_monitorctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).open_primary(self.handle)
+
+            if monitor_handle == nil then
+                return nil
             end
 
             return Object.__mtnew(M.__monitor.__mt, monitor_handle, true)
