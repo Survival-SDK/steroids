@@ -214,9 +214,7 @@ static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
 
     monitor->handle = monitor_ctx->display;
     monitor->index = index;
-    /* TODO(edomin): Add monitor is_primary flag. We need get it from 
-     * monitors_info[index].primary with !! cast to bool.
-     */
+    monitor->is_primary = !!monitors_info[index].primary;
     monitor->width = monitors_info[index].width;
     monitor->height = monitors_info[index].height;
     monitor->name = XGetAtomName(monitor_ctx->display, 
