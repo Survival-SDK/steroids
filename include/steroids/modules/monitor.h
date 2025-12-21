@@ -19,6 +19,8 @@ typedef st_monitor_t *(*st_monitor_open_t)(st_monitorctx_t *monitor_ctx,
  unsigned index);
 typedef unsigned (*st_monitor_get_width_t)(const st_monitor_t *monitor);
 typedef unsigned (*st_monitor_get_height_t)(const st_monitor_t *monitor);
+typedef unsigned (*st_monitor_get_index_t)(const st_monitor_t *monitor);
+typedef const char *(*st_monitor_get_name_t)(const st_monitor_t *monitor);
 typedef void *(*st_monitor_get_handle_t)(const st_monitor_t *monitor);
 typedef void (*st_monitor_set_userdata_t)(const st_monitor_t *monitor,
  const char *key, uintptr_t value);
@@ -35,6 +37,8 @@ typedef struct {
     st_object_funcs_t;
     st_monitor_get_width_t    get_width;
     st_monitor_get_height_t   get_height;
+    st_monitor_get_index_t    get_index;
+    st_monitor_get_name_t     get_name;
     st_monitor_get_handle_t   get_handle;
     st_monitor_set_userdata_t set_userdata;
     st_monitor_get_userdata_t get_userdata;

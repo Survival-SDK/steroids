@@ -492,6 +492,8 @@ monitor_ctx:get_owner_unsafe(): object
 
 monitor:get_width(): integer
 monitor:get_height(): integer
+monitor:get_index(): integer
+monitor:get_name(): ?string
 -- inherited from object
 monitor:destroy()
 monitor:get_owner(): object

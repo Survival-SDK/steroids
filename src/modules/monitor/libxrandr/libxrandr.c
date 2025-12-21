@@ -1,4 +1,4 @@
-#include "xlib.h"
+#include "libxrandr.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -24,6 +24,8 @@ static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
  unsigned index);
 static unsigned st_monitor_get_width(const st_monitor_t *monitor);
 static unsigned st_monitor_get_height(const st_monitor_t *monitor);
+static unsigned st_monitor_get_index(const st_monitor_t *monitor);
+static const char *st_monitor_get_name(const st_monitor_t *monitor);
 static void *st_monitor_get_handle(const st_monitor_t *monitor);
 static void st_monitor_set_userdata(const st_monitor_t *monitor,
  const char *key, uintptr_t value);
@@ -40,6 +42,8 @@ static st_monitor_funcs_t monitor_funcs = {
     st_object_funcs,
     .get_width    = st_monitor_get_width,
     .get_height   = st_monitor_get_height,
+    .get_index    = st_monitor_get_index,
+    .get_name     = st_monitor_get_name,
     .get_handle   = st_monitor_get_handle,
     .set_userdata = st_monitor_set_userdata,
     .get_userdata = st_monitor_get_userdata,
@@ -139,6 +143,9 @@ static void st_monitor_quit(st_monitorctx_t *monitor_ctx) {
 static void st_monitor_destroy(st_monitor_t *monitor) {
     if (monitor->userdata)
         ST_HTABLE_CALL(monitor->userdata, destroy);
+    if (monitor->name)
+        XFree(monitor->name);
+        
     free(monitor);
 }
 
@@ -205,13 +212,18 @@ static st_monitor_t *st_monitor_open(st_monitorctx_t *monitor_ctx,
 
     monitor->handle = monitor_ctx->display;
     monitor->index = index;
-    /* TODO(edomin): Add monitor name. We need get it from name Atom - 
-     * monitors_info[index].name 
-     * TODO(edomin): Add monitor is_primary flag. We need get it from 
+    /* TODO(edomin): Add monitor is_primary flag. We need get it from 
      * monitors_info[index].primary with !! cast to bool.
      */
     monitor->width = monitors_info[index].width;
     monitor->height = monitors_info[index].height;
+    monitor->name = XGetAtomName(monitor_ctx->display, 
+     monitors_info[index].name);
+    if (!monitor->name)
+        ST_LOGGERCTX_CALL(monitor_ctx->logger_ctx, warning,
+         "%s_%s: Unable to get monitor name for index %u. Monitor name is not "
+         "available for this monitor on this run", st_module_subsystem,
+         st_module_name, index);
 
     monitor->userdata = ST_HTABLECTX_CALL(monitor_ctx->htable_ctx, create,
      (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(
@@ -251,6 +263,14 @@ static unsigned st_monitor_get_width(const st_monitor_t *monitor) {
 
 static unsigned st_monitor_get_height(const st_monitor_t *monitor) {
     return monitor->height;
+}
+
+static unsigned st_monitor_get_index(const st_monitor_t *monitor) {
+    return monitor->index;
+}
+
+static const char *st_monitor_get_name(const st_monitor_t *monitor) {
+    return monitor->name;
 }
 
 static void *st_monitor_get_handle(const st_monitor_t *monitor) {

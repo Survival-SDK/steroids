@@ -21,7 +21,7 @@ typedef struct {
     Display     *handle; /* Copy of display pointer from monitorctx */
     unsigned     index;
     // bool         is_primary;
-    // char        *name;
+    char        *name;
     unsigned     width;
     unsigned     height;
     st_htable_t *userdata;
