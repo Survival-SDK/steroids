@@ -664,15 +664,30 @@ vec2_ctx:default_basis_yvec(): double, double
 
 ## window
 ```luau
-Window = require "Window"
+WindowCtx = require "WindowCtx"
 
-Window.new_ctx(events_ctx: events_ctx, logger_ctx: logger_ctx, monitor_ctx: monitor_ctx): window_ctx
+WindowCtx.new(...): window_ctx
+WindowCtx.new_by_name(module_name: string, ...): window_ctx
+WindowCtx.get_instance(module_name: ?string): window_ctx
 
-window_ctx:destroy()
-window_ctx:create(monitor_ctx: monitor_ctx, x: integer, y: integer, width: integer, height: integer, fullscreen: bool, title: string): window
+window_ctx:create(monitor: monitor, x: integer, y: integer, width: integer, 
+ height: integer, fullscreen: bool, title: string): window
 window_ctx:process()
-window:destroy()
+-- inherited from modctx
+window_ctx:get_subsystem(): string
+window_ctx:get_name(): string
+window_ctx:as(target: string | table): any
+-- inherited from object
+window_ctx:destroy()
+window_ctx:get_owner(): object
+window_ctx:get_owner_unsafe(): object
+
 window:xed(): bool
+window:get_monitor(): monitor
 window:get_width(): integer
 window:get_height(): integer
+-- inherited from object
+window:destroy()
+window:get_owner(): object
+window:get_owner_unsafe(): object
 ```
