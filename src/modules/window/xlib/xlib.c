@@ -307,7 +307,9 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
     uintptr_t            monitor_x;
     uintptr_t            monitor_y;
 
-    if (!ST_MONITOR_CALL(monitor, is_primary) && getenv("WAYLAND_DISPLAY")) {
+    if (ST_MONITORCTX_CALL(window_ctx->monitor_ctx, get_monitors_count) > 1
+     && !ST_MONITOR_CALL(monitor, is_primary) 
+     && getenv("WAYLAND_DISPLAY")) {
         if (fullscreen) {
             ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
              "window_xlib: Fullscreen is not supported on XWayland non-primary "
@@ -316,8 +318,9 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
             fullscreen = false;
         }
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
-         "window_xlib: Placing window on XWayland non-primary monitor is not "
-         "supported. Window will be placed on the primary monitor");
+         "window_xlib: Manually placing window on XWayland non-primary monitor "
+         "is not supported. Window will be placed on the primary or first "
+         "available monitor");
     }
     
     if (!ST_MONITOR_CALL(monitor, get_userdata, &root_window, "root_window")) {
