@@ -202,22 +202,85 @@ static void st_window_quit(st_windowctx_t *window_ctx) {
     free(window_ctx);
 }
 
-static void fullscreen_window(Display *display, Window window) {
+static bool is_ewmh_supported(Display *display, Window root_window, 
+const Atom net_wm_fullscreen_monitors) {
+    Atom           net_supported;
+    Atom           actual_type;
+    int            actual_format;
+    unsigned long  nitems;
+    unsigned long  bytes_after;
+    unsigned char *prop = NULL;
+    Bool           ewmh_supported = False;
+    
+    net_supported = XInternAtom(display, "_NET_SUPPORTED", False);
+    if (XGetWindowProperty(display, root_window, net_supported, 0, 1024, False, 
+     XA_ATOM, &actual_type, &actual_format, &nitems, &bytes_after, &prop) 
+     == Success && prop) {
+        Atom *atoms = (Atom *)prop;
+        for (unsigned long i = 0; i < nitems; i++) {
+            if (atoms[i] == net_wm_fullscreen_monitors) {
+                ewmh_supported = True;
+                break;
+            }
+        }
+        XFree(prop);
+    }
+
+    return !!ewmh_supported;
+}
+
+static void fullscreen_window(st_windowctx_t *window_ctx, Window window, 
+ const st_monitor_t *monitor) {
     XWindowAttributes attrs;
     XEvent            event = {0};
+    Atom              net_wm_fullscreen_monitors;
+    Bool              ewmh_supported = False;
+    Display          *display = (Display *)ST_MONITOR_CALL(monitor, get_handle);
 
     XGetWindowAttributes(display, window, &attrs);
+
+    net_wm_fullscreen_monitors = XInternAtom(display, 
+     "_NET_WM_FULLSCREEN_MONITORS", False);
+
+    if (!is_ewmh_supported(display, attrs.root, net_wm_fullscreen_monitors)) {
+        uintptr_t monitor_x;
+        uintptr_t monitor_y;
+
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+         "window_xlib: EWMH _NET_WM_FULLSCREEN_MONITORS is NOT supported, "
+         "using fallback XMoveResizeWindow for monitor %u", 
+         ST_MONITOR_CALL(monitor, get_index));
+
+        if (!ST_MONITOR_CALL(monitor, get_userdata, &monitor_x, "x") ||
+         !ST_MONITOR_CALL(monitor, get_userdata, &monitor_y, "y")) {
+            ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+             "window_xlib: Unable to get monitor coordinates in display space. "
+             "Window will be placed on the screen, but not fullscreened");
+
+            return;
+        }
+        
+        XMoveResizeWindow(display, window, 
+         monitor_x, 
+         monitor_y, 
+         ST_MONITOR_CALL(monitor, get_width), 
+         ST_MONITOR_CALL(monitor, get_height));
+        XFlush(display);
+    }
 
     event.xclient.type = ClientMessage;
     event.xclient.message_type = XInternAtom(display, "_NET_WM_STATE", false);
     event.xclient.display = display;
     event.xclient.window = window;
     event.xclient.format = ATOM_BITS;
-    event.xclient.data.l[0] = 1;
+    event.xclient.data.l[0] = 1; /* _NET_WM_STATE_ADD */
     event.xclient.data.l[1] = (long)XInternAtom(display,
      "_NET_WM_STATE_FULLSCREEN", false);
+    event.xclient.data.l[2] = 0;
+    event.xclient.data.l[3] = 1; /* source indication: application */
     XSendEvent(display, attrs.root, false,
      SubstructureNotifyMask | SubstructureRedirectMask, &event); // NOLINT(hicpp-signed-bitwise)
+    XFlush(display);
 }
 
 static st_window_t *st_window_create(st_windowctx_t *window_ctx,
@@ -285,11 +348,36 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
     window->xed = false;
 
     XSetWMHints(display, window->handle, &hints);
-    XMapWindow(display, window->handle);
     XStoreName(display, window->handle, title);
 
     if (fullscreen) {
-        fullscreen_window(display, window->handle);
+        Atom net_wm_fullscreen_monitors = XInternAtom(display, 
+         "_NET_WM_FULLSCREEN_MONITORS", False);
+    
+        if (is_ewmh_supported(display, root_window, net_wm_fullscreen_monitors)
+         ) {
+            unsigned monitor_index = ST_MONITOR_CALL(monitor, get_index);
+            long     monitors[4] = { 
+                monitor_index, 
+                monitor_index, 
+                monitor_index,
+                monitor_index,
+            };
+
+            ST_LOGGERCTX_CALL(window_ctx->logger_ctx, debug,
+             "window_xlib: EWMH _NET_WM_FULLSCREEN_MONITORS is supported");
+            
+            XChangeProperty(display, window->handle, net_wm_fullscreen_monitors, 
+            XA_CARDINAL, ATOM_BITS, PropModeReplace, (unsigned char*)monitors, 
+             4);
+            XFlush(display);
+        }
+    }
+
+    XMapWindow(display, window->handle);
+
+    if (fullscreen) {
+        fullscreen_window(window_ctx, window->handle, monitor);
     } else {
         XChangeProperty(display, window->handle,
          XInternAtom(display, "_HILDON_NON_COMPOSITED_WINDOW", False),
