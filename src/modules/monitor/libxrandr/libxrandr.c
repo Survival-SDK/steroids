@@ -26,6 +26,7 @@ static unsigned st_monitor_get_width(const st_monitor_t *monitor);
 static unsigned st_monitor_get_height(const st_monitor_t *monitor);
 static unsigned st_monitor_get_index(const st_monitor_t *monitor);
 static const char *st_monitor_get_name(const st_monitor_t *monitor);
+static bool st_monitor_is_primary(const st_monitor_t *monitor);
 static void *st_monitor_get_handle(const st_monitor_t *monitor);
 static void st_monitor_set_userdata(const st_monitor_t *monitor,
  const char *key, uintptr_t value);
@@ -44,6 +45,7 @@ static st_monitor_funcs_t monitor_funcs = {
     .get_height   = st_monitor_get_height,
     .get_index    = st_monitor_get_index,
     .get_name     = st_monitor_get_name,
+    .is_primary   = st_monitor_is_primary,
     .get_handle   = st_monitor_get_handle,
     .set_userdata = st_monitor_set_userdata,
     .get_userdata = st_monitor_get_userdata,
@@ -271,6 +273,10 @@ static unsigned st_monitor_get_index(const st_monitor_t *monitor) {
 
 static const char *st_monitor_get_name(const st_monitor_t *monitor) {
     return monitor->name;
+}
+
+static bool st_monitor_is_primary(const st_monitor_t *monitor) {
+    return monitor->is_primary;
 }
 
 static void *st_monitor_get_handle(const st_monitor_t *monitor) {

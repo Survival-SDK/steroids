@@ -20,8 +20,8 @@ typedef struct {
     st_object_t;
     Display     *handle; /* Copy of display pointer from monitorctx */
     unsigned     index;
-    // bool         is_primary;
     char        *name;
+    bool         is_primary;
     unsigned     width;
     unsigned     height;
     st_htable_t *userdata;

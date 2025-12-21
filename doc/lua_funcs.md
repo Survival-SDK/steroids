@@ -494,6 +494,7 @@ monitor:get_width(): integer
 monitor:get_height(): integer
 monitor:get_index(): integer
 monitor:get_name(): ?string
+monitor:is_primary(): bool
 -- inherited from object
 monitor:destroy()
 monitor:get_owner(): object
