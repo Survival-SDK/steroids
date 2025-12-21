@@ -1,6 +1,7 @@
 #include "xlib.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <X11/Xatom.h> // NOLINT(llvm-include-order)
 #include <X11/XKBlib.h> // NOLINT(llvm-include-order)
@@ -306,6 +307,19 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
     uintptr_t            monitor_x;
     uintptr_t            monitor_y;
 
+    if (!ST_MONITOR_CALL(monitor, is_primary) && getenv("WAYLAND_DISPLAY")) {
+        if (fullscreen) {
+            ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+             "window_xlib: Fullscreen is not supported on XWayland non-primary "
+             "monitor. Window will be windowed");
+
+            fullscreen = false;
+        }
+        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+         "window_xlib: Placing window on XWayland non-primary monitor is not "
+         "supported. Window will be placed on the primary monitor");
+    }
+    
     if (!ST_MONITOR_CALL(monitor, get_userdata, &root_window, "root_window")) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to get root window from monitor");
