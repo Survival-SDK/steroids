@@ -62,13 +62,9 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
 #endif
 
 static void st_window_free(void *window) {
-    st_window_t *win = (st_window_t *)window;
-
-    XCloseIM(win->input_method);
-    XDestroyWindow((Display *)ST_MONITOR_CALL(win->monitor, get_handle),
-     win->handle);
-    // ST_OBJECT_CALL(win->monitor, destroy);
-    // ST_OBJECT_CALL(win, destroy);
+    XCloseIM(((st_window_t *)window)->input_method);
+    XDestroyWindow(((st_window_t *)window)->display,
+     ((st_window_t *)window)->handle);
 }
 
 static st_windowctx_t *st_window_init(const st_param_t params[]) {
@@ -299,11 +295,14 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
     XWMHints             hints = { .input = True, .flags = InputHint }; // NOLINT(hicpp-signed-bitwise)
     XIMStyles           *im_styles = NULL;
     XIMStyle             im_best_match_style = 0;
-    st_window_t         *window;
+    st_window_t          window = {
+        .monitor = monitor,
+        .display = (Display *)ST_MONITOR_CALL(monitor, get_handle),
+        .width = width,
+        .height = height,
+    };
     st_dlnode_t         *node;
     uintptr_t            root_window;
-    Display             *display = (Display *)ST_MONITOR_CALL(monitor,
-     get_handle);
     uintptr_t            monitor_x;
     uintptr_t            monitor_y;
 
@@ -338,41 +337,36 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
         return NULL;
     }
 
-    window = (st_window_t *)st_object_new(sizeof(st_window_t), &window_funcs, 
+    st_object_placement_new(&window, &window_funcs,
      (st_object_dtor_t)st_window_destroy, (st_object_t *)window_ctx);
-    if (!window) {
+
+    window.handle = XCreateWindow(window.display, root_window, monitor_x + x, 
+     monitor_y + y, width, height, 0, CopyFromParent, InputOutput, 
+     CopyFromParent, CWEventMask, &event_attrs); // NOLINT(hicpp-signed-bitwise)
+    if (!window.handle) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
-         "window_xlib: Unable to create new window object");
+         "window_xlib: Unable to create window");
 
         return NULL;
     }
 
-    window->handle = XCreateWindow(display, root_window, monitor_x + x, 
-     monitor_y + y, width, height, 0, CopyFromParent, InputOutput, 
-     CopyFromParent, CWEventMask, &event_attrs); // NOLINT(hicpp-signed-bitwise)
-    if (!window->handle) {
-        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
-         "window_xlib: Unable to create window");
-
-        goto create_window_fail;
-    }
-
-    XChangeWindowAttributes(display, window->handle, CWOverrideRedirect,
+    XChangeWindowAttributes(window.display, window.handle, CWOverrideRedirect,
      &override_redirect_attrs);  // NOLINT(hicpp-signed-bitwise)
 
-    window->wm_delete_msg = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(display, window->handle, &window->wm_delete_msg, 1);
-    window->xed = false;
+    window.wm_delete_msg = XInternAtom(window.display, "WM_DELETE_WINDOW", 
+     False);
+    XSetWMProtocols(window.display, window.handle, &window.wm_delete_msg, 1);
+    window.xed = false;
 
-    XSetWMHints(display, window->handle, &hints);
-    XStoreName(display, window->handle, title);
+    XSetWMHints(window.display, window.handle, &hints);
+    XStoreName(window.display, window.handle, title);
 
     if (fullscreen) {
-        Atom net_wm_fullscreen_monitors = XInternAtom(display, 
+        Atom net_wm_fullscreen_monitors = XInternAtom(window.display, 
          "_NET_WM_FULLSCREEN_MONITORS", False);
     
-        if (is_ewmh_supported(display, root_window, net_wm_fullscreen_monitors)
-         ) {
+        if (is_ewmh_supported(window.display, root_window, 
+         net_wm_fullscreen_monitors)) {
             unsigned monitor_index = ST_MONITOR_CALL(monitor, get_index);
             long     monitors[4] = { 
                 monitor_index, 
@@ -384,32 +378,32 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
             ST_LOGGERCTX_CALL(window_ctx->logger_ctx, debug,
              "window_xlib: EWMH _NET_WM_FULLSCREEN_MONITORS is supported");
             
-            XChangeProperty(display, window->handle, net_wm_fullscreen_monitors, 
-            XA_CARDINAL, ATOM_BITS, PropModeReplace, (unsigned char*)monitors, 
-             4);
-            XFlush(display);
+            XChangeProperty(window.display, window.handle, 
+             net_wm_fullscreen_monitors, XA_CARDINAL, ATOM_BITS, 
+             PropModeReplace, (unsigned char*)monitors, 4);
+            XFlush(window.display);
         }
     }
 
-    XMapWindow(display, window->handle);
+    XMapWindow(window.display, window.handle);
 
     if (fullscreen) {
-        fullscreen_window(window_ctx, window->handle, monitor);
+        fullscreen_window(window_ctx, window.handle, monitor);
     } else {
-        XChangeProperty(display, window->handle,
-         XInternAtom(display, "_HILDON_NON_COMPOSITED_WINDOW", False),
+        XChangeProperty(window.display, window.handle,
+         XInternAtom(window.display, "_HILDON_NON_COMPOSITED_WINDOW", False),
          XA_INTEGER, ATOM_BITS, PropModeReplace, (unsigned char*)(int[]){1}, 1);
     }
 
-    window->input_method = XOpenIM(display, NULL, NULL, NULL);
-    if (!window->input_method) {
+    window.input_method = XOpenIM(window.display, NULL, NULL, NULL);
+    if (!window.input_method) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to open X input method");
 
         goto open_im_fail;
     }
 
-    if (XGetIMValues(window->input_method, XNQueryInputStyle, &im_styles, NULL)
+    if (XGetIMValues(window.input_method, XNQueryInputStyle, &im_styles, NULL)
      != NULL || !im_styles) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to get input method styles");
@@ -435,23 +429,19 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
         goto best_match_fail;
     }
 
-    window->input_context = XCreateIC(window->input_method, XNInputStyle,
-     im_best_match_style, XNClientWindow, window->handle, XNFocusWindow,
-     window->handle, NULL);
-    if (!window->input_context) {
+    window.input_context = XCreateIC(window.input_method, XNInputStyle,
+     im_best_match_style, XNClientWindow, window.handle, XNFocusWindow,
+     window.handle, NULL);
+    if (!window.input_context) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to create input context");
 
         goto create_ic_fail;
     }
 
-    XkbSetDetectableAutoRepeat(display, true, NULL);
+    XkbSetDetectableAutoRepeat(window.display, true, NULL);
 
-    window->monitor = monitor;
-    window->width = width;
-    window->height = height;
-
-    node = st_dlist_push_back(window_ctx->windows, window);
+    node = st_dlist_push_back(window_ctx->windows, &window);
     if (!node) {
         ST_LOGGERCTX_CALL(window_ctx->logger_ctx, error,
          "window_xlib: Unable to create list entry for window");
@@ -459,17 +449,15 @@ static st_window_t *st_window_create(st_windowctx_t *window_ctx,
         goto dlist_push_back_fail;
     }
 
-    return window;
+    return st_dlist_get_data(node);
 
 dlist_push_back_fail:
 create_ic_fail:
 best_match_fail:
 get_im_values_fail:
-    XCloseIM(window->input_method);
+    XCloseIM(window.input_method);
 open_im_fail:
-    XDestroyWindow(display, window->handle);
-create_window_fail:
-    ST_OBJECT_CALL(window, destroy);
+    XDestroyWindow(window.display, window.handle);
 
     return NULL;
 }

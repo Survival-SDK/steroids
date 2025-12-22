@@ -51,6 +51,7 @@ typedef struct {
     st_object_t;
     Window        handle;
     st_monitor_t *monitor;
+    Display      *display;
     Atom          wm_delete_msg;
     XIM           input_method;
     XIC           input_context;
