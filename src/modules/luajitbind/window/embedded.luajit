@@ -1,47 +1,47 @@
-local ffi = require "ffi"
-
-local ModCtx     = require "ModCtx"
-local MonitorCtx = require "MonitorCtx"
-local Object     = require "Object"
-
-ffi.cdef[[
-    typedef struct st_windowctx {
-        st_modctx_t __st_parent;
-    } st_windowctx_t;
-
-    typedef struct st_window {
-        st_object_t __st_parent;
-    } st_window_t;
-
-    typedef st_window_t *(*st_window_create_t)(st_windowctx_t *window_ctx,
-     st_monitor_t *monitor, int x, int y, unsigned width, unsigned height,
-     bool fullscreen, const char *title);
-    typedef void (*st_window_process_t)(st_windowctx_t *window_ctx);
-    typedef bool (*st_window_xed_t)(const st_window_t *window);
-    typedef st_monitor_t *(*st_window_get_monitor_t)(const st_window_t *window);
-    // typedef void *(*st_window_get_handle_t)(const st_window_t *window);
-    typedef unsigned (*st_window_get_width_t)(const st_window_t *window);
-    typedef unsigned (*st_window_get_height_t)(const st_window_t *window);
-
-    typedef struct {
-        st_modctx_funcs_t     __st_parent_funcs;
-        st_window_create_t    create;
-        st_window_process_t   process;
-    } st_windowctx_funcs_t;
-
-    typedef struct {
-        st_object_funcs_t         __st_parent_funcs;
-        st_window_xed_t           xed;
-        st_window_get_monitor_t   get_monitor;
-        void                     *__get_handle;
-        st_window_get_width_t     get_width;
-        st_window_get_height_t    get_height;
-    } st_window_funcs_t;
-]]
-
 -- Window context and window object
 package.preload["WindowCtx"] = function()
-    local ModsMgr = require "ModsMgr"
+    local ffi = require "ffi"
+
+    local ModCtx     = require "ModCtx"
+    local ModsMgr    = require "ModsMgr"
+    local MonitorCtx = require "MonitorCtx"
+    local Object     = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_windowctx {
+            st_modctx_t __st_parent;
+        } st_windowctx_t;
+
+        typedef struct st_window {
+            st_object_t __st_parent;
+        } st_window_t;
+
+        typedef st_window_t *(*st_window_create_t)(st_windowctx_t *window_ctx,
+        st_monitor_t *monitor, int x, int y, unsigned width, unsigned height,
+        bool fullscreen, const char *title);
+        typedef void (*st_window_process_t)(st_windowctx_t *window_ctx);
+        typedef bool (*st_window_xed_t)(const st_window_t *window);
+        typedef st_monitor_t *(*st_window_get_monitor_t)(const st_window_t *window);
+        // typedef void *(*st_window_get_handle_t)(const st_window_t *window);
+        typedef unsigned (*st_window_get_width_t)(const st_window_t *window);
+        typedef unsigned (*st_window_get_height_t)(const st_window_t *window);
+
+        typedef struct {
+            st_modctx_funcs_t     __st_parent_funcs;
+            st_window_create_t    create;
+            st_window_process_t   process;
+        } st_windowctx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t         __st_parent_funcs;
+            st_window_xed_t           xed;
+            st_window_get_monitor_t   get_monitor;
+            void                     *__get_handle;
+            st_window_get_width_t     get_width;
+            st_window_get_height_t    get_height;
+        } st_window_funcs_t;
+    ]]
+    
     local M = {
         __ctype = "st_windowctx_t *",
     }

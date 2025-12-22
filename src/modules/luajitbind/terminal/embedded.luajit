@@ -1,26 +1,27 @@
-local ffi = require "ffi"
-local ModCtx = require "ModCtx"
-
-ffi.cdef[[
-    typedef struct st_terminalctx {
-        st_modctx_t __st_parent;
-    } st_terminalctx_t;
-
-    typedef int (*st_terminal_get_rows_count_t)(
-        const st_terminalctx_t *terminal_ctx);
-    typedef int (*st_terminal_get_cols_count_t)(
-        const st_terminalctx_t *terminal_ctx);
-
-    typedef struct {
-        st_modctx_funcs_t           __st_parent_funcs;
-        st_terminal_get_rows_count_t get_rows_count;
-        st_terminal_get_cols_count_t get_cols_count;
-    } st_terminalctx_funcs_t;
-]]
-
 package.preload["TerminalCtx"] = function()
-    local Object  = require "Object"
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
     local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_terminalctx {
+            st_modctx_t __st_parent;
+        } st_terminalctx_t;
+
+        typedef int (*st_terminal_get_rows_count_t)(
+            const st_terminalctx_t *terminal_ctx);
+        typedef int (*st_terminal_get_cols_count_t)(
+            const st_terminalctx_t *terminal_ctx);
+
+        typedef struct {
+            st_modctx_funcs_t           __st_parent_funcs;
+            st_terminal_get_rows_count_t get_rows_count;
+            st_terminal_get_cols_count_t get_cols_count;
+        } st_terminalctx_funcs_t;
+    ]]
+
     local M = {
         __ctype = "st_terminalctx_t *",
     }
