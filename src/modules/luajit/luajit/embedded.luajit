@@ -1,29 +1,29 @@
-local ffi = require("ffi")
-
-ffi.cdef[[
-    struct st_object;
-
-    typedef const struct st_object *(*st_object_get_owner_t)(
-    const void *obj);
-    typedef struct st_object *(*st_object_get_owner_unsafe_t)(
-    void *obj);
-    typedef void (*st_object_destroy_t)(void *obj);
-
-    typedef struct {
-        st_object_get_owner_t        get_owner;
-        st_object_get_owner_unsafe_t get_owner_unsafe;
-        st_object_destroy_t          destroy;
-    } st_object_funcs_t;
-
-    typedef struct st_object {
-        const st_object_funcs_t *funcs;
-        void                    *__st_owner;
-        void                    *__st_dtor;
-        uintptr_t                __st_userdata;
-    } st_object_t;
-]]
-
 package.preload["Object"] = function()
+    local ffi = require("ffi")
+
+    ffi.cdef[[
+        struct st_object;
+
+        typedef const struct st_object *(*st_object_get_owner_t)(
+        const void *obj);
+        typedef struct st_object *(*st_object_get_owner_unsafe_t)(
+        void *obj);
+        typedef void (*st_object_destroy_t)(void *obj);
+
+        typedef struct {
+            st_object_get_owner_t        get_owner;
+            st_object_get_owner_unsafe_t get_owner_unsafe;
+            st_object_destroy_t          destroy;
+        } st_object_funcs_t;
+
+        typedef struct st_object {
+            const st_object_funcs_t *funcs;
+            void                    *__st_owner;
+            void                    *__st_dtor;
+            uintptr_t                __st_userdata;
+        } st_object_t;
+    ]]
+    
     local M = {
         __ctype = "st_object_t *",
         __mtnew = function(metatype, handle, owned)
@@ -74,39 +74,41 @@ package.preload["Object"] = function()
     return M
 end
 
-local Object = require "Object"
-
-ffi.cdef[[
-    struct st_modctx;
-
-    typedef const char *(*st_modctx_get_subsystem_t)(
-    const struct st_modctx *modctx);
-    typedef const char *(*st_modctx_get_name_t)(
-    const struct st_modctx *modctx);
-
-    typedef struct {
-        st_object_funcs_t         __st_parent_funcs;
-        st_modctx_get_subsystem_t get_subsystem;
-        st_modctx_get_name_t      get_name;
-    } st_modctx_funcs_t;
-
-    typedef struct st_modctx {
-        st_object_t __st_parent;
-        const void *__st_subsystem;
-        const void *__st_name;
-    } st_modctx_t;
-
-    typedef struct {
-        const char *key;
-        uintptr_t   value;
-    } st_param_t;
-
-    typedef st_param_t st_params_t[32];
-
-    typedef st_modctx_t *(*st_ctx_ctor_t)(const st_param_t params[]);
-]]
-
 package.preload["ModCtx"] = function()
+    local ffi = require("ffi")
+
+    local Object = require "Object"
+
+    ffi.cdef[[
+        struct st_modctx;
+
+        typedef const char *(*st_modctx_get_subsystem_t)(
+        const struct st_modctx *modctx);
+        typedef const char *(*st_modctx_get_name_t)(
+        const struct st_modctx *modctx);
+
+        typedef struct {
+            st_object_funcs_t         __st_parent_funcs;
+            st_modctx_get_subsystem_t get_subsystem;
+            st_modctx_get_name_t      get_name;
+        } st_modctx_funcs_t;
+
+        typedef struct st_modctx {
+            st_object_t __st_parent;
+            const void *__st_subsystem;
+            const void *__st_name;
+        } st_modctx_t;
+
+        typedef struct {
+            const char *key;
+            uintptr_t   value;
+        } st_param_t;
+
+        typedef st_param_t st_params_t[32];
+
+        typedef st_modctx_t *(*st_ctx_ctor_t)(const st_param_t params[]);
+    ]]
+    
     local M = {
         __ctype = "st_modctx_t *",
         new = function()
@@ -226,44 +228,47 @@ package.preload["ModCtx"] = function()
     return M
 end
 
-ffi.cdef[[
-    typedef struct {
-        st_object_t __parent;
-        void       *__modsdata;
-        void       *__singletons;
-    } st_modsmgr_t;
-
-    typedef void (*st_modsmgr_get_module_names_t)(st_modsmgr_t *modsmgr,
-        char **dst, size_t mods_count, size_t modname_size,
-        const char *subsystem);
-    typedef st_ctx_ctor_t (*st_modsmgr_get_ctor_t)(
-        const st_modsmgr_t *modsmgr, const char *subsystem,
-        const char *module_name);
-    typedef st_modctx_t *(*st_modsmgr_create_singleton_t)(
-        const st_modsmgr_t *modsmgr, const char *subsystem,
-        const char *module_name, st_param_t params[]);
-    typedef bool (*st_modsmgr_have_singleton_t)(
-        const st_modsmgr_t *modsmgr, const char *subsystem,
-        const char *module_name);
-    typedef st_modctx_t *(*st_modsmgr_get_singleton_t)(
-        const st_modsmgr_t *modsmgr, const char *subsystem,
-        const char *module_name);
-
-    typedef struct st_modsmgr_funcs {
-        st_object_funcs_t             __st_parent_funcs;
-        void                         *__load_module;
-        void                         *__process_deps;
-        st_modsmgr_get_module_names_t get_module_names;
-        st_modsmgr_get_ctor_t         get_ctor;
-        st_modsmgr_create_singleton_t create_singleton;
-        st_modsmgr_have_singleton_t   have_singleton;
-        st_modsmgr_get_singleton_t    get_singleton;
-    } st_modsmgr_funcs_t;
-]]
-
-local ModCtx = require "ModCtx"
-
 package.preload["ModsMgr"] = function()
+    local ffi = require("ffi")
+    
+    local ModCtx = require "ModCtx"
+    local Object = require "Object"
+
+    ffi.cdef[[
+        typedef struct {
+            st_object_t __parent;
+            void       *__modsdata;
+            void       *__singletons;
+        } st_modsmgr_t;
+
+        typedef void (*st_modsmgr_get_module_names_t)(st_modsmgr_t *modsmgr,
+            char **dst, size_t mods_count, size_t modname_size,
+            const char *subsystem);
+        typedef st_ctx_ctor_t (*st_modsmgr_get_ctor_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+        typedef st_modctx_t *(*st_modsmgr_create_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name, st_param_t params[]);
+        typedef bool (*st_modsmgr_have_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+        typedef st_modctx_t *(*st_modsmgr_get_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+
+        typedef struct st_modsmgr_funcs {
+            st_object_funcs_t             __st_parent_funcs;
+            void                         *__load_module;
+            void                         *__process_deps;
+            st_modsmgr_get_module_names_t get_module_names;
+            st_modsmgr_get_ctor_t         get_ctor;
+            st_modsmgr_create_singleton_t create_singleton;
+            st_modsmgr_have_singleton_t   have_singleton;
+            st_modsmgr_get_singleton_t    get_singleton;
+        } st_modsmgr_funcs_t;
+    ]]
+    
     local M = {
         __ctype = "st_modsmgr_t *",
         new = function()
