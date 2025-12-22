@@ -511,10 +511,19 @@ static void st_window_process(st_windowctx_t *window_ctx) {
                     st_window_t *event_window = get_window_by_xwindow(
                      window_ctx, xevent.xclient.window);
 
-                    if (xevent.xclient.data.l[0] ==
-                     (long)event_window->wm_delete_msg)
-                        event_window->xed = true;
+                    if (!event_window) {
+                        ST_LOGGERCTX_CALL(window_ctx->logger_ctx, warning,
+                         "window_xlib: Received ClientMessage for unknown "
+                         "window %u", xevent.xclient.window);
+                        break;
+                    }
 
+                    if (xevent.xclient.message_type == XInternAtom(display, 
+                     "WM_PROTOCOLS", False)) {
+                        if (xevent.xclient.data.l[0] ==
+                         (long)event_window->wm_delete_msg)
+                            event_window->xed = true;
+                    }
                     break;
                 }
                 case ButtonPress: {
