@@ -50,8 +50,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
  "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
  "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gfxctx/egl"
-#  "${CMAKE_BINARY_DIR}/src/modules/gfxctx/egl")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gfxctx/egl"
+ "${CMAKE_BINARY_DIR}/src/modules/gfxctx/egl")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gldebug/opengl"
 #  "${CMAKE_BINARY_DIR}/src/modules/gldebug/opengl")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/glloader/egl"
@@ -76,8 +76,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/dynarr")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/gfxctx"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/gfxctx")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/gfxctx")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/keyboard"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/keyboard")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"

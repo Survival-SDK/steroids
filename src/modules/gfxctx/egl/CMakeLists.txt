@@ -7,30 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_GFXCTX_EGL})
 set(ST_MODULE_SUBSYSTEM "gfxctx")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "fnv1a",
-        .name = NULL,
-    },
-    {
-        .subsystem = "htable",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-    {
-        .subsystem = "monitor",
-        .name = NULL,
-    },
-    {
-        .subsystem = "window",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 5)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -47,6 +23,7 @@ bb_add_more_warnings(
         format
         preprocessor
         switch
+        alloc
     OPTIONS C_COMPILE_OPTIONS
 )
 
@@ -56,7 +33,7 @@ st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(EGL REQUIRED egl)
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "egl.c"
 )
