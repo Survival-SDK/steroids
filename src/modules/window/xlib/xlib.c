@@ -46,7 +46,7 @@ static st_window_funcs_t window_funcs = {
 static const st_modprerq_t mod_prereqs[] = {
     {"events", NULL},
     {"logger", NULL},
-    {"monitor", NULL},
+    {"monitor", "libxrandr"},
     {0}
 };
 
