@@ -3,22 +3,11 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 
+#include "steroids/modctx.h"
+#include "steroids/modsmgr.h"
 #include "steroids/modules/gfxctx.h"
 #include "steroids/modules/glloader.h"
 #include "steroids/modules/logger.h"
-
-typedef struct {
-    st_modctx_t        *ctx;
-    st_logger_debug_t   debug;
-    st_logger_info_t    info;
-    st_logger_warning_t warning;
-    st_logger_error_t   error;
-} st_gldebug_opengl_logger_t;
-
-typedef struct {
-    st_gfxctx_t *handle;
-    st_gapi_t    api;
-} st_gldebug_opengl_gfxctx_t;
 
 typedef struct {
     /* Core */
@@ -47,31 +36,33 @@ typedef struct {
      GLsizei count, const GLuint* ids, GLboolean enabled);
 } st_gldebug_glfuncs_t;
 
+struct st_gldebugctx;
+
 typedef struct {
-    void (*set_callback)(const st_modctx_t *gldebug_ctx);
-    void (*init_control)(const st_modctx_t *gldebug_ctx);
-    void (*remove_callback)(const st_modctx_t *gldebug_ctx);
-    void (*label_buffer)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*set_callback)(const struct st_gldebugctx *gldebug_ctx);
+    void (*init_control)(const struct st_gldebugctx *gldebug_ctx);
+    void (*remove_callback)(const struct st_gldebugctx *gldebug_ctx);
+    void (*label_buffer)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_shader)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_shader)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_shdprog)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_shdprog)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_vao)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_vao)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_pipeline)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_pipeline)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_texture)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_texture)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*label_framebuffer)(const st_modctx_t *gldebug_ctx, unsigned id,
+    void (*label_framebuffer)(const struct st_gldebugctx *gldebug_ctx, unsigned id,
      const char *label);
-    void (*unlabel_buffer)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_shader)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_shdprog)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_vao)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_pipeline)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_texture)(const st_modctx_t *gldebug_ctx, unsigned id);
-    void (*unlabel_framebuffer)(const st_modctx_t *gldebug_ctx, unsigned id);
+    void (*unlabel_buffer)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_shader)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_shdprog)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_vao)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_pipeline)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_texture)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
+    void (*unlabel_framebuffer)(const struct st_gldebugctx *gldebug_ctx, unsigned id);
 } st_gldebug_apiagnostic_t;
 
 typedef enum {
@@ -88,11 +79,17 @@ typedef struct {
     st_ext_t cbk_ext;
 } st_gldebug_glsupported_t;
 
-typedef struct {
-    st_gldebug_opengl_gfxctx_t gfxctx;
-    st_gldebug_opengl_logger_t logger;
+typedef struct st_gldebugctx {
+    st_modctx_t;
+    st_modsmgr_t      *modsmgr;
+    st_loggerctx_t    *logger_ctx;
+    st_glloaderctx_t  *glloader_ctx;
+    st_gfxctx_t       *gfxctx;
+    st_gapi_t          api;
 
     st_gldebug_glfuncs_t       gl;
     st_gldebug_glsupported_t   glsupported;
     st_gldebug_apiagnostic_t   agn;
-} st_gldebug_opengl_t;
+} st_gldebugctx_t;
+
+#define ST_GLDEBUGCTX_T_DEFINED
