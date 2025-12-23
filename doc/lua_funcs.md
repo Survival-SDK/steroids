@@ -126,42 +126,58 @@ fs_ctx:mkdir(dirname: string): bool
 
 ## gfxctx
 ```luau
-GfxCtx = require "GfxCtx"
+GfxCtxCtx = require "GfxCtxCtx"
 
-GfxCtx.new_ctx(logger_ctx: logger_ctx, monitor_ctx: monitor_ctx): gfxctx_ctx
-GfxCtx.gapi_gl11: integer
-GfxCtx.gapi_gl12: integer
-GfxCtx.gapi_gl13: integer
-GfxCtx.gapi_gl14: integer
-GfxCtx.gapi_gl15: integer
-GfxCtx.gapi_gl2: integer
-GfxCtx.gapi_gl21: integer
-GfxCtx.gapi_gl3: integer
-GfxCtx.gapi_gl31: integer
-GfxCtx.gapi_gl32: integer
-GfxCtx.gapi_gl33: integer
-GfxCtx.gapi_gl4: integer
-GfxCtx.gapi_gl41: integer
-GfxCtx.gapi_gl42: integer
-GfxCtx.gapi_gl43: integer
-GfxCtx.gapi_gl44: integer
-GfxCtx.gapi_gl45: integer
-GfxCtx.gapi_gl46: integer
-GfxCtx.gapi_es1: integer
-GfxCtx.gapi_es11: integer
-GfxCtx.gapi_es2: integer
-GfxCtx.gapi_es3: integer
-GfxCtx.gapi_es31: integer
-GfxCtx.gapi_es32: integer
+GfxCtxCtx.gapi_gl1: integer
+GfxCtxCtx.gapi_gl11: integer
+GfxCtxCtx.gapi_gl12: integer
+GfxCtxCtx.gapi_gl13: integer
+GfxCtxCtx.gapi_gl14: integer
+GfxCtxCtx.gapi_gl15: integer
+GfxCtxCtx.gapi_gl2: integer
+GfxCtxCtx.gapi_gl21: integer
+GfxCtxCtx.gapi_gl3: integer
+GfxCtxCtx.gapi_gl31: integer
+GfxCtxCtx.gapi_gl32: integer
+GfxCtxCtx.gapi_gl33: integer
+GfxCtxCtx.gapi_gl4: integer
+GfxCtxCtx.gapi_gl41: integer
+GfxCtxCtx.gapi_gl42: integer
+GfxCtxCtx.gapi_gl43: integer
+GfxCtxCtx.gapi_gl44: integer
+GfxCtxCtx.gapi_gl45: integer
+GfxCtxCtx.gapi_gl46: integer
+GfxCtxCtx.gapi_es1: integer
+GfxCtxCtx.gapi_es11: integer
+GfxCtxCtx.gapi_es2: integer
+GfxCtxCtx.gapi_es3: integer
+GfxCtxCtx.gapi_es31: integer
+GfxCtxCtx.gapi_es32: integer
 
-gfxctx_ctx:destroy()
+GfxCtxCtx.new(...): gfxctx_ctx
+GfxCtxCtx.new_by_name(module_name: string, ...): gfxctx_ctx
+GfxCtxCtx.get_instance(module_name: ?string): gfxctx_ctx
+
 gfxctx_ctx:create(monitor: monitor, window: window, api: integer): gfxctx
-gfxctx_ctx:create_shared(monitor: monitor, window: window, gfxctx: gfxctx): gfxctx
+gfxctx_ctx:create_shared(monitor: monitor, window: window, other: gfxctx): 
+ gfxctx
+-- inherited from modctx
+gfxctx_ctx:get_subsystem(): string
+gfxctx_ctx:get_name(): string
+gfxctx_ctx:as(target: string | table): any
+-- inherited from object
+gfxctx_ctx:destroy()
+gfxctx_ctx:get_owner(): object
+gfxctx_ctx:get_owner_unsafe(): object
 
 gfxctx:make_current(): bool
 gfxctx:swap_buffers(): bool
+gfxctx:get_window(): window
 gfxctx:get_api(): integer
+-- inherited from object
 gfxctx:destroy()
+gfxctx:get_owner(): object
+gfxctx:get_owner_unsafe(): object
 ```
 
 ## keyboard
