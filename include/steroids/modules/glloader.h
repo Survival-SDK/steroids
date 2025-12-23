@@ -1,17 +1,20 @@
 #pragma once
 
-#include "steroids/module.h"
-#include "steroids/modules/gfxctx.h"
+#include "steroids/modctx.h"
+#include "steroids/object.h"
 
-typedef st_modctx_t *(*st_glloader_init_t)(st_modctx_t *logger_ctx,
- st_gfxctx_t *gfxctx);
-typedef void (*st_glloader_quit_t)(st_modctx_t *glloader_ctx);
+#ifndef ST_GLLOADERCTX_T_DEFINED
+    typedef st_modctx_t st_glloaderctx_t;
+#endif
 
-typedef void *(*st_glloader_get_proc_address_t)(st_modctx_t *glloader_ctx,
+typedef void *(*st_glloader_get_proc_address_t)(st_glloaderctx_t *glloader_ctx,
  const char *funcname);
 
 typedef struct {
-    st_glloader_init_t             glloader_init;
-    st_glloader_quit_t             glloader_quit;
-    st_glloader_get_proc_address_t glloader_get_proc_address;
-} st_glloader_funcs_t;
+    st_modctx_funcs_t;
+    st_glloader_get_proc_address_t get_proc_address;
+} st_glloaderctx_funcs_t;
+
+#define ST_GLLOADERCTX_CALL(ctx, func, ...) \
+    ((st_glloaderctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)

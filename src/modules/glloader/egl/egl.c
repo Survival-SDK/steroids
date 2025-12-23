@@ -1,84 +1,78 @@
 #include "egl.h"
 
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <EGL/egl.h>
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
-ST_MODULE_DEF_GET_FUNC(glloader_egl)
-ST_MODULE_DEF_INIT_FUNC(glloader_egl)
+static st_glloaderctx_t *st_glloader_init(const st_param_t params[]);
+static void st_glloader_quit(st_glloaderctx_t *glloader_ctx);
+
+static void *st_glloader_get_proc_address(st_glloaderctx_t *glloader_ctx,
+ const char *funcname);
+
+static st_glloaderctx_funcs_t glloaderctx_funcs = {
+    st_modctx_funcs,
+    .get_proc_address = st_glloader_get_proc_address,
+};
+
+static const st_modprerq_t mod_prereqs[] = {
+    { "gfxctx", "egl", },
+    { "logger", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_glloader_egl_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("glloader", "egl", ST_MODULE_TYPE, mod_prereqs,
+     st_glloader_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_glloader_egl_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_glloader_egl_init(modsmgr);
 }
 #endif
 
-static bool st_glloader_import_functions(st_modctx_t *glloader_ctx,
- st_modctx_t *logger_ctx, st_gfxctx_t *gfxctx) {
-    st_glloader_egl_t  *module = glloader_ctx->data;
+static st_glloaderctx_t *st_glloader_init(const st_param_t params[]) {
+    st_modsmgr_t     *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t   *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_gfxctx_t      *gfxctx = st_modctx_get_param_as_ptr(params, "gfxctx");
+    st_glloaderctx_t *glloader_ctx = (st_glloaderctx_t *)st_modctx_new(
+     "glloader", "egl", sizeof(st_glloaderctx_t), NULL, &glloaderctx_funcs,
+     (st_object_dtor_t)st_glloader_quit);
 
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "glloader_egl: Unable to load function \"error\" from module "
-         "\"logger\"\n");
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION_FROM_CTX("glloader_egl", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("glloader_egl", logger, info);
-
-    return true;
-}
-
-static st_modctx_t *st_glloader_init(st_modctx_t *logger_ctx,
- st_gfxctx_t *gfxctx) {
-    st_modctx_t       *glloader_ctx;
-    st_glloader_egl_t *module;
-
-    glloader_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_glloader_egl_data, sizeof(st_glloader_egl_t));
-
-    if (!glloader_ctx)
-        return NULL;
-
-    glloader_ctx->funcs = &st_glloader_egl_funcs;
-
-    module = glloader_ctx->data;
-    module->gfxctx = gfxctx;
-    module->logger.ctx = logger_ctx;
-
-    if (!st_glloader_import_functions(glloader_ctx, logger_ctx, gfxctx)) {
-        global_modsmgr_funcs.free_module_ctx(global_modsmgr, glloader_ctx);
+    if (!glloader_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "glloader_egl: unable to create new glloader ctx object");
 
         return NULL;
     }
 
-    module->logger.info(module->logger.ctx,
+    glloader_ctx->modsmgr    = modsmgr;
+    glloader_ctx->logger_ctx = logger_ctx;
+    glloader_ctx->gfxctx     = gfxctx;
+
+    ST_LOGGERCTX_CALL(logger_ctx, info,
      "glloader_egl: Open GL functions loader initialized");
 
     return glloader_ctx;
 }
 
-static void st_glloader_quit(st_modctx_t *glloader_ctx) {
-    st_glloader_egl_t *module = glloader_ctx->data;
-
-    module->logger.info(module->logger.ctx,
+static void st_glloader_quit(st_glloaderctx_t *glloader_ctx) {
+    ST_LOGGERCTX_CALL(glloader_ctx->logger_ctx, info,
      "glloader_egl: Open GL functions loader destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, glloader_ctx);
+    free(glloader_ctx);
 }
 
-static void *st_glloader_get_proc_address(st_modctx_t *glloader_ctx,
+static void *st_glloader_get_proc_address(st_glloaderctx_t *glloader_ctx,
  const char *funcname) {
-    st_glloader_egl_t *module = glloader_ctx->data;
-
-    ST_GFXCTX_CALL(module->gfxctx, make_current);
+    ST_GFXCTX_CALL(glloader_ctx->gfxctx, make_current);
 
     return eglGetProcAddress(funcname);
 }
