@@ -60,24 +60,6 @@ angle_ctx:rdacos(cos: double): double
 angle_ctx:dgacos(cos : double): double
 ```
 
-## atlas
-```luau
-Atlas = require "Atlas"
-
-Atlas.new_ctx(logger_ctx: logger_ctx): atlas_ctx
-
-atlas_ctx:destroy()
-```
-
-## bitmap
-```luau
-Bitmap = require "Bitmap"
-
-Bitmap.new_ctx(logger_ctx: logger_ctx): bitmap_ctx
-
-bitmap_ctx:destroy()
-```
-
 ## drawq
 ```luau
 Drawq = require "Drawq"
@@ -94,15 +76,6 @@ Dynarr = require "Dynarr"
 Dynarr.new_ctx(logger_ctx: logger_ctx): dynarr_ctx
 
 dynarr_ctx:destroy()
-```
-
-## events
-```luau
-Events = require "Events"
-
-Events.new_ctx(logger_ctx: logger_ctx): events_ctx
-
-events_ctx:destroy()
 ```
 
 ## fs
