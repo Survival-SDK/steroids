@@ -7,18 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_BMCODEC_STB_IMAGE})
 set(ST_MODULE_SUBSYSTEM "bmcodec")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "bitmap",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 2)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -33,13 +21,17 @@ bb_add_more_warnings(
         asciiz
         format
         preprocessor
+        alloc
     OPTIONS C_COMPILE_OPTIONS
 )
 
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_BMCODEC_STB_IMAGE})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE
+    ${C_COMPILE_OPTIONS}
+    -fms-extensions
+)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "stb_image.c"
 )

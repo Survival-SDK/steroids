@@ -34,12 +34,12 @@ add_custom_target(copy_plugins
 set(ST_INTERNAL_MODULES_COUNT 0)
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/angle/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/angle/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bitmap/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/bitmap/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/libpng"
-#  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/libpng")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
-#  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bitmap/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/bitmap/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/libpng"
+ "${CMAKE_BINARY_DIR}/src/modules/bmcodec/libpng")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
+ "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/drawq/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
