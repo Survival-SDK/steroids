@@ -617,15 +617,30 @@ terminal_ctx:get_owner_unsafe(): object
 
 ## texture
 ```luau
-Texture = require "Texture"
+TextureCtx = require "TextureCtx"
 
-Texture.new_ctx(bitmap_ctx: bitmap_ctx, logger_ctx: logger_ctx, gfxctx: gfxctx): texture_ctx
+TextureCtx.new(...): texture_ctx
+TextureCtx.new_by_name(module_name: string, ...): texture_ctx
+TextureCtx.get_instance(module_name: ?string): texture_ctx
 
-texture_ctx:destroy()
 texture_ctx:load(filename: string): texture
-texture:destroy()
+<!-- texture_ctx:memload(data: cdata, size: integer): texture -->
+-- inherited from modctx
+texture_ctx:get_subsystem(): string
+texture_ctx:get_name(): string
+texture_ctx:as(target: string | table): any
+-- inherited from object
+texture_ctx:destroy()
+texture_ctx:get_owner(): object
+texture_ctx:get_owner_unsafe(): object
+
+texture:bind(unit: integer): bool
 texture:get_width(): integer
 texture:get_height(): integer
+-- inherited from object
+texture:destroy()
+texture:get_owner(): object
+texture:get_owner_unsafe(): object
 ```
 
 ## vec2
