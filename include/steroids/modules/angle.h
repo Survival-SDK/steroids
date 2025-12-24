@@ -1,44 +1,51 @@
 #pragma once
 
-#include "steroids/module.h"
+#include "steroids/modctx.h"
+#include "steroids/object.h"
 
-typedef st_modctx_t *(*st_angle_init_t)(st_modctx_t *logger_ctx);
-typedef void (*st_angle_quit_t)(st_modctx_t *angle_ctx);
+#ifndef ST_ANGLECTX_T_DEFINED
+    typedef st_modctx_t st_anglectx_t;
+#endif
 
-typedef float (*st_angle_rtod_t)(st_modctx_t *angle_ctx, float radians);
-typedef float (*st_angle_dtor_t)(st_modctx_t *angle_ctx, float degrees);
-typedef void (*st_angle_rnormalize360_t)(st_modctx_t *angle_ctx,
+typedef float (*st_angle_rtod_t)(const st_anglectx_t *angle_ctx, float radians);
+typedef float (*st_angle_dtor_t)(const st_anglectx_t *angle_ctx, float degrees);
+typedef void (*st_angle_rnormalize360_t)(const st_anglectx_t *angle_ctx,
  float *radians);
-typedef float (*st_angle_rnormalized360_t)(st_modctx_t *angle_ctx,
+typedef float (*st_angle_rnormalized360_t)(const st_anglectx_t *angle_ctx,
  float radians);
-typedef void (*st_angle_dnormalize360_t)(st_modctx_t *angle_ctx,
+typedef void (*st_angle_dnormalize360_t)(const st_anglectx_t *angle_ctx,
  float *radians);
-typedef float (*st_angle_dnormalized360_t)(st_modctx_t *angle_ctx,
+typedef float (*st_angle_dnormalized360_t)(const st_anglectx_t *angle_ctx,
  float degrees);
-typedef float (*st_angle_rdsin_t)(st_modctx_t *angle_ctx, float radians);
-typedef float (*st_angle_dgsin_t)(st_modctx_t *angle_ctx, float degrees);
-typedef float (*st_angle_rdcos_t)(st_modctx_t *angle_ctx, float radians);
-typedef float (*st_angle_dgcos_t)(st_modctx_t *angle_ctx, float degrees);
-typedef float (*st_angle_rdtan_t)(st_modctx_t *angle_ctx, float radians);
-typedef float (*st_angle_dgtan_t)(st_modctx_t *angle_ctx, float degrees);
-typedef float (*st_angle_rdacos_t)(st_modctx_t *angle_ctx, float angle_cos);
-typedef float (*st_angle_dgacos_t)(st_modctx_t *angle_ctx, float angle_cos);
+typedef float (*st_angle_rdsin_t)(const st_anglectx_t *angle_ctx, float radians);
+typedef float (*st_angle_dgsin_t)(const st_anglectx_t *angle_ctx, float degrees);
+typedef float (*st_angle_rdcos_t)(const st_anglectx_t *angle_ctx, float radians);
+typedef float (*st_angle_dgcos_t)(const st_anglectx_t *angle_ctx, float degrees);
+typedef float (*st_angle_rdtan_t)(const st_anglectx_t *angle_ctx, float radians);
+typedef float (*st_angle_dgtan_t)(const st_anglectx_t *angle_ctx, float degrees);
+typedef float (*st_angle_rdacos_t)(const st_anglectx_t *angle_ctx,
+ float angle_cos);
+typedef float (*st_angle_dgacos_t)(const st_anglectx_t *angle_ctx,
+ float angle_cos);
 
 typedef struct {
-    st_angle_init_t           angle_init;
-    st_angle_quit_t           angle_quit;
-    st_angle_rtod_t           angle_rtod;
-    st_angle_dtor_t           angle_dtor;
-    st_angle_rnormalize360_t  angle_rnormalize360;
-    st_angle_rnormalized360_t angle_rnormalized360;
-    st_angle_dnormalize360_t  angle_dnormalize360;
-    st_angle_dnormalized360_t angle_dnormalized360;
-    st_angle_rdsin_t          angle_rdsin;
-    st_angle_dgsin_t          angle_dgsin;
-    st_angle_rdcos_t          angle_rdcos;
-    st_angle_dgcos_t          angle_dgcos;
-    st_angle_rdtan_t          angle_rdtan;
-    st_angle_dgtan_t          angle_dgtan;
-    st_angle_rdacos_t         angle_rdacos;
-    st_angle_dgacos_t         angle_dgacos;
-} st_angle_funcs_t;
+    st_modctx_funcs_t;
+    st_angle_rtod_t           rtod;
+    st_angle_dtor_t           dtor;
+    st_angle_rnormalize360_t  rnormalize360;
+    st_angle_rnormalized360_t rnormalized360;
+    st_angle_dnormalize360_t  dnormalize360;
+    st_angle_dnormalized360_t dnormalized360;
+    st_angle_rdsin_t          rdsin;
+    st_angle_dgsin_t          dgsin;
+    st_angle_rdcos_t          rdcos;
+    st_angle_dgcos_t          dgcos;
+    st_angle_rdtan_t          rdtan;
+    st_angle_dgtan_t          dgtan;
+    st_angle_rdacos_t         rdacos;
+    st_angle_dgacos_t         dgacos;
+} st_anglectx_funcs_t;
+
+#define ST_ANGLECTX_CALL(ctx, func, ...) \
+    ((st_anglectx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)

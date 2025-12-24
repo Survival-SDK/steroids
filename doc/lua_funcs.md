@@ -41,11 +41,12 @@ modsmgr:get_owner_unsafe(): object
 
 ## angle
 ```luau
-Angle = require "Angle"
+AngleCtx = require "AngleCtx"
 
-Angle.new_ctx(logger_ctx: logger_ctx): angle_ctx
+AngleCtx.new(...): angle_ctx
+AngleCtx.new_by_name(module_name: string, ...): angle_ctx
+AngleCtx.get_instance(module_name: ?string): angle_ctx
 
-angle_ctx:destroy()
 angle_ctx:rtod(radians: double): double
 angle_ctx:dtor(degrees: double): double
 angle_ctx:rnormalized360(radians: double): double
@@ -57,7 +58,15 @@ angle_ctx:dgcos(degrees: double): double
 angle_ctx:rdtan(radians: double): double
 angle_ctx:dgtan(degrees: double): double
 angle_ctx:rdacos(cos: double): double
-angle_ctx:dgacos(cos : double): double
+angle_ctx:dgacos(cos: double): double
+-- inherited from modctx
+angle_ctx:get_subsystem(): string
+angle_ctx:get_name(): string
+angle_ctx:as(target: string | table): any
+-- inherited from object
+angle_ctx:destroy()
+angle_ctx:get_owner(): object
+angle_ctx:get_owner_unsafe(): object
 ```
 
 ## drawq
