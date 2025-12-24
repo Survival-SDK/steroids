@@ -7,30 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_TEXTURE_OPENGL})
 set(ST_MODULE_SUBSYSTEM "texture")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "bitmap",
-        .name = NULL,
-    },
-    {
-        .subsystem = "gfxctx",
-        .name = NULL,
-    },
-    {
-        .subsystem = "gldebug",
-        .name = NULL,
-    },
-    {
-        .subsystem = "glloader",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 5)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -61,7 +37,7 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_TEXTURE_OPENGL})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "opengl.c"
 )
@@ -71,6 +47,7 @@ bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
     "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
+    # "${CMAKE_SOURCE_DIR}/src"
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 

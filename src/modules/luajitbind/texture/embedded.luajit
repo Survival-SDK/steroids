@@ -1,0 +1,161 @@
+-- Texture context and texture object
+package.preload["TextureCtx"] = function()
+    local ffi = require "ffi"
+    
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_texturectx {
+            st_modctx_t __st_parent;
+        } st_texturectx_t;
+
+        typedef struct st_texture {
+            st_object_t __st_parent;
+        } st_texture_t;
+
+        typedef st_texture_t *(*st_texture_load_t)(
+         st_texturectx_t *texture_ctx, const char *filename);
+        typedef st_texture_t *(*st_texture_memload_t)(
+         st_texturectx_t *texture_ctx, const void *data, size_t size);
+        typedef bool (*st_texture_bind_t)(const st_texture_t *texture,
+         unsigned unit);
+        typedef unsigned (*st_texture_get_width_t)(const st_texture_t *texture);
+        typedef unsigned (*st_texture_get_height_t)(
+         const st_texture_t *texture);
+
+        typedef struct {
+            st_modctx_funcs_t        __st_parent_funcs;
+            st_texture_load_t        load;
+            st_texture_memload_t     memload;
+        } st_texturectx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t        __st_parent_funcs;
+            st_texture_bind_t        bind;
+            st_texture_get_width_t   get_width;
+            st_texture_get_height_t  get_height;
+        } st_texture_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_texturectx_t *",
+    }
+
+    -- Internal table for texture object wrapper
+    M.__texture = {}
+
+    M.__texture.methods = setmetatable({
+        bind = function(self, unit)
+            return ffi.cast("const st_texture_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).bind(self.handle, unit)
+        end,
+
+        get_width = function(self)
+            return ffi.cast("const st_texture_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_width(self.handle)
+        end,
+
+        get_height = function(self)
+            return ffi.cast("const st_texture_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_height(self.handle)
+        end,
+    }, { __index = Object.methods })
+
+    M.__texture.__mt = ffi.metatype(
+        "struct { st_texture_t *handle; bool owned; }", {
+        __index = M.__texture.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.methods = setmetatable({
+        load = function(self, filename)
+            local texture_handle = ffi.cast("const st_texturectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).load(self.handle, filename)
+
+            if texture_handle == nil then
+                error(string.format(
+                    "TextureCtx.load: failed to load texture from file '%s'",
+                    filename or "nil")
+                )
+            end
+
+            return Object.__mtnew(M.__texture.__mt, texture_handle, true)
+        end,
+
+        memload = function(self, data, size)
+            local texture_handle = ffi.cast("const st_texturectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).memload(self.handle, data, size)
+
+            if texture_handle == nil then
+                error("TextureCtx.memload: failed to load texture from memory")
+            end
+
+            return Object.__mtnew(M.__texture.__mt, texture_handle, true)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_texturectx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local texture_ctor = modsmgr:get_ctor("texture", name)
+        if not texture_ctor then
+            error(string.format(
+                "TextureCtx.new_by_name: constructor not found for texture '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local texture_ctx = texture_ctor(params)
+
+        if not texture_ctx then
+            error(string.format(
+                "TextureCtx.new_by_name: failed to create texture instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_texturectx_t *",
+            texture_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("texture", module_name):as("TextureCtx")
+    end
+
+    return M
+end
+

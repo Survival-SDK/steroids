@@ -2,216 +2,199 @@
 
 #include <errno.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <GL/gl.h>
 
-#include "steroids/object.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
+#include "steroids/modules/bitmap.h"
+#include "steroids/modules/gfxctx.h"
+#include "steroids/modules/gldebug.h"
+#include "steroids/modules/glloader.h"
 
 #define ERRMSGBUF_SIZE 128
 
 static void (*glGenerateMipmap)(GLenum target);
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_texturectx_t *st_texture_init(const st_param_t params[]);
+static void st_texture_quit(st_texturectx_t *texture_ctx);
+static void st_texture_destroy(st_texture_t *texture);
+
+static st_texture_t *st_texture_load(st_texturectx_t *texture_ctx,
+ const char *filename);
+static st_texture_t *st_texture_memload(st_texturectx_t *texture_ctx,
+ const void *data, size_t size);
+static bool st_texture_bind(const st_texture_t *texture, unsigned unit);
+static unsigned st_texture_get_width(const st_texture_t *texture);
+static unsigned st_texture_get_height(const st_texture_t *texture);
+
+static st_texturectx_funcs_t texturectx_funcs = {
+    st_modctx_funcs,
+    .load    = st_texture_load,
+    .memload = st_texture_memload,
+};
 
 static st_texture_funcs_t texture_funcs = {
-    .destroy    = st_texture_destroy,
+    st_object_funcs,
     .bind       = st_texture_bind,
     .get_width  = st_texture_get_width,
     .get_height = st_texture_get_height,
 };
 
-ST_MODULE_DEF_GET_FUNC(texture_opengl)
-ST_MODULE_DEF_INIT_FUNC(texture_opengl)
+static const st_modprerq_t mod_prereqs[] = {
+    { "bitmap", NULL, },
+    { "gfxctx", NULL, },
+    { "gldebug", "opengl", },
+    { "glloader", NULL, },
+    { "logger", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_texture_opengl_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("texture", "opengl", ST_MODULE_TYPE, mod_prereqs,
+     st_texture_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_texture_opengl_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_texture_opengl_init(modsmgr);
 }
 #endif
 
-static bool st_texture_import_functions(st_modctx_t *texture_ctx,
- st_modctx_t *bitmap_ctx, st_modctx_t *logger_ctx, st_gfxctx_t *gfxctx) {
-    st_texture_opengl_t           *module = texture_ctx->data;
-    st_modctx_t                   *gfxctx_ctx;
-    st_modctx_t                   *glloader_ctx;
-    st_glloader_init_t             st_glloader_init;
-    st_glloader_quit_t             st_glloader_quit;
-    st_glloader_get_proc_address_t st_glloader_get_proc_address;
-
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "texture_opengl: Unable to load function \"error\" from module "
-         "\"logger\"\n");
-
-        return false;
-    }
-
-    gfxctx_ctx = st_object_get_owner(gfxctx);
-    module->gfxctx.api = ST_GFXCTX_CALL(gfxctx, get_api);
-
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", logger, info);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", logger, warning);
-
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, load);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, memload);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, destroy);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, get_data);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, get_width);
-    ST_LOAD_FUNCTION_FROM_CTX("texture_opengl", bitmap, get_height);
-
-    ST_LOAD_FUNCTION("texture_opengl", gldebug, NULL, init);
-    ST_LOAD_FUNCTION("texture_opengl", gldebug, NULL, quit);
-    ST_LOAD_FUNCTION("texture_opengl", gldebug, NULL, label_texture);
-    ST_LOAD_FUNCTION("texture_opengl", gldebug, NULL, unlabel_texture);
-    ST_LOAD_FUNCTION("texture_opengl", gldebug, NULL, get_error_msg);
-
-    st_glloader_init = global_modsmgr_funcs.get_function(global_modsmgr,
-     "glloader", gfxctx_ctx->name, "init");
-    if (!st_glloader_init) {
-        module->logger.error(module->logger.ctx,
-         "texture_opengl: Unable to load function \"init\" from module "
-         "\"glloader\"\n");
-
-        return false;
-    }
-
-    glloader_ctx = st_glloader_init(logger_ctx, gfxctx);
-    if (glloader_ctx) {
-        st_glloader_quit = global_modsmgr_funcs.get_function_from_ctx(
-         global_modsmgr, glloader_ctx, "quit");
-        if (!st_glloader_quit) {
-            module->logger.warning(module->logger.ctx,
-             "texture_opengl: Unable to load function \"quit\" from module "
-             "\"glloader\"\n");
-        }
-
-        st_glloader_get_proc_address =
-         global_modsmgr_funcs.get_function_from_ctx(global_modsmgr,
-         glloader_ctx, "get_proc_address");
-        if (!st_glloader_get_proc_address) {
-            module->logger.error(module->logger.ctx,
-             "texture_opengl: Unable to load function \"get_proc_address\" "
-             "from module \"gllogger\"\n");
-
-            goto get_proc_addr_fail;
-        }
-
-        glGenerateMipmap = st_glloader_get_proc_address(glloader_ctx,
-         "glGenerateMipmap");
-        if (!glGenerateMipmap) {
-            module->logger.warning(module->logger.ctx,
-             "texture_opengl: Unable to load function \"glGenerateMipmap\". "
-             "Mipmaps will not be supported in this OpenGL context");
-        }
-    } else {
-        glGenerateMipmap = NULL;
-    }
-
-get_proc_addr_fail:
-    if (glloader_ctx && st_glloader_quit)
-        st_glloader_quit(glloader_ctx);
-
-    return true;
-}
+static const char *st_module_subsystem = "texture";
+static const char *st_module_name = "opengl";
 
 static void st_texture_label(const st_texture_t *texture, const char *label) {
-    st_texture_opengl_t *module = ((st_modctx_t *)st_object_get_owner(texture))->data;
+    st_texturectx_t *texture_ctx = (st_texturectx_t *)st_object_get_owner(
+     (const st_object_t *)texture);
 
-    if (module->gldebug.ctx)
-        module->gldebug.label_texture(module->gldebug.ctx, texture->id, label);
+    if (texture_ctx->gldebug_ctx)
+        ST_GLDEBUGCTX_CALL(texture_ctx->gldebug_ctx, label_texture, texture->id,
+         label);
 }
 
 static void st_texture_unlabel(const st_texture_t *texture) {
-    st_texture_opengl_t *module = ((st_modctx_t *)st_object_get_owner(texture))->data;
+    st_texturectx_t *texture_ctx = (st_texturectx_t *)st_object_get_owner(
+     (const st_object_t *)texture);
 
-    if (module->gldebug.ctx)
-        module->gldebug.unlabel_texture(module->gldebug.ctx, texture->id);
+    if (texture_ctx->gldebug_ctx)
+        ST_GLDEBUGCTX_CALL(texture_ctx->gldebug_ctx, unlabel_texture,
+         texture->id);
 }
 
-static st_modctx_t *st_texture_init(st_modctx_t *bitmap_ctx,
- st_modctx_t *logger_ctx, st_gfxctx_t *gfxctx) {
-    st_modctx_t         *texture_ctx;
-    st_texture_opengl_t *module;
+static bool glapi_least(st_texturectx_t *texture_ctx, st_gapi_t api) {
+    if (api < ST_GAPI_GL11 || api > ST_GAPI_GL46)
+        return false;
 
-    texture_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_texture_opengl_data, sizeof(st_texture_opengl_t));
+    return texture_ctx->gfxctx_api >= api;
+}
 
-    if (!texture_ctx)
-        return NULL;
+static st_texturectx_t *st_texture_init(const st_param_t params[]) {
+    st_gfxctx_t      *gfxctx = st_modctx_get_param_as_ptr(params, "gfxctx");
+    st_gfxctxctx_t   *gfxctx_ctx = (st_gfxctxctx_t *)st_object_get_owner(
+     (st_object_t *)gfxctx);
+    st_modsmgr_t     *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_bitmapctx_t   *bitmap_ctx = (st_bitmapctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "bitmap", NULL);
+    st_loggerctx_t   *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_glloaderctx_t *glloader_ctx = (st_glloaderctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "glloader", 
+     ST_GFXCTXCTX_CALL(gfxctx_ctx, get_name));
+    st_gldebugctx_t  *gldebug_ctx = (st_gldebugctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "gldebug", "opengl");
+    st_texturectx_t  *texture_ctx;
 
-    texture_ctx->funcs = &st_texture_opengl_funcs;
-
-    module = texture_ctx->data;
-    module->bitmap.ctx = bitmap_ctx;
-    module->logger.ctx = logger_ctx;
-    module->gfxctx.handle = gfxctx;
-
-    if (!st_texture_import_functions(texture_ctx, bitmap_ctx, logger_ctx,
-     gfxctx)) {
-        global_modsmgr_funcs.free_module_ctx(global_modsmgr, texture_ctx);
+    if (!bitmap_ctx || !logger_ctx || !glloader_ctx || !gldebug_ctx) {
+        if (logger_ctx)
+            ST_LOGGERCTX_CALL(logger_ctx, error,
+             "%s_%s: Unable to get required module contexts",
+             st_module_subsystem, st_module_name);
+        else
+            fprintf(stderr,
+             "%s_%s: Unable to get logger context\n", st_module_subsystem,
+             st_module_name);
 
         return NULL;
     }
 
-    module->gldebug.ctx = module->gldebug.init(logger_ctx, gfxctx);
-    if (!module->gldebug.ctx)
-        module->logger.warning(module->logger.ctx,
-         "texture_opengl: Unable to initialize gldebug");
+    if (!gfxctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: gfxctx parameter is required", st_module_subsystem,
+         st_module_name);
 
-    module->logger.info(module->logger.ctx,
-     "texture_opengl: Texture mgr initialized.");
+        return NULL;
+    }
+
+    texture_ctx = (st_texturectx_t *)st_modctx_new(st_module_subsystem,
+     st_module_name, sizeof(st_texturectx_t), NULL, &texturectx_funcs,
+     (st_object_dtor_t)st_texture_quit);
+    if (!texture_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to create texture context", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+
+    texture_ctx->bitmap_ctx = bitmap_ctx;
+    texture_ctx->logger_ctx = logger_ctx;
+    texture_ctx->gldebug_ctx = gldebug_ctx;
+    texture_ctx->glloader_ctx = glloader_ctx;
+    texture_ctx->gfxctx = gfxctx;
+    texture_ctx->gfxctx_api = ST_GFXCTX_CALL(gfxctx, get_api);
+
+    gfxctx_ctx = (st_modctx_t *)st_object_get_owner((st_object_t *)gfxctx);
+    
+    glGenerateMipmap = (void (*)(GLenum))ST_GLLOADERCTX_CALL(glloader_ctx,
+     get_proc_address, "glGenerateMipmap");
+    if (!glGenerateMipmap)
+        ST_LOGGERCTX_CALL(logger_ctx, warning,
+         "%s_%s: Unable to load function \"glGenerateMipmap\". "
+         "Mipmaps will not be supported in this OpenGL context",
+         st_module_subsystem, st_module_name);
+
+    ST_LOGGERCTX_CALL(logger_ctx, info,
+     "%s_%s: Context initialized", st_module_subsystem, st_module_name);
 
     return texture_ctx;
 }
 
-static void st_texture_quit(st_modctx_t *texture_ctx) {
-    st_texture_opengl_t *module = texture_ctx->data;
-
-    if (module->gldebug.ctx)
-        module->gldebug.quit(module->gldebug.ctx);
-
-    module->logger.info(module->logger.ctx,
-     "texture_opengl: Texture mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, texture_ctx);
+static void st_texture_quit(st_texturectx_t *texture_ctx) {
+    ST_LOGGERCTX_CALL(texture_ctx->logger_ctx, info,
+     "%s_%s: Context destroyed", st_module_subsystem, st_module_name);
+    free(texture_ctx);
 }
 
-static bool glapi_least(st_modctx_t *texture_ctx, st_gapi_t api) {
-    st_texture_opengl_t *module = texture_ctx->data;
-
-    if (api < ST_GAPI_GL11 || api > ST_GAPI_GL46)
-        return false;
-
-    return module->gfxctx.api >= api;
+static void st_texture_destroy(st_texture_t *texture) {
+    st_texture_unlabel(texture);
+    glDeleteTextures(1, &texture->id);
+    free(texture);
 }
 
-static st_texture_t *st_texture_load_impl(st_modctx_t *texture_ctx,
+static st_texture_t *st_texture_load_impl(st_texturectx_t *texture_ctx,
  const st_bitmap_t *bitmap, const char *name) {
-    st_texture_opengl_t *module = texture_ctx->data;
-    GLenum               error;
-    st_texture_t        *texture = malloc(sizeof(st_texture_t));
+    GLenum        error;
+    st_texture_t *texture = (st_texture_t *)st_object_new(sizeof(st_texture_t),
+     &texture_funcs, (st_object_dtor_t)st_texture_destroy,
+     (st_object_t *)texture_ctx);
 
     if (!texture) {
-        char errbuf[ERRMSGBUF_SIZE];
-
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "texture_opengl: Unable to allocate memory for texture struct "
-             "\"%s\": %s", name ? name : "(unnamed)", errbuf);
+        ST_LOGGERCTX_CALL(texture_ctx->logger_ctx, error,
+         "%s_%s: Unable to create texture object \"%s\"", st_module_subsystem,
+         st_module_name, name ? name : "(unnamed)");
 
         return NULL;
     }
 
-    st_object_make(texture, texture_ctx, &texture_funcs);
-    texture->width = module->bitmap.get_width(bitmap);
-    texture->height = module->bitmap.get_height(bitmap);
+    texture->width = ST_BITMAP_CALL(bitmap, get_width);
+    texture->height = ST_BITMAP_CALL(bitmap, get_height);
 
-    ST_GFXCTX_CALL(module->gfxctx.handle, make_current);
+    ST_GFXCTX_CALL(texture_ctx->gfxctx, make_current);
     glGenTextures(1, &texture->id);
     glBindTexture(GL_TEXTURE_2D, texture->id);
     st_texture_label(texture, name ? name : "(unnamed)");
@@ -229,16 +212,17 @@ static st_texture_t *st_texture_load_impl(st_modctx_t *texture_ctx,
     }
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (GLsizei)texture->width,
      (GLsizei)texture->height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-     module->bitmap.get_data(bitmap));
+     ST_BITMAP_CALL(bitmap, get_data));
 
     if (glapi_least(texture_ctx, ST_GAPI_GL3) && glGenerateMipmap) {
         glGenerateMipmap(GL_TEXTURE_2D);
         error = glGetError();
         if (error != GL_NO_ERROR) {
-            module->logger.warning(module->logger.ctx,
-             "texture_opengl: Unable to generate mipmap for texture \"%s\": %s",
-             name ? name : "(unnamed)",
-             module->gldebug.get_error_msg(module->gldebug.ctx, error));
+            ST_LOGGERCTX_CALL(texture_ctx->logger_ctx, warning,
+             "%s_%s: Unable to generate mipmap for texture \"%s\": %s",
+             st_module_subsystem, st_module_name, name ? name : "(unnamed)",
+             ST_GLDEBUGCTX_CALL(texture_ctx->gldebug_ctx, get_error_msg,
+              error));
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         }
@@ -257,11 +241,10 @@ static st_texture_t *st_texture_load_impl(st_modctx_t *texture_ctx,
     return texture;
 }
 
-static st_texture_t *st_texture_load(st_modctx_t *texture_ctx,
+static st_texture_t *st_texture_load(st_texturectx_t *texture_ctx,
  const char *filename) {
-    st_texture_opengl_t *module = texture_ctx->data;
-    st_texture_t        *texture;
-    st_bitmap_t         *bitmap = module->bitmap.load(module->bitmap.ctx,
+    st_texture_t *texture;
+    st_bitmap_t  *bitmap = ST_BITMAPCTX_CALL(texture_ctx->bitmap_ctx, load,
      filename);
 
     if (!bitmap)
@@ -269,16 +252,15 @@ static st_texture_t *st_texture_load(st_modctx_t *texture_ctx,
 
     texture = st_texture_load_impl(texture_ctx, bitmap, filename);
 
-    module->bitmap.destroy(bitmap);
+    ST_BITMAP_CALL(bitmap, destroy);
 
     return texture;
 }
 
-static st_texture_t *st_texture_memload(st_modctx_t *texture_ctx,
+static st_texture_t *st_texture_memload(st_texturectx_t *texture_ctx,
  const void *data, size_t size) {
-    st_texture_opengl_t *module = texture_ctx->data;
-    st_texture_t        *texture;
-    st_bitmap_t         *bitmap = module->bitmap.memload(module->bitmap.ctx,
+    st_texture_t *texture;
+    st_bitmap_t  *bitmap = ST_BITMAPCTX_CALL(texture_ctx->bitmap_ctx, memload,
      data, size);
 
     if (!bitmap)
@@ -286,15 +268,9 @@ static st_texture_t *st_texture_memload(st_modctx_t *texture_ctx,
 
     texture = st_texture_load_impl(texture_ctx, bitmap, NULL);
 
-    module->bitmap.destroy(bitmap);
+    ST_BITMAP_CALL(bitmap, destroy);
 
     return texture;
-}
-
-static void st_texture_destroy(st_texture_t *texture) {
-    st_texture_unlabel(texture);
-    glDeleteTextures(1, &texture->id);
-    free(texture);
 }
 
 static bool st_texture_bind(const st_texture_t *texture, unsigned unit) {
@@ -304,12 +280,13 @@ static bool st_texture_bind(const st_texture_t *texture, unsigned unit) {
 
     error = glGetError();
     if (error != GL_NO_ERROR) {
-        st_texture_opengl_t *module = (
-         (st_modctx_t *)st_object_get_owner(texture))->data;
+        st_texturectx_t *texture_ctx = (st_texturectx_t *)st_object_get_owner(
+         (const st_object_t *)texture);
 
-        module->logger.error(module->logger.ctx,
-         "texture_opengl: Unable to bind texture: %s",
-         module->gldebug.get_error_msg(module->gldebug.ctx, error));
+        ST_LOGGERCTX_CALL(texture_ctx->logger_ctx, error,
+         "%s_%s: Unable to bind texture: %s", st_module_subsystem,
+         st_module_name, ST_GLDEBUGCTX_CALL(texture_ctx->gldebug_ctx,
+          get_error_msg, error));
 
         return false;
     }
