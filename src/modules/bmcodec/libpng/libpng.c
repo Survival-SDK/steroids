@@ -58,8 +58,10 @@ static st_bmcodecctx_t *st_bmcodec_init(const st_param_t params[]) {
     st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
     st_loggerctx_t *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "logger", NULL);
-    st_bitmapctx_t *bitmap_ctx = (st_bitmapctx_t *)ST_MODSMGR_CALL(modsmgr,
-     get_singleton, "bitmap", NULL);
+    /* We need get bitmap_ctx via params because bitmap_ctx is not available
+     * yet as singleton when this context is created */
+     st_bitmapctx_t *bitmap_ctx = st_modctx_get_param_as_ptr(params, 
+     "bitmap_ctx");
     st_bmcodecctx_t *bmcodec_ctx = (st_bmcodecctx_t *)st_modctx_new("bmcodec",
      "libpng", sizeof(st_bmcodecctx_t), NULL, &bmcodecctx_funcs,
      (st_object_dtor_t)st_bmcodec_quit);

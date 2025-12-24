@@ -112,7 +112,8 @@ static void st_bitmap_init_codecs(st_bitmapctx_t *bitmap_ctx) {
         }
 
         ctx = ctx_ctor((st_params_t){
-            {"modsmgr", (uintptr_t)bitmap_ctx->modsmgr}
+            {"modsmgr", (uintptr_t)bitmap_ctx->modsmgr},
+            {"bitmap_ctx", (uintptr_t)bitmap_ctx},
         });
         if (!ctx)
             continue;
