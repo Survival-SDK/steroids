@@ -26,8 +26,8 @@ ModsMgr = require "ModsMgr"
 
 ModsMgr.get_instance(): modsmgr
 
--- modsmgr:get_module_names(dst: table, mods_count: integer, 
---  modname_size: integer, subsystem: string)
+<!-- modsmgr:get_module_names(dst: table, mods_count: integer, 
+ modname_size: integer, subsystem: string) -->
 modsmgr:get_ctor(subsystem: string, module_name: string): cfunction
 modsmgr:create_singleton(subsystem: string, module_name: string, 
  params: params): modctx
@@ -412,8 +412,8 @@ logger_ctx:enable_events(): bool
 logger_ctx:set_stdout_levels(levels: integer): bool
 logger_ctx:set_stderr_levels(levels: integer): bool
 logger_ctx:set_log_file(filename: string, levels: integer): bool
--- logger_ctx:set_callback(callback: function, userdata: ?any, 
---  levels: integer): bool
+<!-- logger_ctx:set_callback(callback: function, userdata: ?any, 
+ levels: integer): bool -->
 logger_ctx:debug(format: string, ...)
 logger_ctx:info(format: string, ...)
 logger_ctx:warning(format: string, ...)
