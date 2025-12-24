@@ -601,7 +601,7 @@ static st_gldebugctx_t *st_gldebug_init(const st_param_t params[]) {
     st_gfxctx_t      *gfxctx = st_modctx_get_param_as_ptr(params, "gfxctx");
     st_gldebugctx_t  *gldebug_ctx = (st_gldebugctx_t *)st_modctx_new(
      "gldebug", "opengl", sizeof(st_gldebugctx_t), NULL,
-     &st_gldebug_opengl_funcs, NULL);
+     &st_gldebug_opengl_funcs, (st_object_dtor_t)st_gldebug_quit);
 
     if (!gldebug_ctx)
         return NULL;
