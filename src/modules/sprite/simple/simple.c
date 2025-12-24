@@ -1,157 +1,118 @@
 #include "simple.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "steroids/modules/atlas.h"
-#include "steroids/object.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE 128
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_spritectx_t *st_sprite_init(const st_param_t params[]);
+static void st_sprite_quit(st_spritectx_t *sprite_ctx);
+static void st_sprite_destroy(st_sprite_t *sprite);
+
+static st_sprite_t *st_sprite_from_texture(st_spritectx_t *sprite_ctx,
+ const st_texture_t *texture);
+static const st_texture_t *st_sprite_get_texture(const st_sprite_t *sprite);
+static unsigned st_sprite_get_width(const st_sprite_t *sprite);
+static unsigned st_sprite_get_height(const st_sprite_t *sprite);
+static void st_sprite_export_uv(const st_sprite_t *sprite, st_uv_t *dstuv);
+
+static st_spritectx_funcs_t spritectx_funcs = {
+    st_modctx_funcs,
+    .from_texture = st_sprite_from_texture,
+};
 
 static st_sprite_funcs_t sprite_funcs = {
-    .destroy     = st_sprite_destroy,
+    st_object_funcs,
     .get_texture = st_sprite_get_texture,
     .get_width   = st_sprite_get_width,
     .get_height  = st_sprite_get_height,
     .export_uv   = st_sprite_export_uv,
 };
 
-ST_MODULE_DEF_GET_FUNC(sprite_simple)
-ST_MODULE_DEF_INIT_FUNC(sprite_simple)
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger", NULL, },
+    { "texture", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_sprite_simple_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("sprite", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_sprite_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_sprite_simple_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_sprite_simple_init(modsmgr);
 }
 #endif
 
-static bool st_sprite_import_functions(st_modctx_t *sprite_ctx,
- st_modctx_t *logger_ctx) {
-    st_sprite_simple_t *module = sprite_ctx->data;
+static const char *st_module_subsystem = "sprite";
+static const char *st_module_name = "simple";
 
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
+static st_spritectx_t *st_sprite_init(const st_param_t params[]) {
+    st_modsmgr_t    *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t  *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_spritectx_t  *sprite_ctx;
+
+    if (!logger_ctx) {
         fprintf(stderr,
-         "sprite_simple: Unable to load function \"error\" from module "
-         "\"logger\"\n");
+         "%s_%s: Unable to get logger context\n", st_module_subsystem,
+         st_module_name);
 
-        return false;
+        return NULL;
     }
 
-    ST_LOAD_FUNCTION_FROM_CTX("sprite_simple", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("sprite_simple", logger, info);
+    sprite_ctx = (st_spritectx_t *)st_modctx_new(st_module_subsystem,
+     st_module_name, sizeof(st_spritectx_t), NULL, &spritectx_funcs,
+     (st_object_dtor_t)st_sprite_quit);
+    if (!sprite_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to create sprite context", st_module_subsystem,
+         st_module_name);
 
-    return true;
-}
-
-static st_modctx_t *st_sprite_init(st_modctx_t *logger_ctx) {
-    st_modctx_t        *sprite_ctx;
-    st_sprite_simple_t *module;
-
-    sprite_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_sprite_simple_data, sizeof(st_sprite_simple_t));
-
-    if (!sprite_ctx)
         return NULL;
+    }
 
-    sprite_ctx->funcs = &st_sprite_simple_funcs;
+    sprite_ctx->logger_ctx = logger_ctx;
 
-    module = sprite_ctx->data;
-    module->logger.ctx = logger_ctx;
-
-    if (!st_sprite_import_functions(sprite_ctx, logger_ctx))
-        goto fail;
-
-    module->logger.info(module->logger.ctx,
-     "sprite_simple: Sprites mgr initialized");
+    ST_LOGGERCTX_CALL(logger_ctx, info,
+     "%s_%s: Context initialized", st_module_subsystem, st_module_name);
 
     return sprite_ctx;
-
-fail:
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, sprite_ctx);
-
-    return NULL;
 }
 
-static void st_sprite_quit(st_modctx_t *sprite_ctx) {
-    st_sprite_simple_t *module = sprite_ctx->data;
-
-    module->logger.info(module->logger.ctx,
-     "sprite_simple: Sprites mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, sprite_ctx);
+static void st_sprite_quit(st_spritectx_t *sprite_ctx) {
+    ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, info,
+     "%s_%s: Context destroyed", st_module_subsystem, st_module_name);
+    free(sprite_ctx);
 }
 
-static st_sprite_t *st_sprite_create(st_modctx_t *sprite_ctx,
- const st_atlas_t *atlas, size_t clip_num) {
-    st_sprite_simple_t *module = sprite_ctx->data;
-    unsigned            texture_width;
-    unsigned            texture_height;
-    unsigned            clip_x;
-    unsigned            clip_y;
-    st_sprite_t        *sprite = malloc(sizeof(st_sprite_t));
-
-    if (!sprite) {
-        char errbuf[ERRMSGBUF_SIZE];
-
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "sprite_simple: Unable to allocate memory for new sprite: %s",
-             errbuf);
-
-        return NULL;
-    }
-
-    st_object_make(sprite, sprite_ctx, &sprite_funcs);
-    sprite->texture = ST_ATLAS_CALL(atlas, get_texture);
-
-    texture_width = ST_TEXTURE_CALL(sprite->texture, get_width);
-    texture_height = ST_TEXTURE_CALL(sprite->texture, get_height);
-    clip_x = ST_ATLAS_CALL(atlas, get_clip_x, clip_num);
-    clip_y = ST_ATLAS_CALL(atlas, get_clip_y, clip_num);
-
-    sprite->width = ST_ATLAS_CALL(atlas, get_clip_width, clip_num);
-    sprite->height = ST_ATLAS_CALL(atlas, get_clip_height, clip_num);
-
-    sprite->uv.upper_left.u = (float)clip_x / (float)texture_width;
-    sprite->uv.upper_left.v = (float)clip_y / (float)texture_height;
-    sprite->uv.upper_right.u = (float)(clip_x + sprite->width) /
-     (float)texture_width;
-    sprite->uv.upper_right.v = (float)clip_y / (float)texture_height;
-    sprite->uv.lower_left.u = (float)clip_x / (float)texture_width;
-    sprite->uv.lower_left.v = (float)(clip_y + sprite->height) /
-     (float)texture_height;
-    sprite->uv.lower_right.u = (float)(clip_x + sprite->width) /
-     (float)texture_width;
-    sprite->uv.lower_right.v = (float)(clip_y + sprite->height) /
-     (float)texture_height;
-
-    return sprite;
+static void st_sprite_destroy(st_sprite_t *sprite) {
+    free(sprite);
 }
 
-static st_sprite_t *st_sprite_from_texture(st_modctx_t *sprite_ctx,
+static st_sprite_t *st_sprite_from_texture(st_spritectx_t *sprite_ctx,
  const st_texture_t *texture) {
-    st_sprite_simple_t *module = sprite_ctx->data;
-    st_sprite_t        *sprite = malloc(sizeof(st_sprite_t));
+    st_sprite_t *sprite = (st_sprite_t *)st_object_new(sizeof(st_sprite_t),
+     &sprite_funcs, (st_object_dtor_t)st_sprite_destroy,
+     (st_object_t *)sprite_ctx);
 
     if (!sprite) {
-        char errbuf[ERRMSGBUF_SIZE];
-
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "sprite_simple: Unable to allocate memory for new sprite: %s",
-             errbuf);
+        ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, error,
+         "%s_%s: Unable to create sprite object", st_module_subsystem,
+         st_module_name);
 
         return NULL;
     }
 
-    st_object_make(sprite, sprite_ctx, &sprite_funcs);
     sprite->texture = texture;
-
     sprite->width = ST_TEXTURE_CALL(texture, get_width);
     sprite->height = ST_TEXTURE_CALL(texture, get_height);
 
@@ -165,10 +126,6 @@ static st_sprite_t *st_sprite_from_texture(st_modctx_t *sprite_ctx,
     sprite->uv.lower_right.v = 1.0f;
 
     return sprite;
-}
-
-static void st_sprite_destroy(st_sprite_t *sprite) {
-    free(sprite);
 }
 
 static const st_texture_t *st_sprite_get_texture(const st_sprite_t *sprite) {

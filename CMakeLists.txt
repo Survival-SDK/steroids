@@ -94,8 +94,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/render"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/render")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/sprite"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/sprite")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/sprite"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/sprite")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/terminal"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/terminal")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/texture"
@@ -130,8 +130,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
  "${CMAKE_BINARY_DIR}/src/modules/so/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
  "${CMAKE_BINARY_DIR}/src/modules/spcpaths/cfgpath")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sprite/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/sprite/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sprite/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/sprite/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/terminal/simple"
  "${CMAKE_BINARY_DIR}/src/modules/terminal/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/texture/opengl"

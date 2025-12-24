@@ -571,15 +571,29 @@ render_ctx:process()
 
 ## sprite
 ```luau
-Sprite = require "Sprite"
+SpriteCtx = require "SpriteCtx"
 
-Sprite.new_ctx(logger_ctx: logger_ctx): sprite_ctx
+SpriteCtx.new(...): sprite_ctx
+SpriteCtx.new_by_name(module_name: string, ...): sprite_ctx
+SpriteCtx.get_instance(module_name: ?string): sprite_ctx
 
-sprite_ctx:destroy()
 sprite_ctx:from_texture(texture: texture): sprite
-sprite:destroy()
+-- inherited from modctx
+sprite_ctx:get_subsystem(): string
+sprite_ctx:get_name(): string
+sprite_ctx:as(target: string | table): any
+-- inherited from object
+sprite_ctx:destroy()
+sprite_ctx:get_owner(): object
+sprite_ctx:get_owner_unsafe(): object
+
+sprite:get_texture(): texture
 sprite:get_width(): integer
 sprite:get_height(): integer
+-- inherited from object
+sprite:destroy()
+sprite:get_owner(): object
+sprite:get_owner_unsafe(): object
 ```
 
 ## timer
