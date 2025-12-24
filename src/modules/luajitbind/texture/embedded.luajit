@@ -17,8 +17,8 @@ package.preload["TextureCtx"] = function()
 
         typedef st_texture_t *(*st_texture_load_t)(
          st_texturectx_t *texture_ctx, const char *filename);
-        typedef st_texture_t *(*st_texture_memload_t)(
-         st_texturectx_t *texture_ctx, const void *data, size_t size);
+        // typedef st_texture_t *(*st_texture_memload_t)(
+        //  st_texturectx_t *texture_ctx, const void *data, size_t size);
         typedef bool (*st_texture_bind_t)(const st_texture_t *texture,
          unsigned unit);
         typedef unsigned (*st_texture_get_width_t)(const st_texture_t *texture);
@@ -28,7 +28,7 @@ package.preload["TextureCtx"] = function()
         typedef struct {
             st_modctx_funcs_t        __st_parent_funcs;
             st_texture_load_t        load;
-            st_texture_memload_t     memload;
+            void                     *__memload;
         } st_texturectx_funcs_t;
 
         typedef struct {
@@ -95,17 +95,17 @@ package.preload["TextureCtx"] = function()
             return Object.__mtnew(M.__texture.__mt, texture_handle, true)
         end,
 
-        memload = function(self, data, size)
-            local texture_handle = ffi.cast("const st_texturectx_funcs_t *",
-                ffi.cast("st_object_t *", self.handle).funcs
-            ).memload(self.handle, data, size)
+        -- memload = function(self, data, size)
+        --     local texture_handle = ffi.cast("const st_texturectx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).memload(self.handle, data, size)
 
-            if texture_handle == nil then
-                error("TextureCtx.memload: failed to load texture from memory")
-            end
+        --     if texture_handle == nil then
+        --         error("TextureCtx.memload: failed to load texture from memory")
+        --     end
 
-            return Object.__mtnew(M.__texture.__mt, texture_handle, true)
-        end,
+        --     return Object.__mtnew(M.__texture.__mt, texture_handle, true)
+        -- end,
     }, { __index = ModCtx.methods })
 
     M.__mt = ffi.metatype(
