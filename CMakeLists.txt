@@ -42,8 +42,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/drawq/simple"
 #  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
-#  "${CMAKE_BINARY_DIR}/src/modules/dynarr/scv")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
+ "${CMAKE_BINARY_DIR}/src/modules/dynarr/scv")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
  "${CMAKE_BINARY_DIR}/src/modules/events/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
@@ -72,8 +72,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/angle"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/bitmap")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/drawq"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/drawq")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/dynarr"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/dynarr")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"

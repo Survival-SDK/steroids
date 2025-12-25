@@ -78,15 +78,6 @@ Drawq.new_ctx(dynarr_ctx: dynarr_ctx, logger_ctx: logger_ctx, sprite_ctx: sprite
 drawq_ctx:destroy()
 ```
 
-## dynarr
-```luau
-Dynarr = require "Dynarr"
-
-Dynarr.new_ctx(logger_ctx: logger_ctx): dynarr_ctx
-
-dynarr_ctx:destroy()
-```
-
 ## fs
 ```luau
 Fs = require "Fs"
