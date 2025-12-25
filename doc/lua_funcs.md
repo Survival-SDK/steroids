@@ -429,37 +429,6 @@ logger_ctx:get_owner(): object
 logger_ctx:get_owner_unsafe(): object
 ```
 
-## matrix3x3
-```luau
-Matrix3x3 = require "Matrix3x3"
-
-Matrix3x3.new_ctx(logger_ctx: logger_ctx, angle_ctx: angle_ctx): matrix3x3_ctx
-
-matrix3x3_ctx:destroy()
-matrix3x3_ctx:custom(r1c1: double, r1c2: double, r1c3: double, r2c1: double, r2c2: double, r2c3: double): matrix3x3
-matrix3x3_ctx:identity(): matrix3x3
-matrix3x3_ctx:translation(x: double, y: double): matrix3x3
-matrix3x3_ctx:scaling(hscale: double, vscale: double): matrix3x3
-matrix3x3_ctx:rrotation(radians: double): matrix3x3
-matrix3x3_ctx:drotation(degrees: double): matrix3x3
-matrix3x3_ctx:rhshearing(radians: double): matrix3x3
-matrix3x3_ctx:dhshearing(degrees: double): matrix3x3
-matrix3x3_ctx:rvshearing(radians: double): matrix3x3
-matrix3x3_ctx:dvshearing(degrees: double): matrix3x3
-
-matrix3x3:clone(): matrix3x3
-matrix3x3:apply(other: matrix): matrix3x3
-matrix3x3:translate(x: double, y: double): matrix3x3
-matrix3x3:scale(hscale: double, vscale: double): matrix3x3
-matrix3x3:rrotate(radians: double): matrix3x3
-matrix3x3:drotate(degrees: double): matrix3x3
-matrix3x3:rhshear(radians: double): matrix3x3
-matrix3x3:dhshear(degrees: double): matrix3x3
-matrix3x3:rvshear(radians: double): matrix3x3
-matrix3x3:dvshear(degrees: double): matrix3x3
-matrix3x3:get_data(): double, double, double, double, double, double
-```
-
 ## monitor
 ```luau
 MonitorCtx = require "MonitorCtx"
@@ -655,32 +624,6 @@ texture:get_height(): integer
 texture:destroy()
 texture:get_owner(): object
 texture:get_owner_unsafe(): object
-```
-
-## vec2
-```luau
-Vec2 = require "Vec2"
-
-Vec2.new_ctx(logger_ctx: logger_ctx, angle_ctx: angle_ctx): vec2_ctx
-
-vec2_ctx:destroy()
-vec2_ctx:sum(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:diff(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:product(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:len(x: double, y: double): double
-vec2_ctx:distance(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:unit(x: double, y: double): double, double
-vec2_ctx:dot_product(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:rangle(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:dangle(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:rrotation(x: double, y: double, radians: double): double, double
-vec2_ctx:drotation(x: double, y: double, degrees: double): double, double
-vec2_ctx:rotation90(x: double, y: double): double, double
-vec2_ctx:rotation180(x: double, y: double): double, double
-vec2_ctx:rotation270(x: double, y: double): double, double
-vec2_ctx:applying_matrix3x3(x: double, y: double, matrix: matrix3x3): double, double
-vec2_ctx:default_basis_xvec(): double, double
-vec2_ctx:default_basis_yvec(): double, double
 ```
 
 ## window
