@@ -2,6 +2,7 @@
 
 #include "steroids/modctx.h"
 #include "steroids/object.h"
+#include "steroids/modules/texture.h"
 
 #ifndef ST_SPRITECTX_T_DEFINED
     typedef st_modctx_t st_spritectx_t;
