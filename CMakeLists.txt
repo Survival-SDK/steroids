@@ -68,8 +68,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
  "${CMAKE_BINARY_DIR}/src/modules/luajit/luajit")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/angle"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/angle")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/bitmap"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/bitmap")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/drawq"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/drawq")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
