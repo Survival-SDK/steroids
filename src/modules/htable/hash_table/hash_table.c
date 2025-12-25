@@ -66,9 +66,8 @@ st_moddata_t *st_module_htable_hash_table_init(st_modsmgr_t *modsmgr) {
 }
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_htable_hash_table_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_htable_hash_table_init(modsmgr);
 }
 #endif
 
