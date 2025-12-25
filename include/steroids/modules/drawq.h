@@ -3,12 +3,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "steroids/module.h"
+#include "steroids/modctx.h"
 #include "steroids/modules/sprite.h"
 #include "steroids/object.h"
 
+#ifndef ST_DRAWQCTX_T_DEFINED
+    typedef st_modctx_t st_drawqctx_t;
+#endif
 #ifndef ST_DRAWQ_T_DEFINED
-    typedef struct st_drawq_s st_drawq_t;
+    typedef st_object_t st_drawq_t;
 #endif
 
 typedef struct {
@@ -25,12 +28,7 @@ typedef struct {
     float              pivot_y;
 } st_drawrec_t;
 
-typedef st_modctx_t *(*st_drawq_init_t)(st_modctx_t *dynarr_ctx,
- st_modctx_t *logger_ctx, st_modctx_t *sprite_ctx);
-typedef void (*st_drawq_quit_t)(st_modctx_t *drawq_ctx);
-
-typedef st_drawq_t *(*st_drawq_create_t)(st_modctx_t *drawq_ctx);
-typedef void (*st_drawq_destroy_t)(st_drawq_t *drawq);
+typedef st_drawq_t *(*st_drawq_create_t)(st_drawqctx_t *drawq_ctx);
 typedef size_t (*st_drawq_len_t)(const st_drawq_t *drawq);
 typedef bool (*st_drawq_empty_t)(const st_drawq_t *drawq);
 typedef bool (*st_drawq_export_entry_t)(const st_drawq_t *drawq,
@@ -43,12 +41,12 @@ typedef bool (*st_drawq_sort_t)(st_drawq_t *drawq);
 typedef bool (*st_drawq_clear_t)(st_drawq_t *drawq);
 
 typedef struct {
-    st_drawq_quit_t   quit;
+    st_modctx_funcs_t;
     st_drawq_create_t create;
 } st_drawqctx_funcs_t;
 
 typedef struct {
-    st_drawq_destroy_t      destroy;
+    st_object_funcs_t;
     st_drawq_len_t          len;
     st_drawq_empty_t        empty;
     st_drawq_export_entry_t export_entry;
@@ -58,5 +56,9 @@ typedef struct {
     st_drawq_clear_t        clear;
 } st_drawq_funcs_t;
 
+#define ST_DRAWQCTX_CALL(ctx, func, ...) \
+    ((st_drawqctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)
 #define ST_DRAWQ_CALL(object, func, ...) \
-    ((st_drawq_funcs_t *)((const st_object_t *)object)->funcs)->func(object, ## __VA_ARGS__)
+    ((st_drawq_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

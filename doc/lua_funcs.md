@@ -69,15 +69,6 @@ angle_ctx:get_owner(): object
 angle_ctx:get_owner_unsafe(): object
 ```
 
-## drawq
-```luau
-Drawq = require "Drawq"
-
-Drawq.new_ctx(dynarr_ctx: dynarr_ctx, logger_ctx: logger_ctx, sprite_ctx: sprite_ctx): drawq_ctx
-
-drawq_ctx:destroy()
-```
-
 ## fs
 ```luau
 Fs = require "Fs"
