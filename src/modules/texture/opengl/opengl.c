@@ -194,7 +194,16 @@ static st_texture_t *st_texture_load_impl(st_texturectx_t *texture_ctx,
     texture->width = ST_BITMAP_CALL(bitmap, get_width);
     texture->height = ST_BITMAP_CALL(bitmap, get_height);
 
-    ST_GFXCTX_CALL(texture_ctx->gfxctx, make_current);
+    if (!ST_GFXCTX_CALL(texture_ctx->gfxctx, make_current)) {
+        ST_LOGGERCTX_CALL(texture_ctx->logger_ctx, error,
+         "%s_%s: Unable to make OpenGL context current. Texture creation failed",
+         st_module_subsystem, st_module_name);
+
+        free(texture);
+
+        return NULL;
+    }
+
     glGenTextures(1, &texture->id);
     glBindTexture(GL_TEXTURE_2D, texture->id);
     st_texture_label(texture, name ? name : "(unnamed)");
