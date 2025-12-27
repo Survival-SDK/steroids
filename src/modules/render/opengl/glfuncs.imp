@@ -34,18 +34,18 @@ static bool glapi_least(st_gapi_t current_api, st_gapi_t req_api) {
         && current_api >= req_api;
 }
 
-static void *glfuncs_load_with_check(st_render_opengl_logger_t *logger,
- st_modctx_t *glloader_ctx, st_glloader_get_proc_address_t get_proc_address,
- bool *prop_out, bool prop_check, const char *func_name, const char *err_msg) {
+static void *glfuncs_load_with_check(st_loggerctx_t *logger_ctx,
+ st_glloaderctx_t *glloader_ctx, bool *prop_out, bool prop_check, 
+ const char *func_name, const char *err_msg) {
     void *func = NULL;
 
     if (!prop_check)
         return NULL;
 
-    func = get_proc_address(glloader_ctx, func_name);
+    func = ST_GLLOADERCTX_CALL(glloader_ctx, get_proc_address, func_name);
 
     if (!func)
-        logger->warning(logger->ctx,
+        ST_LOGGERCTX_CALL(logger_ctx, warning, 
          "render_opengl: Unable to load function \"%s\". %s", func_name,
          err_msg);
 
@@ -55,115 +55,114 @@ static void *glfuncs_load_with_check(st_render_opengl_logger_t *logger,
 }
 
 static bool glfuncs_load_all(st_glfuncs_t *glfuncs,
- st_glsupported_t *glsupported, st_render_opengl_logger_t *logger,
- st_modctx_t *glloader_ctx, st_glloader_get_proc_address_t get_proc_address,
- st_gapi_t gapi) {
+ st_glsupported_t *glsupported, st_loggerctx_t *logger_ctx,
+ st_glloaderctx_t *glloader_ctx, st_gapi_t gapi) {
     /* Not tested on machines with OpenGL version <3.3 */
     assert(glapi_least(gapi, ST_GAPI_GL33));
 
     if (glapi_least(gapi, ST_GAPI_GL2)) {
         /* Shader - Main */
-        glfuncs->create_shader = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->create_shader = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             true,
             "glCreateShader",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->shader_source = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->shader_source = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glShaderSource",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->compile_shader = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->compile_shader = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glCompileShader",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->get_shader_iv = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->get_shader_iv = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glGetShaderiv",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->create_program = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->create_program = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glCreateProgram",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->attach_shader = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->attach_shader = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glAttachShader",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->link_program = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->link_program = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glLinkProgram",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->get_program_iv = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->get_program_iv = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glGetProgramiv",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->use_program = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->use_program = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glUseProgram",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->get_attrib_location = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->get_attrib_location = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glGetAttribLocation",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->vertex_attrib_pointer = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->vertex_attrib_pointer = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glVertexAttribPointer",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->enable_vertex_attrib_array = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->enable_vertex_attrib_array = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glEnableVertexAttribArray",
             SHADER_LOAD_FAIL_MSG
         );
-        glfuncs->disable_vertex_attrib_array = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->disable_vertex_attrib_array = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_main,
             glsupported->shader_main,
             "glDisableVertexAttribArray",
             SHADER_LOAD_FAIL_MSG
         );
         /* Shader - Delete */
-        glfuncs->delete_shader = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->delete_shader = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_del,
             glsupported->shader_main,
             "glDeleteShader",
             SHADER_DEL_LOAD_FAIL_MSG
         );
         /* Shader - Log */
-        glfuncs->get_shader_info_log = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->get_shader_info_log = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shader_log,
             glsupported->shader_main,
             "glGetShaderInfoLog",
             SHADER_LOG_LOAD_FAIL_MSG
         );
         /* Shader program - Delete */
-        glfuncs->delete_program = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->delete_program = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shdprog_del,
             glsupported->shader_main,
             "glDeleteProgram",
             SHDPROG_DEL_LOAD_FAIL_MSG
         );
         /* Shader program - Log */
-        glfuncs->get_program_info_log = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->get_program_info_log = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->shdprog_log,
             glsupported->shader_main,
             "glGetProgramInfoLog",
@@ -200,33 +199,33 @@ static bool glfuncs_load_all(st_glfuncs_t *glfuncs,
 
     if (glapi_least(gapi, ST_GAPI_GL15)) {
         /* Buffer - Main */
-        glfuncs->gen_buffers = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->gen_buffers = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->buf_main,
             true,
             "glGenBuffers",
             BUF_LOAD_FAIL_MSG
         );
-        glfuncs->bind_buffer = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->bind_buffer = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->buf_main,
             glsupported->buf_main,
             "glBindBuffer",
             BUF_LOAD_FAIL_MSG
         );
-        glfuncs->buffer_data = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->buffer_data = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->buf_main,
             glsupported->buf_main,
             "glBufferData",
             BUF_LOAD_FAIL_MSG
         );
         /* Buffer - Delete */
-        glfuncs->delete_buffers = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->delete_buffers = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->buf_del,
             glsupported->buf_main,
             "glDeleteBuffers",
             BUF_DEL_LOAD_FAIL_MSG
         );
         /* Buffer - Subdata */
-        glfuncs->buffer_sub_data = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->buffer_sub_data = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->buf_subdata,
             glsupported->buf_main,
             "glBufferSubData",
@@ -263,20 +262,20 @@ static bool glfuncs_load_all(st_glfuncs_t *glfuncs,
 
     if (glapi_least(gapi, ST_GAPI_GL3)) {
         /* VAO - Main */
-        glfuncs->gen_vertex_arrays = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->gen_vertex_arrays = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->vao_main,
             glsupported->shader_main || glsupported->buf_main,
             "glGenVertexArrays",
             VAO_LOAD_FAIL_MSG
         );
-        glfuncs->bind_vertex_array = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->bind_vertex_array = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->vao_main,
             glsupported->vao_main,
             "glBindVertexArray",
             VAO_LOAD_FAIL_MSG
         );
         /* VAO - Delete */
-        glfuncs->delete_vertex_arrays = glfuncs_load_with_check(logger, glloader_ctx, get_proc_address,
+        glfuncs->delete_vertex_arrays = glfuncs_load_with_check(logger_ctx, glloader_ctx,
             &glsupported->vao_delete,
             glsupported->vao_main,
             "glDeleteVertexArrays",

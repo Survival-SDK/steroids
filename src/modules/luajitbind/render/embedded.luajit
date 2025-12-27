@@ -1,0 +1,169 @@
+package.preload["RenderCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_renderctx {
+            st_modctx_t __st_parent;
+        } st_renderctx_t;
+
+        typedef struct st_sprite st_sprite_t;
+
+        typedef void (*st_render_put_sprite_t)(const st_renderctx_t *render_ctx,
+         const st_sprite_t *sprite, float x, float y, float z, float hscale,
+         float vscale, float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_rdangled_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float radians,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_dgangled_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float degrees,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_rhsheared_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float radians,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_dhsheared_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float degrees,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_rvsheared_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float radians,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_put_sprite_dvsheared_t)(
+         const st_renderctx_t *render_ctx, const st_sprite_t *sprite, float x,
+         float y, float z, float hscale, float vscale, float degrees,
+         float pivot_x, float pivot_y);
+        typedef void (*st_render_process_t)(st_renderctx_t *render_ctx);
+
+        typedef struct {
+            st_modctx_funcs_t                __st_parent_funcs;
+            st_render_put_sprite_t           put_sprite;
+            st_render_put_sprite_rdangled_t  put_sprite_rdangled;
+            st_render_put_sprite_dgangled_t  put_sprite_dgangled;
+            st_render_put_sprite_rhsheared_t put_sprite_rhsheared;
+            st_render_put_sprite_dhsheared_t put_sprite_dhsheared;
+            st_render_put_sprite_rvsheared_t put_sprite_rvsheared;
+            st_render_put_sprite_dvsheared_t put_sprite_dvsheared;
+            st_render_process_t              process;
+        } st_renderctx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_renderctx_t *",
+    }
+
+    M.methods = setmetatable({
+        put_sprite = function(self, sprite, x, y, z, hscale, vscale, pivot_x,
+         pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite(self.handle, sprite.handle, x, y, z, hscale, vscale,
+             pivot_x, pivot_y)
+        end,
+        put_sprite_rdangled = function(self, sprite, x, y, z, hscale, vscale,
+         radians, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_rdangled(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, radians, pivot_x, pivot_y)
+        end,
+        put_sprite_dgangled = function(self, sprite, x, y, z, hscale, vscale,
+         degrees, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_dgangled(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, degrees, pivot_x, pivot_y)
+        end,
+        put_sprite_rhsheared = function(self, sprite, x, y, z, hscale, vscale,
+         radians, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_rhsheared(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, radians, pivot_x, pivot_y)
+        end,
+        put_sprite_dhsheared = function(self, sprite, x, y, z, hscale, vscale,
+         degrees, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_dhsheared(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, degrees, pivot_x, pivot_y)
+        end,
+        put_sprite_rvsheared = function(self, sprite, x, y, z, hscale, vscale,
+         radians, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_rvsheared(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, radians, pivot_x, pivot_y)
+        end,
+        put_sprite_dvsheared = function(self, sprite, x, y, z, hscale, vscale,
+         degrees, pivot_x, pivot_y)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).put_sprite_dvsheared(self.handle, sprite.handle, x, y, z, hscale,
+             vscale, degrees, pivot_x, pivot_y)
+        end,
+        process = function(self)
+            ffi.cast("const st_renderctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).process(self.handle)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_renderctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local render_ctor = modsmgr:get_ctor("render", name)
+        if not render_ctor then
+            error(string.format(
+                "RenderCtx.new_by_name: constructor not found for render '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local render_ctx = render_ctor(params)
+
+        if not render_ctx then
+            error(string.format(
+                "RenderCtx.new_by_name: failed to create render instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_renderctx_t *",
+            render_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("render", module_name):as("RenderCtx")
+    end
+
+    return M
+end
+
+

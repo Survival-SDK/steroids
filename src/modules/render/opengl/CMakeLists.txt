@@ -7,46 +7,6 @@ set(ST_MODULE_TYPE ${ST_MODULE_RENDER_OPENGL})
 set(ST_MODULE_SUBSYSTEM "render")
 set(ST_MODULE_TARGET st_${ST_MODULE_SUBSYSTEM}_${ST_MODULE_NAME})
 
-set(ST_MODULE_PREREQS [=[
-    {
-        .subsystem = "drawq",
-        .name = NULL,
-    },
-    {
-        .subsystem = "dynarr",
-        .name = NULL,
-    },
-    {
-        .subsystem = "gfxctx",
-        .name = NULL,
-    },
-    {
-        .subsystem = "gldebug",
-        .name = NULL,
-    },
-    {
-        .subsystem = "glloader",
-        .name = NULL,
-    },
-    {
-        .subsystem = "logger",
-        .name = NULL,
-    },
-    {
-        .subsystem = "sprite",
-        .name = NULL,
-    },
-    {
-        .subsystem = "texture",
-        .name = "opengl",
-    },
-    {
-        .subsystem = "window",
-        .name = NULL,
-    },
-]=])
-set(ST_MODULE_PREREQS_COUNT 9)
-
 configure_file(
     "config.h.in"
     "config.h"
@@ -70,7 +30,7 @@ st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GL REQUIRED gl)
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "render.c"
 )

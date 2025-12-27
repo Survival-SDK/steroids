@@ -1,39 +1,38 @@
 #pragma once
 
-static bool vertattr_init(st_modctx_t *render_ctx, st_vertattr_t *vertattr,
+static bool vertattr_init(st_vertattr_t *vertattr, st_loggerctx_t *logger_ctx,
+ st_gldebugctx_t *gldebug_ctx, const st_glfuncs_t *gl,
  const st_vbo_t *vbo, const st_shdprog_t *shdprog, const char *name,
  unsigned components_count, unsigned offset) {
-    st_render_opengl_t *module = render_ctx->data;
-    GLenum              error;
-    st_glfuncs_t       *gl = &module->gl;
+    GLenum error;
 
-    vertattr->module = module;
+    vertattr->gl = gl;
     vertattr->handle = gl->get_attrib_location(shdprog->handle, name);
 
     if (vertattr->handle == -1) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "render_opengl: Unable to get attribute \"%s\" location in shader "
          "program: %s",
          name,
-         module->gldebug.get_error_msg(module->gldebug.ctx, glGetError()));
+         ST_GLDEBUGCTX_CALL(gldebug_ctx, get_error_msg, glGetError()));
 
         return false;
     }
 
     gl->enable_vertex_attrib_array((GLuint)vertattr->handle);
-    vbo_bind(&module->vbo);
+    vbo_bind(vbo);
     gl->vertex_attrib_pointer((GLuint)vertattr->handle, (GLint)components_count,
      GL_FLOAT, GL_FALSE,
-     (GLsizei)(sizeof(float) * vbo_get_components_per_vertex(&module->vbo)),
+     (GLsizei)(sizeof(float) * vbo_get_components_per_vertex(vbo)),
      (void *)(uintptr_t)offset);
 
     error = glGetError();
     if (error != GL_NO_ERROR)
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "render_opengl: Unable to init vertex attribute: %s",
-         module->gldebug.get_error_msg(module->gldebug.ctx, error));
+         ST_GLDEBUGCTX_CALL(gldebug_ctx, get_error_msg, error));
 
-    vbo_unbind(&module->vbo);
+    vbo_unbind(vbo);
     gl->disable_vertex_attrib_array((GLuint)vertattr->handle);
 
     if (error != GL_NO_ERROR)
@@ -47,15 +46,11 @@ static void vertattr_free(st_vertattr_t *vertattr) {
 }
 
 static void vertattr_enable(const st_vertattr_t *vertattr) {
-    st_glfuncs_t *gl = &vertattr->module->gl;
-
     if (vertattr->handle != -1)
-        gl->enable_vertex_attrib_array((GLuint)vertattr->handle);
+        vertattr->gl->enable_vertex_attrib_array((GLuint)vertattr->handle);
 }
 
 static void vertattr_disable(const st_vertattr_t *vertattr) {
-    st_glfuncs_t *gl = &vertattr->module->gl;
-
     if (vertattr->handle != -1)
-        gl->disable_vertex_attrib_array((GLuint)vertattr->handle);
+        vertattr->gl->disable_vertex_attrib_array((GLuint)vertattr->handle);
 }

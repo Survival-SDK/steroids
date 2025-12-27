@@ -23,23 +23,22 @@
 #define SHD_LOG_SIZE      1024
 
 typedef enum {
-    SHD_VERTEX = GL_VERTEX_SHADER,
+    SHD_VERTEX   = GL_VERTEX_SHADER,
     SHD_FRAGMENT = GL_FRAGMENT_SHADER,
 } st_shader_type_t;
 
-static bool shader_init(st_modctx_t *render_ctx, st_shader_t *shader,
- st_shader_type_t type, const char *source) {
-    st_render_opengl_t *module = render_ctx->data;
-    st_glfuncs_t       *gl = &module->gl;
-    GLint               compiled;
-    GLchar              log[SHD_LOG_SIZE];
+static bool shader_init(st_shader_t *shader, st_loggerctx_t *logger_ctx, 
+ st_gldebugctx_t *gldebug_ctx, const st_glfuncs_t *gl, st_shader_type_t type, 
+ const char *source) {
+    GLint  compiled;
+    GLchar log[SHD_LOG_SIZE];
 
-    shader->module = module;
+    shader->gl = gl;
     shader->handle = gl->create_shader(type);
     if (!shader->handle) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "render_opengl: Unable create shader: %s",
-         module->gldebug.get_error_msg(module->gldebug.ctx, glGetError()));
+         ST_GLDEBUGCTX_CALL(gldebug_ctx, get_error_msg, glGetError()));
 
         return false;
     }
@@ -50,7 +49,7 @@ static bool shader_init(st_modctx_t *render_ctx, st_shader_t *shader,
     gl->get_shader_iv(shader->handle, GL_COMPILE_STATUS, &compiled);
     if(!compiled) {
         gl->get_shader_info_log(shader->handle, SHD_LOG_SIZE, NULL, log);
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "render_opengl: Unable to compile shader: %s", log);
         shader->handle = 0;
 
@@ -61,10 +60,8 @@ static bool shader_init(st_modctx_t *render_ctx, st_shader_t *shader,
 }
 
 static void shader_free(st_shader_t *shader) {
-    st_glfuncs_t *gl = &shader->module->gl;
-
     if (shader && shader->handle) {
-        gl->delete_shader(shader->handle);
+        shader->gl->delete_shader(shader->handle);
         shader->handle = 0;
     }
 }

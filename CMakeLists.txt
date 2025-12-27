@@ -84,8 +84,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/opts")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/pathtools"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/render"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/render")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/render"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/render")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/sprite"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/sprite")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/terminal"
@@ -110,8 +110,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/pathtools/cwalk"
  "${CMAKE_BINARY_DIR}/src/modules/pathtools/cwalk")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/plugin/simple"
  "${CMAKE_BINARY_DIR}/src/modules/plugin/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/render/opengl"
-#  "${CMAKE_BINARY_DIR}/src/modules/render/opengl")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/render/opengl"
+ "${CMAKE_BINARY_DIR}/src/modules/render/opengl")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/rbuf/lwrb"
  "${CMAKE_BINARY_DIR}/src/modules/rbuf/lwrb")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/runner/simple"
