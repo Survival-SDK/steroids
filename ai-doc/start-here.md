@@ -16,11 +16,13 @@
 
 ### Технические гайды
 
-- **`ai-doc/coding-style.md`** — кодстайл, правила именования, различия понятий (модуль vs контекст)
+- **`ai-doc/coding-style.md`** — кодстайл, правила именования
 - **`ai-doc/oop-system.md`** — OOP-система движка (st_object_t, st_modctx_t, наследование)
 - **`ai-doc/module-system.md`** — система модулей, регистрация, зависимости, инициализация
 - **`ai-doc/luajit-bindings.md`** — создание LuaJIT FFI биндингов для модулей
 - **`ai-doc/cmake-patterns.md`** — паттерны CMake для сборки модулей
+- **`ai-doc/best-practices.md`** — best practices и edge cases (зависимости, POD vs OOP, обработка ошибок)
+- **`ai-doc/gfxctx-specifics.md`** — специфичные правила для модуля gfxctx
 
 ## Порядок изучения (для новых агентов)
 
@@ -33,7 +35,9 @@
 5. `module-system.md` — понять, как работают модули
 6. `branch.md` — понять цель текущих изменений
 7. `current.md` — понять текущую задачу
-8. `luajit-bindings.md` и `cmake-patterns.md` — по необходимости
+8. `best-practices.md` — edge cases и best practices (читать по необходимости)
+9. `gfxctx-specifics.md` — специфика gfxctx (читать при работе с графикой)
+10. `luajit-bindings.md` и `cmake-patterns.md` — по необходимости
 
 ## Важные примечания
 
@@ -45,6 +49,6 @@
 
 ### Быстрый старт для типичных задач
 
-- **Работа с кодом проекта:** изучи `branch.md`, `module-system.md` и `cmake-patterns.md`
+- **Работа с кодом проекта:** изучи `branch.md`, `module-system.md`, `best-practices.md` и `cmake-patterns.md`
 - **Создание LuaJIT биндинга:** изучи `luajit-bindings.md`
-- **Работа с OOP:** изучи `oop-system.md`
+- **Работа с OOP:** изучи `oop-system.md` и `best-practices.md`
