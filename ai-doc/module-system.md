@@ -6,6 +6,10 @@
 - **Модуль** — результат сборки исходников: статическая библиотека (линкуется к бинарнику движка) или динамическая библиотека (плагин)
 - **Контекст модуля** — объект (`st_xxxctx_t`), который позволяет использовать функции модуля как методы. В теории можно создать несколько контекстов одного модуля в runtime (хотя обычно это не нужно).
 
+**В сообщениях логирования:**
+- При создании контекста: `"Context initialized"` (не "Module initialized")
+- При уничтожении контекста: `"Context destroyed"` (не "Module destroyed")
+
 ## Структура модуля
 
 Каждый модуль определяется через `st_moddata_t` и имеет:
@@ -42,6 +46,21 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
 #endif
 ```
 
+## Константы модуля (опционально)
+
+Не обязательны, но могут использоваться для упрощения сообщений логирования:
+
+```c
+static const char *st_module_subsystem = "subsystem";
+static const char *st_module_name = "name";
+```
+
+Эти константы позволяют использовать единообразный формат в сообщениях:
+```c
+ST_LOGGERCTX_CALL(logger_ctx, info,
+    "%s_%s: Context initialized", st_module_subsystem, st_module_name);
+```
+
 ## Конструктор контекста модуля
 
 ```c
@@ -54,7 +73,9 @@ static st_xxxctx_t *st_xxx_init(const st_param_t params[]) {
         get_singleton, "logger", NULL);
     
     if (!logger_ctx) {
-        // Допустимо использовать fprintf или вообще ничего не выводить
+        // Если logger_ctx еще не получен, допустимо:
+        // - Использовать fprintf(stderr, ...)
+        // - Вообще ничего не выводить (не строгое правило)
         fprintf(stderr, "xxx_yyy: Unable to get logger context\n");
         return NULL;
     }
@@ -82,12 +103,25 @@ static st_xxxctx_t *st_xxx_init(const st_param_t params[]) {
     // См. пример в src/modules/luajit/luajit/luajit.c
     
     // 6. Финальное сообщение об инициализации
+    // Используй ST_LOGGERCTX_CALL для вывода сообщений
     ST_LOGGERCTX_CALL(logger_ctx, info,
         "xxx_yyy: Context initialized");
     
     return ctx;
 }
 ```
+
+### Правила логирования в конструкторе
+
+**Используй `ST_LOGGERCTX_CALL` для вывода сообщений:**
+```c
+ST_LOGGERCTX_CALL(ctx->logger_ctx, error, 
+    "subsystem_name: Error message");
+```
+
+**Исключение:** Если `logger_ctx` еще не получен, допустимо:
+- Использовать `fprintf(stderr, ...)` 
+- Вообще ничего не выводить (не строгое правило)
 
 ## Деструктор контекста
 
@@ -127,10 +161,3 @@ static const st_modprerq_t mod_prereqs[] = {
 ```
 
 **Исключение:** Сам модуль `logger` не зависит от `logger`.
-
-## Примеры модулей
-
-- **Без зависимости от logger:** `src/modules/logger/libsir/`
-- **Простой модуль (только контекст):** `src/modules/terminal/simple/`
-- **Модуль с объектами:** `src/modules/ini/inih/`, `src/modules/monitor/libxrandr/`
-
