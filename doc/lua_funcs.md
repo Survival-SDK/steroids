@@ -69,6 +69,52 @@ angle_ctx:get_owner(): object
 angle_ctx:get_owner_unsafe(): object
 ```
 
+## dpsrvconn
+```luau
+DpsrvConnCtx = require "DpsrvConnCtx"
+
+DpsrvConnCtx.new(...): dpsrvconn_ctx
+DpsrvConnCtx.new_by_name(module_name: string, ...): dpsrvconn_ctx
+DpsrvConnCtx.get_instance(module_name: ?string): dpsrvconn_ctx
+
+dpsrvconn_ctx:get_monitors_count(): integer
+dpsrvconn_ctx:get_primary_monitor_index(): integer
+dpsrvconn_ctx:get_monitor_by_index(index: integer): monitor
+dpsrvconn_ctx:get_monitor_by_id(id: integer): monitor
+dpsrvconn_ctx:get_primary_monitor(): monitor | nil
+dpsrvconn_ctx:open_window(monitor: monitor, x: integer, y: integer, 
+ width: integer, height: integer, fullscreen: bool, title: string): window
+dpsrvconn_ctx:process()
+-- inherited from modctx
+dpsrvconn_ctx:get_subsystem(): string
+dpsrvconn_ctx:get_name(): string
+dpsrvconn_ctx:as(target: string | table): any
+-- inherited from object
+dpsrvconn_ctx:destroy()
+dpsrvconn_ctx:get_owner(): object
+dpsrvconn_ctx:get_owner_unsafe(): object
+
+monitor:get_width(): integer
+monitor:get_height(): integer
+monitor:get_index(): integer
+monitor:get_name(): string | nil
+monitor:is_primary(): bool
+monitor:get_device_handle(): userdata
+-- inherited from object
+monitor:destroy()
+monitor:get_owner(): object
+monitor:get_owner_unsafe(): object
+
+window:xed(): bool
+window:get_monitor(): monitor | nil
+window:get_width(): integer
+window:get_height(): integer
+-- inherited from object
+window:destroy()
+window:get_owner(): object
+window:get_owner_unsafe(): object
+```
+
 ## fs
 ```luau
 Fs = require "Fs"
