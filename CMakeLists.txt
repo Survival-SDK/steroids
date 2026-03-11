@@ -40,6 +40,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/libpng"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/libpng")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dpsrvconn/libxrandr"
+ "${CMAKE_BINARY_DIR}/src/modules/dpsrvconn/libxrandr")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/drawq/simple"
  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
@@ -68,6 +70,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
  "${CMAKE_BINARY_DIR}/src/modules/luajit/luajit")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/angle"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/angle")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/dpsrvconn"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/dpsrvconn")
 # add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
