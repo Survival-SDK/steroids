@@ -42,6 +42,8 @@ static const char *st_dpsrvconn_get_monitor_name(const st_monitor_t *monitor);
 static bool st_dpsrvconn_is_monitor_primary(const st_monitor_t *monitor);
 static void *st_dpsrvconn_get_monitor_device_handle(
  const st_monitor_t *monitor);
+static void *st_dpsrvconn_get_monitor_native_device_handle(
+ const st_monitor_t *monitor);
 //  static void st_monitor_set_userdata(const st_monitor_t *monitor,
 //   const char *key, uintptr_t value);
 //  static bool st_monitor_get_userdata(const st_monitor_t *monitor, uintptr_t *dst,
@@ -51,6 +53,7 @@ static bool st_dpsrvconn_is_window_xed(const st_window_t *window);
 static const st_monitor_t *st_dpsrvconn_get_window_monitor(
  const st_window_t *window);
 static void *st_dpsrvconn_get_window_handle(const st_window_t *window);
+static void *st_dpsrvconn_get_window_native_handle(const st_window_t *window);
 static unsigned st_dpsrvconn_get_window_width(const st_window_t *window);
 static unsigned st_dpsrvconn_get_window_height(const st_window_t *window);
 
@@ -67,21 +70,23 @@ static st_dpsrvconnctx_funcs_t dpsrvconnctx_funcs = {
 
 static st_monitor_funcs_t monitor_funcs = {
     st_object_funcs,
-    .get_width         = st_dpsrvconn_get_monitor_width,
-    .get_height        = st_dpsrvconn_get_monitor_height,
-    .get_index         = st_dpsrvconn_get_monitor_index,
-    .get_name          = st_dpsrvconn_get_monitor_name,
-    .is_primary        = st_dpsrvconn_is_monitor_primary,
-    .get_device_handle = st_dpsrvconn_get_monitor_device_handle,
+    .get_width                = st_dpsrvconn_get_monitor_width,
+    .get_height               = st_dpsrvconn_get_monitor_height,
+    .get_index                = st_dpsrvconn_get_monitor_index,
+    .get_name                 = st_dpsrvconn_get_monitor_name,
+    .is_primary               = st_dpsrvconn_is_monitor_primary,
+    .get_device_handle        = st_dpsrvconn_get_monitor_device_handle,
+    .get_native_device_handle = st_dpsrvconn_get_monitor_native_device_handle,
 };
 
 static st_window_funcs_t window_funcs = {
     st_object_funcs,
-    .xed         = st_dpsrvconn_is_window_xed,
-    .get_monitor = st_dpsrvconn_get_window_monitor,
-    .get_handle  = st_dpsrvconn_get_window_handle,
-    .get_width   = st_dpsrvconn_get_window_width,
-    .get_height  = st_dpsrvconn_get_window_height,
+    .xed               = st_dpsrvconn_is_window_xed,
+    .get_monitor       = st_dpsrvconn_get_window_monitor,
+    .get_handle        = st_dpsrvconn_get_window_handle,
+    .get_native_handle = st_dpsrvconn_get_window_native_handle,
+    .get_width         = st_dpsrvconn_get_window_width,
+    .get_height        = st_dpsrvconn_get_window_height,
 };
 
 static const st_modprerq_t mod_prereqs[] = {
@@ -1190,6 +1195,11 @@ static void *st_dpsrvconn_get_monitor_device_handle(
     return ((st_dpsrvconnctx_t *)ST_MONITOR_CALL(monitor, get_owner))->display;
 }
 
+static void *st_dpsrvconn_get_monitor_native_device_handle(
+ const st_monitor_t *monitor) {
+    return ((st_dpsrvconnctx_t *)ST_MONITOR_CALL(monitor, get_owner))->display;
+}
+
 static bool st_dpsrvconn_is_window_xed(const st_window_t *window) {
     return window->xed;
 }
@@ -1200,6 +1210,10 @@ static const st_monitor_t *st_dpsrvconn_get_window_monitor(
 }
 
 static void *st_dpsrvconn_get_window_handle(const st_window_t *window) {
+    return (void *)(uintptr_t)window->handle;
+}
+
+static void *st_dpsrvconn_get_window_native_handle(const st_window_t *window) {
     return (void *)(uintptr_t)window->handle;
 }
 

@@ -100,21 +100,19 @@ typedef unsigned (*st_dpsrvconn_get_monitor_height_t)(
  const st_monitor_t *monitor);
 typedef unsigned (*st_dpsrvconn_get_monitor_index_t)(
  const st_monitor_t *monitor);
-// typedef uintptr_t (*st_dpsrvconn_get_monitor_id_t)(const st_monitor_t *monitor);
 typedef const char *(*st_dpsrvconn_get_monitor_name_t)(
  const st_monitor_t *monitor);
 typedef bool (*st_dpsrvconn_is_monitor_primary_t)(const st_monitor_t *monitor);
 typedef void *(*st_dpsrvconn_get_monitor_device_handle_t)(
  const st_monitor_t *monitor);
-// typedef void (*st_dpsrvconn_set_userdata_t)(const st_monitor_t *monitor,
-// const char *key, uintptr_t value);
-// typedef bool (*st_dpsrvconn_get_userdata_t)(const st_monitor_t *monitor,
-// uintptr_t *dst, const char *key);
+typedef void *(*st_dpsrvconn_get_monitor_native_device_handle_t)(
+ const st_monitor_t *monitor);
 
 typedef bool (*st_dpsrvconn_is_window_xed_t)(const st_window_t *window);
 typedef const st_monitor_t *(*st_dpsrvconn_get_window_monitor_t)(
  const st_window_t *window);
 typedef void *(*st_dpsrvconn_get_window_handle_t)(const st_window_t *window);
+typedef void *(*st_dpsrvconn_get_window_native_handle_t)(const st_window_t *window);
 typedef unsigned (*st_dpsrvconn_get_window_width_t)(const st_window_t *window);
 typedef unsigned (*st_dpsrvconn_get_window_height_t)(const st_window_t *window);
 
@@ -131,21 +129,23 @@ typedef struct {
 
 typedef struct {
     st_object_funcs_t;
-    st_dpsrvconn_get_monitor_width_t         get_width;
-    st_dpsrvconn_get_monitor_height_t        get_height;
-    st_dpsrvconn_get_monitor_index_t         get_index;
-    st_dpsrvconn_get_monitor_name_t          get_name;
-    st_dpsrvconn_is_monitor_primary_t        is_primary;
-    st_dpsrvconn_get_monitor_device_handle_t get_device_handle;
+    st_dpsrvconn_get_monitor_width_t                get_width;
+    st_dpsrvconn_get_monitor_height_t               get_height;
+    st_dpsrvconn_get_monitor_index_t                get_index;
+    st_dpsrvconn_get_monitor_name_t                 get_name;
+    st_dpsrvconn_is_monitor_primary_t               is_primary;
+    st_dpsrvconn_get_monitor_device_handle_t        get_device_handle;
+    st_dpsrvconn_get_monitor_native_device_handle_t get_native_device_handle;
 } st_monitor_funcs_t;
 
 typedef struct {
     st_object_funcs_t;
-    st_dpsrvconn_is_window_xed_t      xed;
-    st_dpsrvconn_get_window_monitor_t get_monitor;
-    st_dpsrvconn_get_window_handle_t  get_handle;
-    st_dpsrvconn_get_window_width_t   get_width;
-    st_dpsrvconn_get_window_height_t  get_height;
+    st_dpsrvconn_is_window_xed_t            xed;
+    st_dpsrvconn_get_window_monitor_t       get_monitor;
+    st_dpsrvconn_get_window_handle_t        get_handle;
+    st_dpsrvconn_get_window_native_handle_t get_native_handle;
+    st_dpsrvconn_get_window_width_t         get_width;
+    st_dpsrvconn_get_window_height_t        get_height;
 } st_window_funcs_t;
 
 #define ST_DPSRVCONNCTX_CALL(ctx, func, ...) \

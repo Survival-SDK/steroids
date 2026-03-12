@@ -76,6 +76,7 @@ package.preload["DpSrvConnCtx"] = function()
             st_dpsrvconn_get_monitor_name_t      get_name;
             st_dpsrvconn_is_monitor_primary_t    is_primary;
             void                                *__get_device_handle;
+            void                                *__get_native_device_handle;
         } st_monitor_funcs_t;
 
         typedef struct {
@@ -83,6 +84,7 @@ package.preload["DpSrvConnCtx"] = function()
             st_dpsrvconn_is_window_xed_t           xed;
             st_dpsrvconn_get_window_monitor_t      get_monitor;
             void                                  *__get_handle;
+            void                                  *__get_native_handle;
             st_dpsrvconn_get_window_width_t        get_width;
             st_dpsrvconn_get_window_height_t       get_height;
         } st_window_funcs_t;

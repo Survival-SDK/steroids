@@ -683,7 +683,7 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         goto udata_fail;
 
     gfxctx->display = eglGetDisplay(
-     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_device_handle));
+     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_native_device_handle));
 
     if (gfxctx->display == EGL_NO_DISPLAY) {
         ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
@@ -789,7 +789,7 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
 
     gfxctx->surface = eglCreateWindowSurface(gfxctx->display,
      gfxctx->cfg,
-     (EGLNativeWindowType)*(void *[]){ ST_WINDOW_CALL(window, get_handle) }, NULL);
+     (EGLNativeWindowType)*(void *[]){ ST_WINDOW_CALL(window, get_native_handle) }, NULL);
     if (gfxctx->surface == EGL_NO_SURFACE) {
         if (!gfxctx_ctx->debug_enabled)
             ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
