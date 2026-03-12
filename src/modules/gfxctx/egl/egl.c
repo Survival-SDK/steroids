@@ -11,7 +11,6 @@
 
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
-#include "steroids/modules/monitor.h"
 
 #define ERRMSGBUF_SIZE    128
 #define GAPI_STR_SIZE_MAX  32
@@ -86,8 +85,7 @@ static const st_modprerq_t mod_prereqs[] = {
     {"fnv1a", NULL},
     {"htable", NULL},
     {"logger", NULL},
-    {"monitor", NULL},
-    {"window", NULL},
+    {"dpsrvconn", NULL},
     {0}
 };
 
@@ -110,13 +108,12 @@ static bool st_keyeqfunc(const void *left, const void *right) {
 }
 
 static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
-    st_gfxctxctx_t  *gfxctx_ctx;
-    st_modsmgr_t    *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
-    st_loggerctx_t  *logger_ctx;
-    st_monitorctx_t *monitor_ctx;
-    st_windowctx_t  *window_ctx;
-    st_fnv1actx_t   *fnv1a_ctx;
-    st_htablectx_t  *htable_ctx;
+    st_gfxctxctx_t    *gfxctx_ctx;
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t    *logger_ctx;
+    st_dpsrvconnctx_t *dpsrvconn_ctx;
+    st_fnv1actx_t     *fnv1a_ctx;
+    st_htablectx_t    *htable_ctx;
 
     if (!modsmgr)
         return NULL;
@@ -126,21 +123,11 @@ static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
     if (!logger_ctx)
         return NULL;
 
-    monitor_ctx = (st_monitorctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "monitor", NULL);
-    if (!monitor_ctx) {
+    dpsrvconn_ctx = (st_dpsrvconnctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "dpsrvconn", NULL);
+    if (!dpsrvconn_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "%s_%s: Unable to get monitor context", st_module_subsystem,
-         st_module_name);
-
-        return NULL;
-    }
-
-    window_ctx = (st_windowctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
-     "window", NULL);
-    if (!window_ctx) {
-        ST_LOGGERCTX_CALL(logger_ctx, error,
-         "%s_%s: Unable to get window context", st_module_subsystem,
+         "%s_%s: Unable to get dpsrvconn context", st_module_subsystem,
          st_module_name);
 
         return NULL;
@@ -179,8 +166,7 @@ static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
 
     gfxctx_ctx->modsmgr = modsmgr;
     gfxctx_ctx->logger_ctx = logger_ctx;
-    gfxctx_ctx->monitor_ctx = monitor_ctx;
-    gfxctx_ctx->window_ctx = window_ctx;
+    gfxctx_ctx->dpsrvconn_ctx = dpsrvconn_ctx;
     gfxctx_ctx->fnv1a_ctx = fnv1a_ctx;
     gfxctx_ctx->htable_ctx = htable_ctx;
     gfxctx_ctx->debug_enabled = false;
@@ -697,7 +683,7 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         goto udata_fail;
 
     gfxctx->display = eglGetDisplay(
-     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_handle));
+     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_device_handle));
 
     if (gfxctx->display == EGL_NO_DISPLAY) {
         ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,

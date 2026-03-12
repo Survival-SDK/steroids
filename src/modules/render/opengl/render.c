@@ -190,7 +190,8 @@ static st_renderctx_t *st_render_init(const st_param_t params[]) {
     render_ctx->gfxctx = gfxctx;
     render_ctx->gapi = ST_GFXCTX_CALL(gfxctx, get_api);
     render_ctx->window = ST_GFXCTX_CALL(gfxctx, get_window);
-    render_ctx->window_ctx = (st_windowctx_t *)ST_WINDOW_CALL(render_ctx->window, get_owner);
+    render_ctx->dpsrvconn_ctx = (st_dpsrvconnctx_t *)ST_WINDOW_CALL(
+     render_ctx->window, get_owner);
 
     render_ctx->glloader_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "glloader",
      NULL);
