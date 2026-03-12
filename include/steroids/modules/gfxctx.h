@@ -3,8 +3,7 @@
 #include <stdbool.h>
 
 #include "steroids/modctx.h"
-#include "steroids/modules/monitor.h"
-#include "steroids/modules/window.h"
+#include "steroids/modules/dpsrvconn.h"
 #include "steroids/object.h"
 
 #ifndef ST_GFXCTXCTX_T_DEFINED

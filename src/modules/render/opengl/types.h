@@ -3,6 +3,7 @@
 #include <GL/gl.h>
 
 #include "steroids/modules/angle.h"
+#include "steroids/modules/dpsrvconn.h"
 #include "steroids/modules/drawq.h"
 #include "steroids/modules/dynarr.h"
 #include "steroids/modules/gfxctx.h"
@@ -13,7 +14,6 @@
 #include "steroids/modules/sprite.h"
 #include "steroids/modules/texture.h"
 #include "steroids/modules/vec2.h"
-#include "steroids/modules/window.h"
 
 #include "glfuncs.h"
 
@@ -70,7 +70,7 @@ typedef struct st_renderctx {
     st_spritectx_t    *sprite_ctx;
     st_texturectx_t   *texture_ctx;
     st_vec2ctx_t      *vec2_ctx;
-    st_windowctx_t    *window_ctx;
+    st_dpsrvconnctx_t *dpsrvconn_ctx;
     st_window_t       *window;
     
     st_gapi_t          gapi;

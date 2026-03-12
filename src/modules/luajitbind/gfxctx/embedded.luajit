@@ -2,11 +2,10 @@
 package.preload["GfxCtxCtx"] = function()
     local ffi = require "ffi"
 
-    local ModCtx     = require "ModCtx"
-    local ModsMgr    = require "ModsMgr"
-    local MonitorCtx = require "MonitorCtx"
-    local WindowCtx  = require "WindowCtx"
-    local Object     = require "Object"
+    local ModCtx        = require "ModCtx"
+    local ModsMgr       = require "ModsMgr"
+    local DpsrvConnCtx  = require "DpSrvConnCtx"
+    local Object        = require "Object"
 
     ffi.cdef[[
         typedef enum {
@@ -139,9 +138,9 @@ package.preload["GfxCtxCtx"] = function()
                 error("GfxCtxCtx.get_window: failed to get window from gfxctx")
             end
 
-            -- Create wrapper with owned=false since window_ctx owns the 
+            -- Create wrapper with owned=false since dpsrvconn_ctx owns the 
             -- window object
-            return Object.__mtnew(WindowCtx.__window.__mt, window_handle,
+            return Object.__mtnew(DpsrvConnCtx.__window.__mt, window_handle,
              false)
         end,
 
