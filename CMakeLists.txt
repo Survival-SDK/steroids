@@ -114,6 +114,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/rbuf/lwrb"
  "${CMAKE_BINARY_DIR}/src/modules/rbuf/lwrb")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/runner/simple"
  "${CMAKE_BINARY_DIR}/src/modules/runner/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sdl3loader/sdl3"
+ "${CMAKE_BINARY_DIR}/src/modules/sdl3loader/sdl3")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
  "${CMAKE_BINARY_DIR}/src/modules/so/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
