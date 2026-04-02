@@ -30,7 +30,7 @@ typedef struct {
 
 typedef struct {
     uintptr_t id;
-    unsigned index;
+    unsigned  index;
 } st_evmondisc_t;
 
 typedef struct {
@@ -98,8 +98,7 @@ typedef unsigned (*st_dpsrvconn_get_monitor_width_t)(
  const st_monitor_t *monitor);
 typedef unsigned (*st_dpsrvconn_get_monitor_height_t)(
  const st_monitor_t *monitor);
-typedef unsigned (*st_dpsrvconn_get_monitor_index_t)(
- const st_monitor_t *monitor);
+typedef int (*st_dpsrvconn_get_monitor_index_t)(const st_monitor_t *monitor);
 typedef const char *(*st_dpsrvconn_get_monitor_name_t)(
  const st_monitor_t *monitor);
 typedef bool (*st_dpsrvconn_is_monitor_primary_t)(const st_monitor_t *monitor);

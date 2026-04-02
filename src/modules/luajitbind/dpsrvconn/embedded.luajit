@@ -38,7 +38,7 @@ package.preload["DpSrvConnCtx"] = function()
          const st_monitor_t *monitor);
         typedef unsigned (*st_dpsrvconn_get_monitor_height_t)(
          const st_monitor_t *monitor);
-        typedef unsigned (*st_dpsrvconn_get_monitor_index_t)(
+        typedef int (*st_dpsrvconn_get_monitor_index_t)(
          const st_monitor_t *monitor);
         typedef const char *(*st_dpsrvconn_get_monitor_name_t)(
          const st_monitor_t *monitor);
