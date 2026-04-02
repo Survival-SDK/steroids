@@ -110,10 +110,14 @@ static bool st_keyeqfunc(const void *left, const void *right) {
 static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
     st_gfxctxctx_t    *gfxctx_ctx;
     st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    bool               software_opengl = st_modctx_get_param_as_bool(params, 
+     "software");
     st_loggerctx_t    *logger_ctx;
     st_dpsrvconnctx_t *dpsrvconn_ctx;
     st_fnv1actx_t     *fnv1a_ctx;
     st_htablectx_t    *htable_ctx;
+    char              *env_libgl_always_software;
+    char              *env_gallium_driver;
 
     if (!modsmgr)
         return NULL;
@@ -172,6 +176,25 @@ static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
     gfxctx_ctx->debug_enabled = false;
     gfxctx_ctx->must_quit = false;
     gfxctx_ctx->gfxctxs_count = 0;
+    gfxctx_ctx->software_opengl = software_opengl;
+
+    if (software_opengl) {
+        env_libgl_always_software = getenv("LIBGL_ALWAYS_SOFTWARE");
+        env_gallium_driver = getenv("GALLIUM_DRIVER");
+
+        gfxctx_ctx->old_envs.libgl_always_software.was_set = 
+        !!env_libgl_always_software;
+        gfxctx_ctx->old_envs.gallium_driver.was_set = !!env_gallium_driver;
+
+        strncpy(gfxctx_ctx->old_envs.libgl_always_software.value, 
+        env_libgl_always_software ? env_libgl_always_software : "", 
+        OLD_ENVS_SIZE_MAX);
+        strncpy(gfxctx_ctx->old_envs.gallium_driver.value, 
+        env_gallium_driver ? env_gallium_driver : "", OLD_ENVS_SIZE_MAX);
+
+        setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
+        setenv("GALLIUM_DRIVER", "llvmpipe", 1);
+    }
 
     ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
      "%s_%s: Graphics context mgr initialized", st_module_subsystem,
@@ -185,6 +208,19 @@ static void st_gfxctx_quit(st_gfxctxctx_t *gfxctx_ctx) {
         gfxctx_ctx->must_quit = true;
 
         return;
+    }
+
+    if (gfxctx_ctx->software_opengl) {
+        if (gfxctx_ctx->old_envs.libgl_always_software.was_set)
+            setenv("LIBGL_ALWAYS_SOFTWARE", 
+            gfxctx_ctx->old_envs.libgl_always_software.value, 1);
+        else
+            unsetenv("LIBGL_ALWAYS_SOFTWARE");
+
+        if (gfxctx_ctx->old_envs.gallium_driver.was_set)
+            setenv("GALLIUM_DRIVER", gfxctx_ctx->old_envs.gallium_driver.value, 1);
+        else
+            unsetenv("GALLIUM_DRIVER");
     }
 
     ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
@@ -693,8 +729,6 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         goto get_display_fail;
     }
 
-
-
     if (eglInitialize(gfxctx->display, &egl_version_major, &egl_version_minor)
      == EGL_FALSE) {
         if (!gfxctx_ctx->debug_enabled)
@@ -789,7 +823,9 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
 
     gfxctx->surface = eglCreateWindowSurface(gfxctx->display,
      gfxctx->cfg,
-     (EGLNativeWindowType)*(void *[]){ ST_WINDOW_CALL(window, get_native_handle) }, NULL);
+     (EGLNativeWindowType)*(void *[]){ 
+      ST_WINDOW_CALL(window, get_native_handle) }, 
+     NULL);
     if (gfxctx->surface == EGL_NO_SURFACE) {
         if (!gfxctx_ctx->debug_enabled)
             ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
