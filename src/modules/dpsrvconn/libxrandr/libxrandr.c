@@ -86,8 +86,7 @@ static st_window_funcs_t window_funcs = {
 };
 
 static const st_modprerq_t mod_prereqs[] = {
-    // { "fnv1a", NULL, },
-    // { "htable", NULL, },
+    { "events", NULL, },
     { "logger", NULL, },
     {0},
 };
