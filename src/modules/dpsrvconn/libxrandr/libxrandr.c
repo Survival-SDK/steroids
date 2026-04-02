@@ -37,17 +37,13 @@ static void st_dpsrvconn_process(st_dpsrvconnctx_t *dpsrvconn_ctx);
 
 static unsigned st_dpsrvconn_get_monitor_width(const st_monitor_t *monitor);
 static unsigned st_dpsrvconn_get_monitor_height(const st_monitor_t *monitor);
-static unsigned st_dpsrvconn_get_monitor_index(const st_monitor_t *monitor);
+static int st_dpsrvconn_get_monitor_index(const st_monitor_t *monitor);
 static const char *st_dpsrvconn_get_monitor_name(const st_monitor_t *monitor);
 static bool st_dpsrvconn_is_monitor_primary(const st_monitor_t *monitor);
 static void *st_dpsrvconn_get_monitor_device_handle(
  const st_monitor_t *monitor);
 static void *st_dpsrvconn_get_monitor_native_device_handle(
  const st_monitor_t *monitor);
-//  static void st_monitor_set_userdata(const st_monitor_t *monitor,
-//   const char *key, uintptr_t value);
-//  static bool st_monitor_get_userdata(const st_monitor_t *monitor, uintptr_t *dst,
-//   const char *key);
 
 static bool st_dpsrvconn_is_window_xed(const st_window_t *window);
 static const st_monitor_t *st_dpsrvconn_get_window_monitor(
@@ -1178,7 +1174,7 @@ static unsigned st_dpsrvconn_get_monitor_height(const st_monitor_t *monitor) {
     return monitor->height;
 }
 
-static unsigned st_dpsrvconn_get_monitor_index(const st_monitor_t *monitor) {
+static int st_dpsrvconn_get_monitor_index(const st_monitor_t *monitor) {
     return monitor->index;
 }
 
