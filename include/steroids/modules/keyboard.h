@@ -1,8 +1,10 @@
 #pragma once
 
-#include "steroids/module.h"
+// #include "steroids/module.h"
 
 typedef enum {
+    ST_KEY_UNKNOWN       = 0x0000,  /* Unknown key */
+
     ST_KEY_SPACE         = 0x0020,  /* U+0020 SPACE */
     ST_KEY_EXCLAM        = 0x0021,  /* U+0021 EXCLAMATION MARK */
     ST_KEY_QUOTEDBL      = 0x0022,  /* U+0022 QUOTATION MARK */
@@ -230,25 +232,25 @@ typedef enum {
     ST_KEY_HYPER_R       = 0xFFEE,  /* Right hyper */
 } st_key_t;
 
-typedef st_modctx_t *(*st_keyboard_init_t)(st_modctx_t *events_ctx,
- st_modctx_t *logger_ctx);
-typedef void (*st_keyboard_quit_t)(st_modctx_t *keyboard_ctx);
+// typedef st_modctx_t *(*st_keyboard_init_t)(st_modctx_t *events_ctx,
+//  st_modctx_t *logger_ctx);
+// typedef void (*st_keyboard_quit_t)(st_modctx_t *keyboard_ctx);
 
-typedef void (*st_keyboard_process_t)(st_modctx_t *keyboard_ctx);
-typedef bool (*st_keyboard_press_t)(const st_modctx_t *keyboard_ctx,
- st_key_t key);
-typedef bool (*st_keyboard_release_t)(const st_modctx_t *keyboard_ctx,
- st_key_t key);
-typedef bool (*st_keyboard_pressed_t)(const st_modctx_t *keyboard_ctx,
- st_key_t key);
-typedef const char *(*st_keyboard_get_input_t)(const st_modctx_t *keyboard_ctx);
+// typedef void (*st_keyboard_process_t)(st_modctx_t *keyboard_ctx);
+// typedef bool (*st_keyboard_press_t)(const st_modctx_t *keyboard_ctx,
+//  st_key_t key);
+// typedef bool (*st_keyboard_release_t)(const st_modctx_t *keyboard_ctx,
+//  st_key_t key);
+// typedef bool (*st_keyboard_pressed_t)(const st_modctx_t *keyboard_ctx,
+//  st_key_t key);
+// typedef const char *(*st_keyboard_get_input_t)(const st_modctx_t *keyboard_ctx);
 
-typedef struct {
-    st_keyboard_init_t      keyboard_init;
-    st_keyboard_quit_t      keyboard_quit;
-    st_keyboard_process_t   keyboard_process;
-    st_keyboard_press_t     keyboard_press;
-    st_keyboard_release_t   keyboard_release;
-    st_keyboard_pressed_t   keyboard_pressed;
-    st_keyboard_get_input_t keyboard_get_input;
-} st_keyboard_funcs_t;
+// typedef struct {
+//     st_keyboard_init_t      keyboard_init;
+//     st_keyboard_quit_t      keyboard_quit;
+//     st_keyboard_process_t   keyboard_process;
+//     st_keyboard_press_t     keyboard_press;
+//     st_keyboard_release_t   keyboard_release;
+//     st_keyboard_pressed_t   keyboard_pressed;
+//     st_keyboard_get_input_t keyboard_get_input;
+// } st_keyboard_funcs_t;
