@@ -75,7 +75,11 @@ build-container:
 
 run:
 	distrobox enter --root steroids-deps-$(TRIPLET) -- ./cmake_build/steroids \
-     --cfg=./cmake_build/steroids.ini
+      --cfg=./cmake_build/steroids.ini
+
+run-verbose-dev:
+	distrobox enter --root steroids-deps-$(TRIPLET) --verbose -- \
+      ./cmake_build/steroids --cfg=./cmake_build/steroids.ini
 
 run-help:
 	distrobox enter --root steroids-deps-$(TRIPLET) -- ./cmake_build/steroids \
