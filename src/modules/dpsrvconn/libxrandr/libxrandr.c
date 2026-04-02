@@ -943,7 +943,7 @@ static inline void handle_x_event(st_dpsrvconnctx_t *dpsrvconn_ctx,
                 st_evwinunsigned_t event = {
                     .window = get_window_by_xwindow(dpsrvconn_ctx,
                      xevent->xbutton.window),
-                    .value = xevent->xbutton.button - 1,
+                    .value = xevent->xbutton.button,
                 };
                 ST_EVENTSCTX_CALL(dpsrvconn_ctx->events_ctx, push,
                  dpsrvconn_ctx->evtypes[EV_MOUSE_PRESS], &event);
