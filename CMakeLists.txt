@@ -40,6 +40,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/libpng"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/libpng")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dpsrvconn/sdl3"
+ "${CMAKE_BINARY_DIR}/src/modules/dpsrvconn/sdl3")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dpsrvconn/libxrandr"
  "${CMAKE_BINARY_DIR}/src/modules/dpsrvconn/libxrandr")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/drawq/simple"

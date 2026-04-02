@@ -94,3 +94,8 @@ static int st_modctx_get_param_as_int(const st_param_t params[],
         ? (int)param->value
         : 0;
 }
+
+static bool st_modctx_get_param_as_bool(const st_param_t params[],
+ const char *key) {
+    return !!st_modctx_get_param(params, key);
+}

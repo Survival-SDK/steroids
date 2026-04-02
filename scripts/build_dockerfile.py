@@ -45,7 +45,8 @@ def GetPreInstallCmds(target):
     return {
         "any-any-any":           "groupadd --gid $GROUP_ID user \\\n"
                               "&& useradd -m --uid $USER_ID --gid $GROUP_ID user \\\n"
-                              "&& dnf -y install python3 python3-pip git \\\n",
+                              "&& sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/fedora-cisco-openh264.repo \\\n"
+                              "&& dnf -y --setopt=install_weak_deps=False install python3 python3-pip git SDL3-static \\\n",
         "x86_64-linux-gnu":      "yum -y install shadow-utils\\\n"
                               "&& groupadd --gid $GROUP_ID user \\\n"
                               "&& useradd -m --uid $USER_ID --gid $GROUP_ID user \\\n"
