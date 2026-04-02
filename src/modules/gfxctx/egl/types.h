@@ -13,6 +13,18 @@
 
 #include "dlist.h"
 
+#define OLD_ENVS_SIZE_MAX 32
+
+typedef struct {
+    char value[OLD_ENVS_SIZE_MAX];
+    bool was_set;
+} st_old_env_t;
+
+typedef struct {
+    st_old_env_t libgl_always_software;
+    st_old_env_t gallium_driver;
+} st_old_envs_t;
+
 typedef struct {
     st_modctx_t;
     st_modsmgr_t      *modsmgr;
@@ -27,6 +39,8 @@ typedef struct {
      EGLenum objectType, EGLObjectKHR object, EGLLabelKHR label);
     bool               must_quit;
     size_t             gfxctxs_count;
+    st_old_envs_t      old_envs;
+    bool               software_opengl;
 } st_gfxctxctx_t;
 
 typedef struct {
