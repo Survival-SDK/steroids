@@ -24,10 +24,7 @@ add_custom_target(copy_plugins
     ALL
     COMMAND
         ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugins
-    # "${CMAKE_COMMAND} -E copy" not working with *-wildcard if no suitable
-    # files found
     COMMAND
-        # ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/*.stp ${CMAKE_BINARY_DIR}/plugins
         ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/copy-plugins.cmake
 )
 
@@ -102,8 +99,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/matrix3x3/simple"
  "${CMAKE_BINARY_DIR}/src/modules/matrix3x3/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mouse/simple"
  "${CMAKE_BINARY_DIR}/src/modules/mouse/simple")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mpool/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/mpool/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mpool/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/mpool/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/opts/ketopt"
  "${CMAKE_BINARY_DIR}/src/modules/opts/ketopt")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/pathtools/cwalk"
