@@ -1,0 +1,189 @@
+package.preload["MouseCtx"] = function()
+    local ffi = require "ffi"
+
+    local DpSrvConnCtx = require "DpSrvConnCtx"
+    local ModCtx       = require "ModCtx"
+    local ModsMgr      = require "ModsMgr"
+    local Object       = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_mousectx {
+            st_modctx_t __st_parent;
+        } st_mousectx_t;
+
+        typedef enum {
+            ST_MB_LEFT = 1,
+            ST_MB_MIDDLE,
+            ST_MB_RIGHT,
+
+            ST_MB_MAX,
+        } st_mbutton_t;
+
+        typedef void (*st_mouse_process_t)(st_mousectx_t *mouse_ctx);
+        typedef bool (*st_mouse_press_t)(const st_mousectx_t *mouse_ctx,
+         st_mbutton_t button);
+        typedef bool (*st_mouse_release_t)(const st_mousectx_t *mouse_ctx,
+         st_mbutton_t button);
+        typedef bool (*st_mouse_pressed_t)(const st_mousectx_t *mouse_ctx,
+         st_mbutton_t button);
+        typedef int (*st_mouse_get_wheel_relative_t)(
+         const st_mousectx_t *mouse_ctx);
+        typedef bool (*st_mouse_moved_t)(const st_mousectx_t *mouse_ctx);
+        typedef bool (*st_mouse_entered_t)(const st_mousectx_t *mouse_ctx);
+        typedef bool (*st_mouse_leaved_t)(const st_mousectx_t *mouse_ctx);
+        typedef unsigned (*st_mouse_get_x_t)(const st_mousectx_t *mouse_ctx);
+        typedef unsigned (*st_mouse_get_y_t)(const st_mousectx_t *mouse_ctx);
+        typedef const st_window_t *(*st_mouse_get_window_t)(
+         const st_mousectx_t *mouse_ctx);
+
+        typedef struct {
+            st_modctx_funcs_t              __st_parent_funcs;
+            st_mouse_process_t             process;
+            st_mouse_press_t               press;
+            st_mouse_release_t             release;
+            st_mouse_pressed_t             pressed;
+            st_mouse_get_wheel_relative_t  get_wheel_relative;
+            st_mouse_moved_t               moved;
+            st_mouse_entered_t             entered;
+            st_mouse_leaved_t              leaved;
+            st_mouse_get_x_t               get_x;
+            st_mouse_get_y_t               get_y;
+            st_mouse_get_window_t          get_window;
+        } st_mousectx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_mousectx_t *",
+    }
+
+    M.methods = setmetatable({
+        process = function(self)
+            ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).process(self.handle)
+        end,
+
+        press = function(self, button)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).press(self.handle, button)
+        end,
+
+        release = function(self, button)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).release(self.handle, button)
+        end,
+
+        pressed = function(self, button)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).pressed(self.handle, button)
+        end,
+
+        get_wheel_relative = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_wheel_relative(self.handle)
+        end,
+
+        moved = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).moved(self.handle)
+        end,
+
+        entered = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).entered(self.handle)
+        end,
+
+        leaved = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).leaved(self.handle)
+        end,
+
+        get_x = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_x(self.handle)
+        end,
+
+        get_y = function(self)
+            return ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_y(self.handle)
+        end,
+
+        get_window = function(self)
+            local window_ptr = ffi.cast("const st_mousectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_window(self.handle)
+            
+            if window_ptr == nil then
+                return nil
+            end
+            
+            return Object.__mtnew(DpSrvConnCtx.__window.__mt,
+             ffi.cast("st_window_t *", window_ptr), false)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_mousectx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local mouse_ctor = modsmgr:get_ctor("mouse", name)
+        if not mouse_ctor then
+            error(string.format(
+                "MouseCtx.new_by_name: constructor not found for mouse '%s'", 
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local mouse_ctx = mouse_ctor(params)
+
+        if not mouse_ctx then
+            error(string.format(
+                "MouseCtx.new_by_name: failed to create mouse instance '%s'", 
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_mousectx_t *",
+            mouse_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("mouse", module_name):as("MouseCtx")
+    end
+
+    -- Button constants
+    M.mb_left = ffi.C.ST_MB_LEFT
+    M.mb_middle = ffi.C.ST_MB_MIDDLE
+    M.mb_right = ffi.C.ST_MB_RIGHT
+
+    return M
+end
+

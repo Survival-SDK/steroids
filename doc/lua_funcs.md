@@ -500,14 +500,16 @@ monitor:get_owner_unsafe(): object
 
 ## mouse
 ```luau
-Mouse = require "Mouse"
+MouseCtx = require "MouseCtx"
 
-Mouse.new_ctx(events_ctx: events_ctx, logger_ctx: logger_ctx): mouse_ctx
-Mouse.mb_left: integer
-Mouse.mb_middle: integer
-Mouse.mb_right: integer
+MouseCtx.new(...): mouse_ctx
+MouseCtx.new_by_name(module_name: string, ...): mouse_ctx
+MouseCtx.get_instance(module_name: ?string): mouse_ctx
 
-mouse_ctx:destroy()
+MouseCtx.mb_left: integer
+MouseCtx.mb_middle: integer
+MouseCtx.mb_right: integer
+
 mouse_ctx:process()
 mouse_ctx:press(button: integer): bool
 mouse_ctx:release(button: integer): bool
@@ -519,6 +521,14 @@ mouse_ctx:leaved(): bool
 mouse_ctx:get_x(): integer
 mouse_ctx:get_y(): integer
 mouse_ctx:get_window(): ?window
+-- inherited from modctx
+mouse_ctx:get_subsystem(): string
+mouse_ctx:get_name(): string
+mouse_ctx:as(target: string | table): any
+-- inherited from object
+mouse_ctx:destroy()
+mouse_ctx:get_owner(): object
+mouse_ctx:get_owner_unsafe(): object
 ```
 
 ## opts
