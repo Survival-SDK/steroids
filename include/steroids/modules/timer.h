@@ -1,21 +1,29 @@
 #pragma once
 
-#include "steroids/module.h"
+#include <stdint.h>
 
-typedef st_modctx_t *(*st_timer_init_t)(st_modctx_t *logger_ctx);
-typedef void (*st_timer_quit_t)(st_modctx_t *timer_ctx);
+#include "steroids/modctx.h"
+#include "steroids/object.h"
 
-typedef uint64_t (*st_timer_start_t)(st_modctx_t *timer_ctx);
-typedef unsigned (*st_timer_get_elapsed_t)(st_modctx_t *timer_ctx,
+#ifndef ST_TIMERCTX_T_DEFINED
+    typedef st_modctx_t st_timerctx_t;
+#endif
+
+typedef uint64_t (*st_timer_start_t)(const st_timerctx_t *timer_ctx);
+typedef unsigned (*st_timer_get_elapsed_t)(const st_timerctx_t *timer_ctx,
  uint64_t start);
-typedef void (*st_timer_sleep_t)(st_modctx_t *timer_ctx, unsigned ms);
-typedef void (*st_timer_sleep_for_fps_t)(st_modctx_t *timer_ctx, unsigned fps);
+typedef void (*st_timer_sleep_t)(const st_timerctx_t *timer_ctx, unsigned ms);
+typedef void (*st_timer_sleep_for_fps_t)(const st_timerctx_t *timer_ctx, 
+ unsigned fps);
 
 typedef struct {
-    st_timer_init_t          timer_init;
-    st_timer_quit_t          timer_quit;
-    st_timer_start_t         timer_start;
-    st_timer_get_elapsed_t   timer_get_elapsed;
-    st_timer_sleep_t         timer_sleep;
-    st_timer_sleep_for_fps_t timer_sleep_for_fps;
-} st_timer_funcs_t;
+    st_modctx_funcs_t;
+    st_timer_start_t         start;
+    st_timer_get_elapsed_t   get_elapsed;
+    st_timer_sleep_t         sleep;
+    st_timer_sleep_for_fps_t sleep_for_fps;
+} st_timerctx_funcs_t;
+
+#define ST_TIMERCTX_CALL(ctx, func, ...) \
+    ((st_timerctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)

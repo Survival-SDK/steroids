@@ -471,15 +471,24 @@ sprite:get_owner_unsafe(): object
 
 ## timer
 ```luau
-Timer = require "Timer"
+TimerCtx = require "TimerCtx"
 
-Timer.new_ctx(logger_ctx: logger_ctx): timer_ctx
+TimerCtx.new(...): timer_ctx
+TimerCtx.new_by_name(module_name: string, ...): timer_ctx
+TimerCtx.get_instance(module_name: ?string): timer_ctx
 
-timer_ctx:destroy()
 timer_ctx:start(): integer
 timer_ctx:get_elapsed(start: integer): integer
 timer_ctx:sleep(ms: integer)
 timer_ctx:sleep_for_fps(fps: integer)
+-- inherited from modctx
+timer_ctx:get_subsystem(): string
+timer_ctx:get_name(): string
+timer_ctx:as(target: string | table): any
+-- inherited from object
+timer_ctx:destroy()
+timer_ctx:get_owner(): object
+timer_ctx:get_owner_unsafe(): object
 ```
 
 ## terminal

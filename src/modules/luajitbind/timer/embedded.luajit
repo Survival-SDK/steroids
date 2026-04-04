@@ -1,0 +1,110 @@
+package.preload["TimerCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_timerctx {
+            st_modctx_t __st_parent;
+        } st_timerctx_t;
+
+        typedef uint64_t (*st_timer_start_t)(const st_timerctx_t *timer_ctx);
+        typedef unsigned (*st_timer_get_elapsed_t)(
+         const st_timerctx_t *timer_ctx, uint64_t start);
+        typedef void (*st_timer_sleep_t)(const st_timerctx_t *timer_ctx,
+         unsigned ms);
+        typedef void (*st_timer_sleep_for_fps_t)(
+         const st_timerctx_t *timer_ctx, unsigned fps);
+
+        typedef struct {
+            st_modctx_funcs_t         __st_parent_funcs;
+            st_timer_start_t          start;
+            st_timer_get_elapsed_t    get_elapsed;
+            st_timer_sleep_t          sleep;
+            st_timer_sleep_for_fps_t  sleep_for_fps;
+        } st_timerctx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_timerctx_t *",
+    }
+
+    M.methods = setmetatable({
+        start = function(self)
+            return ffi.cast("const st_timerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).start(self.handle)
+        end,
+
+        get_elapsed = function(self, start)
+            return ffi.cast("const st_timerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_elapsed(self.handle, start)
+        end,
+
+        sleep = function(self, ms)
+            ffi.cast("const st_timerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).sleep(self.handle, ms)
+        end,
+
+        sleep_for_fps = function(self, fps)
+            ffi.cast("const st_timerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).sleep_for_fps(self.handle, fps)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_timerctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local timer_ctor = modsmgr:get_ctor("timer", name)
+        if not timer_ctor then
+            error(string.format(
+                "TimerCtx.new_by_name: constructor not found for timer '%s'", 
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local timer_ctx = timer_ctor(params)
+
+        if not timer_ctx then
+            error(string.format(
+                "TimerCtx.new_by_name: failed to create timer instance '%s'", 
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_timerctx_t *",
+            timer_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("timer", module_name):as("TimerCtx")
+    end
+
+    return M
+end
+
