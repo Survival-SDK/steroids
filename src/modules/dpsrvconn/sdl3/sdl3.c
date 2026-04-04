@@ -567,9 +567,6 @@ static st_dpsrvconnctx_t *st_dpsrvconn_init(const st_param_t params[]) {
     dpsrvconn_ctx->native_display = NULL;
     memset(dpsrvconn_ctx->monitors, 0, sizeof(st_monitor_t) * MONITORS_MAX);
     dpsrvconn_ctx->monitors_count = 0;
-    
-    if (!update_monitors(dpsrvconn_ctx))
-        goto update_monitors_fail;
 
     /* Register event types */
     dpsrvconn_ctx->evtypes[EV_MONITOR_CONNECTED] = ST_EVENTSCTX_CALL(
@@ -643,6 +640,9 @@ static st_dpsrvconnctx_t *st_dpsrvconn_init(const st_param_t params[]) {
     dpsrvconn_ctx->evtypes[EV_WIN_MONITOR_CHANGED] = ST_EVENTSCTX_CALL(
      dpsrvconn_ctx->events_ctx, register_type, "window_monitor_changed",
      sizeof(st_evwinptr_t));
+    
+    if (!update_monitors(dpsrvconn_ctx))
+        goto update_monitors_fail;
 
     ST_LOGGERCTX_CALL(logger_ctx, info,
      "%s_%s: Display server connection context initialized", 
