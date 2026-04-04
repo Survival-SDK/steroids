@@ -76,13 +76,25 @@ static st_eventsctx_t *st_events_init(const st_param_t params[]) {
      get_singleton, "logger", NULL);
     st_rbufctx_t   *rbuf_ctx = (st_rbufctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "rbuf", NULL);
+
+    if (!rbuf_ctx) {
+        rbuf_ctx = (st_rbufctx_t *)ST_MODSMGR_CALL(modsmgr,
+         create_singleton, "rbuf", NULL, (st_params_t){{0}});
+        if (!rbuf_ctx) {
+            ST_LOGGERCTX_CALL(logger_ctx, error,
+             "events_simple: unable to initialize rbuf context");
+
+            return NULL;
+        }
+    }
+
     st_eventsctx_t *events_ctx = (st_eventsctx_t *)st_modctx_new("events",
      "simple", sizeof(st_eventsctx_t), NULL, &eventsctx_funcs,
      (st_object_dtor_t)st_events_quit);
 
     if (!events_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "events_simple: unable to create new rbuf ctx object");
+         "events_simple: unable to create new events ctx object");
 
         return NULL;
     }
@@ -95,12 +107,6 @@ static st_eventsctx_t *st_events_init(const st_param_t params[]) {
      "events_simple: Event subsystem initialized.");
 
     return events_ctx;
-
-rbuf_init_fail:
-get_ctor_fail:
-    free(events_ctx);
-
-    return NULL;
 }
 
 static void st_events_quit(st_eventsctx_t *events_ctx) {
