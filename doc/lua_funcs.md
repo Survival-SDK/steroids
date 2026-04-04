@@ -115,25 +115,6 @@ window:get_owner(): object
 window:get_owner_unsafe(): object
 ```
 
-## fs
-```luau
-Fs = require "Fs"
-
-Fs.new_ctx(logger_ctx: logger_ctx, pathtools_ctx: pathtools_ctx): fs_ctx
-Fs.ft_unknown: integer
-Fs.ft_reg: integer
-Fs.ft_dir: integer
-Fs.ft_chr: integer
-Fs.ft_blk: integer
-Fs.ft_fifo: integer
-Fs.ft_link: integer
-Fs.ft_sock: integer
-
-fs_ctx:destroy()
-fs_ctx:get_file_type(filename: string): integer
-fs_ctx:mkdir(dirname: string): bool
-```
-
 ## gfxctx
 ```luau
 GfxCtxCtx = require "GfxCtxCtx"
@@ -323,38 +304,6 @@ logger_ctx:get_owner(): object
 logger_ctx:get_owner_unsafe(): object
 ```
 
-## monitor
-```luau
-MonitorCtx = require "MonitorCtx"
-
-MonitorCtx.new(...): monitor_ctx
-MonitorCtx.new_by_name(module_name: string, ...): monitor_ctx
-MonitorCtx.get_instance(module_name: ?string): monitor_ctx
-
-monitor_ctx:get_monitors_count(): integer
-monitor_ctx:get_primary_index(): integer
-monitor_ctx:open(index: integer): monitor
-monitor_ctx:open_primary(): monitor
--- inherited from modctx
-monitor_ctx:get_subsystem(): string
-monitor_ctx:get_name(): string
-monitor_ctx:as(target: string | table): any
--- inherited from object
-monitor_ctx:destroy()
-monitor_ctx:get_owner(): object
-monitor_ctx:get_owner_unsafe(): object
-
-monitor:get_width(): integer
-monitor:get_height(): integer
-monitor:get_index(): integer
-monitor:get_name(): ?string
-monitor:is_primary(): bool
--- inherited from object
-monitor:destroy()
-monitor:get_owner(): object
-monitor:get_owner_unsafe(): object
-```
-
 ## mouse
 ```luau
 MouseCtx = require "MouseCtx"
@@ -412,17 +361,6 @@ opts_ctx:as(target: string | table): any
 opts_ctx:destroy()
 opts_ctx:get_owner(): object
 opts_ctx:get_owner_unsafe(): object
-```
-
-## pathtools
-```luau
-PathTools = require "PathTools"
-
-PathTools.new_ctx(logger_ctx: logger_ctx): pathtools_ctx
-
-pathtools_ctx:destroy()
-pathtools_ctx:get_parent_dir(path: string): ?string
-pathtools_ctx:concat(path: string, append: string): ?string
 ```
 
 ## render
@@ -537,34 +475,4 @@ texture:get_height(): integer
 texture:destroy()
 texture:get_owner(): object
 texture:get_owner_unsafe(): object
-```
-
-## window
-```luau
-WindowCtx = require "WindowCtx"
-
-WindowCtx.new(...): window_ctx
-WindowCtx.new_by_name(module_name: string, ...): window_ctx
-WindowCtx.get_instance(module_name: ?string): window_ctx
-
-window_ctx:create(monitor: monitor, x: integer, y: integer, width: integer, 
- height: integer, fullscreen: bool, title: string): window
-window_ctx:process()
--- inherited from modctx
-window_ctx:get_subsystem(): string
-window_ctx:get_name(): string
-window_ctx:as(target: string | table): any
--- inherited from object
-window_ctx:destroy()
-window_ctx:get_owner(): object
-window_ctx:get_owner_unsafe(): object
-
-window:xed(): bool
-window:get_monitor(): monitor
-window:get_width(): integer
-window:get_height(): integer
--- inherited from object
-window:destroy()
-window:get_owner(): object
-window:get_owner_unsafe(): object
 ```
