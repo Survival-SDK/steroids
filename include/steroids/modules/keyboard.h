@@ -1,6 +1,11 @@
 #pragma once
 
-// #include "steroids/module.h"
+#include "steroids/modctx.h"
+#include "steroids/object.h"
+
+#ifndef ST_KEYBOARDCTX_T_DEFINED
+    typedef st_modctx_t st_keyboardctx_t;
+#endif
 
 typedef enum {
     ST_KEY_UNKNOWN       = 0x0000,  /* Unknown key */
@@ -232,25 +237,25 @@ typedef enum {
     ST_KEY_HYPER_R       = 0xFFEE,  /* Right hyper */
 } st_key_t;
 
-// typedef st_modctx_t *(*st_keyboard_init_t)(st_modctx_t *events_ctx,
-//  st_modctx_t *logger_ctx);
-// typedef void (*st_keyboard_quit_t)(st_modctx_t *keyboard_ctx);
+typedef void (*st_keyboard_process_t)(st_keyboardctx_t *keyboard_ctx);
+typedef bool (*st_keyboard_press_t)(const st_keyboardctx_t *keyboard_ctx,
+ st_key_t key);
+typedef bool (*st_keyboard_release_t)(const st_keyboardctx_t *keyboard_ctx,
+ st_key_t key);
+typedef bool (*st_keyboard_pressed_t)(const st_keyboardctx_t *keyboard_ctx,
+ st_key_t key);
+typedef const char *(*st_keyboard_get_input_t)(
+ const st_keyboardctx_t *keyboard_ctx);
 
-// typedef void (*st_keyboard_process_t)(st_modctx_t *keyboard_ctx);
-// typedef bool (*st_keyboard_press_t)(const st_modctx_t *keyboard_ctx,
-//  st_key_t key);
-// typedef bool (*st_keyboard_release_t)(const st_modctx_t *keyboard_ctx,
-//  st_key_t key);
-// typedef bool (*st_keyboard_pressed_t)(const st_modctx_t *keyboard_ctx,
-//  st_key_t key);
-// typedef const char *(*st_keyboard_get_input_t)(const st_modctx_t *keyboard_ctx);
+typedef struct {
+    st_modctx_funcs_t;
+    st_keyboard_process_t   process;
+    st_keyboard_press_t     press;
+    st_keyboard_release_t   release;
+    st_keyboard_pressed_t   pressed;
+    st_keyboard_get_input_t get_input;
+} st_keyboardctx_funcs_t;
 
-// typedef struct {
-//     st_keyboard_init_t      keyboard_init;
-//     st_keyboard_quit_t      keyboard_quit;
-//     st_keyboard_process_t   keyboard_process;
-//     st_keyboard_press_t     keyboard_press;
-//     st_keyboard_release_t   keyboard_release;
-//     st_keyboard_pressed_t   keyboard_pressed;
-//     st_keyboard_get_input_t keyboard_get_input;
-// } st_keyboard_funcs_t;
+#define ST_KEYBOARDCTX_CALL(ctx, func, ...) \
+    ((st_keyboardctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
+     ## __VA_ARGS__)

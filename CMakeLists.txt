@@ -64,8 +64,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/htable/hash_table"
  "${CMAKE_BINARY_DIR}/src/modules/htable/hash_table")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/ini/inih"
  "${CMAKE_BINARY_DIR}/src/modules/ini/inih")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/keyboard/simple"
-#  "${CMAKE_BINARY_DIR}/src/modules/keyboard/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/keyboard/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/keyboard/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/logger/libsir"
  "${CMAKE_BINARY_DIR}/src/modules/logger/libsir")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
@@ -78,8 +78,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/dpsrvconn"
 #  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/gfxctx")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/keyboard"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/keyboard")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/keyboard"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/keyboard")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/logger")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/mouse"
