@@ -1,0 +1,328 @@
+package.preload["Object"] = function()
+    local ffi = require("ffi")
+
+    ffi.cdef[[
+        struct st_object;
+
+        typedef const struct st_object *(*st_object_get_owner_t)(
+        const void *obj);
+        typedef struct st_object *(*st_object_get_owner_unsafe_t)(
+        void *obj);
+        typedef void (*st_object_destroy_t)(void *obj);
+
+        typedef struct {
+            st_object_get_owner_t        get_owner;
+            st_object_get_owner_unsafe_t get_owner_unsafe;
+            st_object_destroy_t          destroy;
+        } st_object_funcs_t;
+
+        typedef struct st_object {
+            const st_object_funcs_t *funcs;
+            void                    *__st_owner;
+            void                    *__st_dtor;
+            uintptr_t                __st_userdata;
+        } st_object_t;
+    ]]
+    
+    local M = {
+        __ctype = "st_object_t *",
+        __mtnew = function(metatype, handle, owned)
+            if handle == nil then
+                return nil
+            else
+                return metatype(handle, owned)
+            end
+        end,
+        new = function()
+            return error("luajit_luajit: Instantiation of class 'st_object_t' via LuaJIT is forbidden")
+        end,
+    }
+
+    M.methods = {
+        get_owner = function(self)
+            return M.__mtnew(
+                M.__mt,
+                ffi.cast("st_object_t *", self.handle).funcs.get_owner(self.handle),
+                false
+            )
+        end,
+        get_owner_unsafe = function(self)
+            return M.__mtnew(
+                M.__mt,
+                ffi.cast("st_object_t *", self.handle).funcs.get_owner_unsafe(self.handle),
+                false
+            )
+        end,
+        destroy = function(self)
+            ffi.cast("st_object_t *", self.handle).funcs.destroy(self.handle)
+        end,
+    }
+
+    M.__mt = ffi.metatype(
+        "struct { st_object_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    return M
+end
+
+package.preload["ModCtx"] = function()
+    local ffi = require("ffi")
+
+    local Object = require "Object"
+
+    ffi.cdef[[
+        struct st_modctx;
+
+        typedef const char *(*st_modctx_get_subsystem_t)(
+        const struct st_modctx *modctx);
+        typedef const char *(*st_modctx_get_name_t)(
+        const struct st_modctx *modctx);
+
+        typedef struct {
+            st_object_funcs_t         __st_parent_funcs;
+            st_modctx_get_subsystem_t get_subsystem;
+            st_modctx_get_name_t      get_name;
+        } st_modctx_funcs_t;
+
+        typedef struct st_modctx {
+            st_object_t __st_parent;
+            const void *__st_subsystem;
+            const void *__st_name;
+        } st_modctx_t;
+
+        typedef struct {
+            const char *key;
+            uintptr_t   value;
+        } st_param_t;
+
+        typedef st_param_t st_params_t[32];
+
+        typedef st_modctx_t *(*st_ctx_ctor_t)(const st_param_t params[]);
+    ]]
+    
+    local M = {
+        __ctype = "st_modctx_t *",
+        new = function()
+            return error("luajit_luajit: Instantiation of class 'st_modctx_t' via LuaJIT is forbidden")
+        end,
+    }
+
+    M.methods = setmetatable({
+        get_subsystem = function(self)
+            return ffi.cast("const st_modctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subsystem(self.handle)
+        end,
+        get_name = function(self)
+            return ffi.cast("const st_modctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_name(self.handle)
+        end,
+        as = function(self, target)
+            local mt
+            local ctype
+            
+            if type(target) == "string" then
+                -- String - load module by name
+                local module = require(target)
+                mt = module.__mt
+                ctype = module.__ctype
+            elseif type(target) == "table" then
+                -- Table - either module (with __mt field) or metatable itself
+                mt = target.__mt or target
+                ctype = target.__ctype
+                
+                if not ctype then
+                    error("ModCtx:as() target module must have __ctype field")
+                end
+            else
+                error("ModCtx:as() expects module table, metatable, or module name string")
+            end
+            
+            -- Move semantics: transfer ownership to the new object
+            local new_obj = Object.__mtnew(mt, ffi.cast(ctype, self.handle), self.owned)
+            self.owned = false  -- Original object no longer owns the memory
+            
+            return new_obj
+        end,
+    }, { __index = Object.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_modctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    local function normalize_params_args(...)
+        local args = {...}
+        local params_table
+        
+        if #args > 0 and type(args[1]) == "table" then
+            params_table = args[1]
+        else
+            params_table = {}
+            for i = 1, #args, 2 do
+                if args[i] then
+                    params_table[args[i]] = args[i + 1]
+                end
+            end
+        end
+        
+        return params_table
+    end
+
+    M.__create_params = function(...)
+        local params_table = normalize_params_args(...)
+        
+        local params = ffi.new("st_params_t")
+        local idx = 0
+        
+        if params_table then
+            for key, value in pairs(params_table) do
+                if idx < 31 then
+                    local ptr_value
+                    
+                    if type(value) == "cdata" and value.handle then
+                        ptr_value = ffi.cast("uintptr_t", value.handle)
+                    else
+                        ptr_value = ffi.cast("uintptr_t", value)
+                    end
+                    
+                    params[idx].key = key
+                    params[idx].value = ptr_value
+                    idx = idx + 1
+                end
+            end
+        end
+        
+        params[idx].key = nil
+        params[idx].value = 0
+        
+        return params
+    end
+
+    M.__create_modctx_params = function(modsmgr, ...)
+        local params_table = normalize_params_args(...)
+        
+        params_table["modsmgr"] = modsmgr
+        
+        return M.__create_params(params_table)
+    end
+
+    return M
+end
+
+package.preload["ModsMgr"] = function()
+    local ffi = require("ffi")
+    
+    local ModCtx = require "ModCtx"
+    local Object = require "Object"
+
+    ffi.cdef[[
+        typedef struct {
+            st_object_t __parent;
+            void       *__modsdata;
+            void       *__singletons;
+        } st_modsmgr_t;
+
+        typedef void (*st_modsmgr_get_module_names_t)(st_modsmgr_t *modsmgr,
+            char **dst, size_t mods_count, size_t modname_size,
+            const char *subsystem);
+        typedef st_ctx_ctor_t (*st_modsmgr_get_ctor_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+        typedef st_modctx_t *(*st_modsmgr_create_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name, st_param_t params[]);
+        typedef bool (*st_modsmgr_have_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+        typedef st_modctx_t *(*st_modsmgr_get_singleton_t)(
+            const st_modsmgr_t *modsmgr, const char *subsystem,
+            const char *module_name);
+
+        typedef struct st_modsmgr_funcs {
+            st_object_funcs_t             __st_parent_funcs;
+            void                         *__load_module;
+            void                         *__process_deps;
+            st_modsmgr_get_module_names_t get_module_names;
+            st_modsmgr_get_ctor_t         get_ctor;
+            st_modsmgr_create_singleton_t create_singleton;
+            st_modsmgr_have_singleton_t   have_singleton;
+            st_modsmgr_get_singleton_t    get_singleton;
+        } st_modsmgr_funcs_t;
+    ]]
+    
+    local M = {
+        __ctype = "st_modsmgr_t *",
+        new = function()
+            return error("luajit_luajit: Instantiation of class 'st_modsmgr_t' is forbidden")
+        end,
+    }
+
+    M.methods = setmetatable({
+        get_module_names = function(self, dst, mods_count, modname_size,
+            subsystem)
+            return ffi.cast("const st_modsmgr_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_module_names(self.handle, dst, mods_count, modname_size, subsystem)
+        end,
+        get_ctor = function(self, subsystem, module_name)
+            return ffi.cast("const st_modsmgr_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_ctor(self.handle, subsystem, module_name)
+        end,
+        create_singleton = function(self, subsystem, module_name, params)
+            return Object.__mtnew(ModCtx.__mt, ffi.cast(
+                "const st_modsmgr_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).create_singleton(self.handle, subsystem, module_name, 
+                ModCtx.__create_modctx_params(self, params)
+            ), false)
+        end,
+        have_singleton = function(self, subsystem, module_name)
+            return ffi.cast("const st_modsmgr_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).have_singleton(self.handle, subsystem, module_name)
+        end,
+        get_singleton = function(self, subsystem, module_name)
+            return Object.__mtnew(ModCtx.__mt, ffi.cast("const st_modsmgr_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_singleton(self.handle, subsystem, module_name), false)
+        end,
+    }, { __index = Object.methods })
+
+    M.__mt = ffi.metatype("struct { st_modsmgr_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.get_instance = function()
+        return M.__mt(ffi.cast("st_modsmgr_t *", M.__instance), false)
+    end
+
+    return M
+end

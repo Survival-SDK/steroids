@@ -5,7 +5,9 @@
 
 #include <GL/gl.h>
 
-#include "steroids/types/modules/sprite.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
+#include "steroids/params.h"
 
 #include "batcher.inl"
 #include "shader.inl"
@@ -35,254 +37,282 @@
     #error Unknown target OS
 #endif
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_renderctx_t *st_render_init(const st_param_t params[]);
+static void st_render_quit(st_renderctx_t *render_ctx);
 
-ST_MODULE_DEF_GET_FUNC(render_opengl)
-ST_MODULE_DEF_INIT_FUNC(render_opengl)
+static void st_render_put_sprite(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float pivot_x, float pivot_y);
+static void st_render_put_sprite_rdangled(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float radians, float pivot_x, float pivot_y);
+static void st_render_put_sprite_dgangled(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float degrees, float pivot_x, float pivot_y);
+static void st_render_put_sprite_rhsheared(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float radians, float pivot_x, float pivot_y);
+static void st_render_put_sprite_dhsheared(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float degrees, float pivot_x, float pivot_y);
+static void st_render_put_sprite_rvsheared(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float radians, float pivot_x, float pivot_y);
+static void st_render_put_sprite_dvsheared(const st_renderctx_t *render_ctx,
+ const st_sprite_t *sprite, float x, float y, float z, float hscale,
+ float vscale, float degrees, float pivot_x, float pivot_y);
+static void st_render_process(st_renderctx_t *render_ctx);
+
+static st_renderctx_funcs_t st_render_opengl_funcs = {
+    st_modctx_funcs,
+    .put_sprite           = st_render_put_sprite,
+    .put_sprite_rdangled  = st_render_put_sprite_rdangled,
+    .put_sprite_dgangled  = st_render_put_sprite_dgangled,
+    .put_sprite_rhsheared = st_render_put_sprite_rhsheared,
+    .put_sprite_dhsheared = st_render_put_sprite_dhsheared,
+    .put_sprite_rvsheared = st_render_put_sprite_rvsheared,
+    .put_sprite_dvsheared = st_render_put_sprite_dvsheared,
+    .process              = st_render_process,
+};
+
+static const st_modprerq_t mod_prereqs[] = {
+    { "angle", NULL, },
+    { "drawq", NULL, },
+    { "dynarr", NULL, },
+    { "gldebug", NULL, },
+    { "glloader", NULL, },
+    { "logger", NULL, },
+    { "matrix3x3", NULL, },
+    { "sprite", NULL, },
+    { "vec2", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_render_opengl_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("render", "opengl", ST_MODULE_TYPE, mod_prereqs,
+     st_render_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_render_opengl_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_render_opengl_init(modsmgr);
 }
 #endif
 
-static bool st_render_import_functions(st_modctx_t *render_ctx,
- st_modctx_t *angle_ctx, st_modctx_t *drawq_ctx, st_modctx_t *dynarr_ctx,
- st_modctx_t *logger_ctx, st_modctx_t *matrix3x3_ctx, st_modctx_t *sprite_ctx,
- st_modctx_t *texture_ctx, st_modctx_t *vec2_ctx, st_gfxctx_t *gfxctx) {
-    st_render_opengl_t            *module = render_ctx->data;
-    st_gfxctx_get_api_t            st_gfxctx_get_api = NULL;
-    st_glloader_init_t             st_glloader_init;
-    st_glloader_quit_t             st_glloader_quit;
-    st_glloader_get_proc_address_t st_glloader_get_proc_address;
-    st_modctx_t                   *gfxctx_ctx = st_object_get_owner(gfxctx);
-    st_modctx_t                   *glloader_ctx = NULL;
+// static bool glapi_least(st_gapi_t current_api, st_gapi_t req_api) {
+//     return req_api >= ST_GAPI_GL1
+//         && req_api <= ST_GAPI_GL46
+//         && current_api >= req_api;
+// }
 
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "render_opengl: Unable to load function \"error\" from module "
-         "\"logger\"\n");
+static st_renderctx_t *st_render_init(const st_param_t params[]) {
+    st_renderctx_t  *render_ctx;
+    st_modsmgr_t    *modsmgr;
+    st_shader_t      shd_vert = {0};
+    st_shader_t      shd_frag = {0};
+    st_gfxctx_t     *gfxctx;
+    // st_windowctx_t  *window_ctx;
 
-        return false;
-    }
+    modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    if (!modsmgr)
+        return NULL;
 
-    module->gfxctx.gapi = ST_GFXCTX_CALL(gfxctx, get_api);
-    module->window.handle = ST_GFXCTX_CALL(gfxctx, get_window);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", angle, dtor);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", drawq, create);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, create);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, destroy);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, append);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, clear);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, get);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, get_all);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", dynarr, get_elements_count);
-
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, init);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, quit);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, label_buffer);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, label_shader);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, label_shdprog);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, label_vao);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, unlabel_buffer);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, unlabel_shader);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, unlabel_shdprog);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, unlabel_vao);
-    ST_LOAD_FUNCTION("render_opengl", gldebug, NULL, get_error_msg);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", logger, info);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", logger, warning);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", matrix3x3, identity);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", sprite, get_texture);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", sprite, get_width);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", sprite, get_height);
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", sprite, export_uv);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", texture, bind);
-
-    ST_LOAD_FUNCTION_FROM_CTX("render_opengl", vec2, apply_matrix3x3);
-
-    st_glloader_init = global_modsmgr_funcs.get_function(global_modsmgr,
-     "glloader", gfxctx_ctx->name, "init");
-    if (!st_glloader_init) {
-        module->logger.warning(module->logger.ctx,
-         "render_opengl: Unable to load function \"init\" from module "
-         "\"glloader\". This is why unable to use OpenGL functions above "
-         "OpenGL %s and extensions\n", MINIMAL_OPENGL);
-    }
-
-    if (st_glloader_init)
-        glloader_ctx = st_glloader_init(logger_ctx, gfxctx);
-    if (glloader_ctx) {
-        st_glloader_quit = global_modsmgr_funcs.get_function_from_ctx(
-         global_modsmgr, glloader_ctx, "quit");
-        if (!st_glloader_quit) {
-            module->logger.warning(module->logger.ctx,
-             "render_opengl: Unable to load function \"quit\" from module "
-             "\"glloader\"\n");
-        }
-
-        st_glloader_get_proc_address =
-         global_modsmgr_funcs.get_function_from_ctx(global_modsmgr,
-         glloader_ctx, "get_proc_address");
-        if (!st_glloader_get_proc_address) {
-            module->logger.error(module->logger.ctx,
-             "render_opengl: Unable to load function \"get_proc_address\" "
-             "from module \"gllogger\"\n");
-
-            goto get_proc_addr_fail;
-        }
-
-        glfuncs_load_all(&module->gl, &module->glsupported,
-         &module->logger, glloader_ctx, st_glloader_get_proc_address,
-         module->gfxctx.gapi);
-
-get_proc_addr_fail:
-        if (st_glloader_quit)
-            st_glloader_quit(glloader_ctx);
-    }
-
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3)
-     && (!module->glsupported.shader_main || !module->glsupported.buf_main)) {
-        module->logger.error(module->logger.ctx,
-         "render_opengl: Shaders and Buffer objects required for OpenGL >=3.0");
-
-        return false;
-    }
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL32) &&
-     !module->glsupported.vao_main) {
-        module->logger.error(module->logger.ctx,
-         "render_opengl: VAO required for OpenGL >=3.2");
-
-        return false;
-    }
-
-    return true;
-}
-
-static st_modctx_t *st_render_init(st_modctx_t *angle_ctx,
- st_modctx_t *drawq_ctx, st_modctx_t *dynarr_ctx, st_modctx_t *logger_ctx,
- st_modctx_t *matrix3x3_ctx, st_modctx_t *sprite_ctx, st_modctx_t *texture_ctx,
- st_modctx_t *vec2_ctx, st_gfxctx_t *gfxctx) {
-    st_modctx_t        *render_ctx;
-    st_render_opengl_t *module;
-    st_shader_t         shd_vert = {0};
-    st_shader_t         shd_frag = {0};
-
-    render_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_render_opengl_data, sizeof(st_render_opengl_t));
-
+    render_ctx = (st_renderctx_t *)st_modctx_new("render", "opengl", 
+     sizeof(st_renderctx_t), NULL, &st_render_opengl_funcs, 
+     (st_object_dtor_t)st_render_quit);
     if (!render_ctx)
         return NULL;
 
-    render_ctx->funcs = &st_render_opengl_funcs;
-
-    module = render_ctx->data;
-    module->angle.ctx = angle_ctx;
-    module->drawq.ctx = drawq_ctx;
-    module->dynarr.ctx = dynarr_ctx;
-    module->gfxctx.handle = gfxctx;
-    module->logger.ctx = logger_ctx;
-    module->matrix3x3.ctx = matrix3x3_ctx;
-    module->vec2.ctx = vec2_ctx;
-    module->gl = (const st_glfuncs_t){0};
-    module->glsupported = (const st_glsupported_t){0};
-
-    if (!st_render_import_functions(render_ctx, angle_ctx, drawq_ctx,
-     dynarr_ctx, logger_ctx, matrix3x3_ctx, sprite_ctx, texture_ctx, vec2_ctx,
-     gfxctx))
-        goto import_fail;
-
-    module->gldebug.ctx = module->gldebug.init(logger_ctx, gfxctx);
-    if (!module->gldebug.ctx)
-        module->logger.warning(module->logger.ctx,
-         "render_opengl: Unable to initialize gldebug");
-
-    module->drawq.handle = module->drawq.create(module->drawq.ctx);
-    if (!module->drawq.handle) {
-        module->logger.error(module->logger.ctx,
-         "render_opengl: Unable to create draw queue");
-
-        goto drawq_fail;
+    render_ctx->logger_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "logger", NULL);
+    if (!render_ctx->logger_ctx) {
+        fprintf(stderr,
+         "render_opengl: Unable to get logger context\n");
+        goto logger_fail;
     }
 
-    if (!vertices_init(render_ctx)) {
-        module->logger.error(module->logger.ctx,
-         "render_opengl: Unable to init vertices array");
+    render_ctx->angle_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "angle", NULL);
+    if (!render_ctx->angle_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get angle context");
+        goto angle_fail;
+    }
 
+    render_ctx->drawq_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "drawq", NULL);
+    if (!render_ctx->drawq_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get drawq context");
+        goto drawq_ctx_fail;
+    }
+
+    render_ctx->dynarr_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "dynarr", NULL);
+    if (!render_ctx->dynarr_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get dynarr context");
+        goto dynarr_ctx_fail;
+    }
+
+    render_ctx->matrix3x3_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "matrix3x3",
+     NULL);
+    if (!render_ctx->matrix3x3_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get matrix3x3 context");
+        goto matrix3x3_fail;
+    }
+
+    render_ctx->sprite_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "sprite", NULL);
+    if (!render_ctx->sprite_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get sprite context");
+        goto sprite_fail;
+    }
+
+    render_ctx->texture_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "texture",
+     NULL);
+    if (!render_ctx->texture_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get texture context");
+        goto texture_fail;
+    }
+
+    render_ctx->vec2_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "vec2", NULL);
+    if (!render_ctx->vec2_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get vec2 context");
+        goto vec2_fail;
+    }
+
+    gfxctx = st_modctx_get_param_as_ptr(params, "gfxctx");
+    if (!gfxctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get gfxctx parameter");
+        goto gfxctx_fail;
+    }
+    render_ctx->gfxctx = gfxctx;
+    render_ctx->gapi = ST_GFXCTX_CALL(gfxctx, get_api);
+    render_ctx->window = ST_GFXCTX_CALL(gfxctx, get_window);
+    render_ctx->dpsrvconn_ctx = (st_dpsrvconnctx_t *)ST_WINDOW_CALL(
+     render_ctx->window, get_owner);
+
+    render_ctx->glloader_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "glloader",
+     NULL);
+    if (!render_ctx->glloader_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, warning,
+         "render_opengl: Unable to get glloader context. Unable to use OpenGL "
+         "functions above OpenGL %s and extensions", MINIMAL_OPENGL);
+    }
+
+    render_ctx->gldebug_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "gldebug",
+     NULL);
+    if (!render_ctx->gldebug_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, warning,
+         "render_opengl: Unable to get gldebug context");
+    }
+
+    render_ctx->gl = (st_glfuncs_t){0};
+    render_ctx->glsupported = (st_glsupported_t){0};
+
+    if (render_ctx->glloader_ctx) {
+        if (!glfuncs_load_all(&render_ctx->gl, &render_ctx->glsupported,
+         render_ctx->logger_ctx, render_ctx->glloader_ctx, render_ctx->gapi)) {
+            ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+             "render_opengl: Unable to load OpenGL functions");
+            goto glfuncs_fail;
+        }
+    }
+
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3)
+     && (!render_ctx->glsupported.shader_main
+      || !render_ctx->glsupported.buf_main)) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Shaders and Buffer objects required for OpenGL >=3.0");
+        goto version_check_fail;
+    }
+
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL32)
+     && !render_ctx->glsupported.vao_main) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: VAO required for OpenGL >=3.2");
+        goto version_check_fail;
+    }
+
+    render_ctx->queue = ST_DRAWQCTX_CALL(render_ctx->drawq_ctx, create);
+    if (!render_ctx->queue) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to create draw queue");
+        goto queue_fail;
+    }
+
+    if (!vertices_init(&render_ctx->vertices, render_ctx->logger_ctx,
+     render_ctx->dynarr_ctx)) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to init vertices array");
         goto vertices_fail;
     }
 
-    if (!batcher_init(render_ctx)) {
-        module->logger.error(module->logger.ctx,
+    if (!batcher_init(&render_ctx->batcher, render_ctx->logger_ctx,
+     render_ctx->dynarr_ctx)) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
          "render_opengl: Unable to init batcher");
-
         goto batcher_fail;
     }
 
-    ST_GFXCTX_CALL(module->gfxctx.handle, make_current);
+    ST_GFXCTX_CALL(render_ctx->gfxctx, make_current);
 
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
-        vao_init(render_ctx, &module->vao);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
+        vao_init(&render_ctx->vao, &render_ctx->gl);
 
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2)) {
-        vbo_init(render_ctx, VBO_COMPONENTS_PER_VERTEX);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2)) {
+        vbo_init(&render_ctx->vbo, &render_ctx->gl, VBO_COMPONENTS_PER_VERTEX);
         /* We have shader sources for only OpenGL 3.3 */
-        assert(module->gfxctx.gapi == ST_GAPI_GL33);
+        assert(render_ctx->gapi == ST_GAPI_GL33);
 
-        if (!shader_init(render_ctx, &shd_vert, SHD_VERTEX,
+        if (!shader_init(&shd_vert, render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, &render_ctx->gl, SHD_VERTEX,
          VERTEX_SHADER_SOURCE_GL33)) {
-            if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
+            if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
                 goto vert_fail;
         }
 
-        if (shd_vert.handle &&
-         !shader_init(render_ctx, &shd_frag, SHD_FRAGMENT,
-          FRAGMENT_SHADER_SOURCE_GL33)) {
-            if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
+        if (shd_vert.handle && !shader_init(&shd_frag, render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, &render_ctx->gl, SHD_FRAGMENT,
+         FRAGMENT_SHADER_SOURCE_GL33)) {
+            if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
                 goto frag_fail;
         }
 
-        if (shd_vert.handle && shd_frag.handle &&
-         !shdprog_init(render_ctx, &shd_vert, &shd_frag)) {
-            if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
+        if (shd_vert.handle && shd_frag.handle && !shdprog_init(
+         &render_ctx->shdprog, render_ctx->logger_ctx, render_ctx->gldebug_ctx,
+         &render_ctx->gl, &shd_vert, &shd_frag)) {
+            if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
                 goto prog_fail;
         }
 
-        if (module->shdprog.handle && !vertattr_init(render_ctx, &module->posattr,
-         &module->vbo, &module->shdprog, ATTR_POS_NAME,
+        if (render_ctx->shdprog.handle && !vertattr_init(&render_ctx->posattr,
+         render_ctx->logger_ctx, render_ctx->gldebug_ctx, &render_ctx->gl,
+         &render_ctx->vbo, &render_ctx->shdprog, ATTR_POS_NAME,
          ATTR_POS_COMPONENTS_COUNT, ATTR_POS_OFFSET)) {
-            if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
+            if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
                 goto posattr_fail;
         }
 
-        if (module->shdprog.handle && (module->posattr.handle != -1) &&
-         !vertattr_init(render_ctx, &module->texcrdattr, &module->vbo,
-         &module->shdprog, ATTR_TEXCOORD_NAME, ATTR_TEXCOORD_COMPONENTS_COUNT,
-         ATTR_TEXCOORD_OFFSET)) {
-            if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
+        if (render_ctx->shdprog.handle && (render_ctx->posattr.handle != -1)
+         && !vertattr_init(&render_ctx->texcrdattr, render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, &render_ctx->gl, &render_ctx->vbo,
+         &render_ctx->shdprog, ATTR_TEXCOORD_NAME,
+         ATTR_TEXCOORD_COMPONENTS_COUNT, ATTR_TEXCOORD_OFFSET)) {
+            if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
                 goto texcrdattr_fail;
         }
 
         shader_free(&shd_frag);
         shader_free(&shd_vert);
 
-        if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3)) {
-            vao_bind(&module->vao);
-            vbo_bind(&module->vbo);
-            vertattr_enable(&module->posattr);
-            vertattr_enable(&module->texcrdattr);
-            vao_unbind(&module->vao);
+        if (glapi_least(render_ctx->gapi, ST_GAPI_GL3)) {
+            vao_bind(&render_ctx->vao);
+            vbo_bind(&render_ctx->vbo);
+            vertattr_enable(&render_ctx->posattr);
+            vertattr_enable(&render_ctx->texcrdattr);
+            vao_unbind(&render_ctx->vao);
         }
     }
 
@@ -295,129 +325,121 @@ static st_modctx_t *st_render_init(st_modctx_t *angle_ctx,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-    module->logger.info(module->logger.ctx,
+    ST_LOGGERCTX_CALL(render_ctx->logger_ctx, info,
      "render_opengl: Render subsystem initialized");
 
     return render_ctx;
 
 texcrdattr_fail:
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2))
-        vertattr_free(&module->texcrdattr);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2))
+        vertattr_free(&render_ctx->posattr);
 posattr_fail:
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2))
-        shdprog_free(&module->shdprog);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2))
+        shdprog_free(&render_ctx->shdprog);
 prog_fail:
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2))
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2))
         shader_free(&shd_frag);
 frag_fail:
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2))
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2))
         shader_free(&shd_vert);
 vert_fail:
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2))
-        vbo_free(&module->vbo);
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
-        vao_free(&module->vao);
-    batcher_free(&module->batcher);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2))
+        vbo_free(&render_ctx->vbo);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
+        vao_free(&render_ctx->vao);
+    batcher_free(&render_ctx->batcher);
 batcher_fail:
-    vertices_free(&module->vertices);
+    vertices_free(render_ctx->vertices);
 vertices_fail:
-    ST_DRAWQ_CALL(module->drawq.handle, destroy);
-drawq_fail:
-    if (module->gldebug.ctx)
-        module->gldebug.quit(module->gldebug.ctx);
-import_fail:
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, render_ctx);
+    ST_DRAWQ_CALL(render_ctx->queue, destroy);
+queue_fail:
+version_check_fail:
+glfuncs_fail:
+vec2_fail:
+texture_fail:
+sprite_fail:
+matrix3x3_fail:
+dynarr_ctx_fail:
+drawq_ctx_fail:
+angle_fail:
+gfxctx_fail:
+logger_fail:
+    free(render_ctx);
 
     return NULL;
 }
 
-static void st_render_quit(st_modctx_t *render_ctx) {
-    st_render_opengl_t *module = render_ctx->data;
-
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL2)) {
-        vertattr_free(&module->texcrdattr);
-        vertattr_free(&module->posattr);
-        shdprog_free(&module->shdprog);
-        vbo_free(&module->vbo);
+static void st_render_quit(st_renderctx_t *render_ctx) {
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL2)) {
+        vertattr_free(&render_ctx->texcrdattr);
+        vertattr_free(&render_ctx->posattr);
+        shdprog_free(&render_ctx->shdprog);
+        vbo_free(&render_ctx->vbo);
     }
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3))
-        vao_free(&module->vao);
-    batcher_free(&module->batcher);
-    vertices_free(&module->vertices);
-    ST_DRAWQ_CALL(module->drawq.handle, destroy);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3))
+        vao_free(&render_ctx->vao);
+    batcher_free(&render_ctx->batcher);
+    vertices_free(render_ctx->vertices);
+    ST_DRAWQ_CALL(render_ctx->queue, destroy);
 
-    if (module->gldebug.ctx)
-        module->gldebug.quit(module->gldebug.ctx);
-
-    module->logger.info(module->logger.ctx,
+    ST_LOGGERCTX_CALL(render_ctx->logger_ctx, info,
      "render_opengl: Render subsystem destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, render_ctx);
+    free(render_ctx);
 }
 
-static void st_render_put_sprite(st_modctx_t *render_ctx,
+static void st_render_put_sprite(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
-
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
      0.0f, 0.0f, 0.0f, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_rdangled(st_modctx_t *render_ctx,
+static void st_render_put_sprite_rdangled(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float radians, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
-
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
      radians, 0.0f, 0.0f, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_dgangled(st_modctx_t *render_ctx,
+static void st_render_put_sprite_dgangled(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float degrees, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
+    float radians = ST_ANGLECTX_CALL(render_ctx->angle_ctx, dtor, degrees);
 
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
-     module->angle.dtor(module->angle.ctx, degrees), 0.0f, 0.0f, pivot_x,
-     pivot_y);
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
+     radians, 0.0f, 0.0f, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_rhsheared(st_modctx_t *render_ctx,
+static void st_render_put_sprite_rhsheared(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float radians, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
-
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
      0.0f, radians, 0.0f, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_dhsheared(st_modctx_t *render_ctx,
+static void st_render_put_sprite_dhsheared(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float degrees, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
+    float radians = ST_ANGLECTX_CALL(render_ctx->angle_ctx, dtor, degrees);
 
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
-     0.0f, module->angle.dtor(module->angle.ctx, degrees), 0.0f, pivot_x,
-     pivot_y);
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
+     0.0f, radians, 0.0f, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_rvsheared(st_modctx_t *render_ctx,
+static void st_render_put_sprite_rvsheared(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float radians, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
-
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
      0.0f, 0.0f, radians, pivot_x, pivot_y);
 }
 
-static void st_render_put_sprite_dvsheared(st_modctx_t *render_ctx,
+static void st_render_put_sprite_dvsheared(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float degrees, float pivot_x, float pivot_y) {
-    st_render_opengl_t *module = render_ctx->data;
+    float radians = ST_ANGLECTX_CALL(render_ctx->angle_ctx, dtor, degrees);
 
-    ST_DRAWQ_CALL(module->drawq.handle, add, sprite, x, y, z, hscale, vscale,
-     0.0f, 0.0f, module->angle.dtor(module->angle.ctx, degrees), pivot_x,
-     pivot_y);
+    ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
+     0.0f, 0.0f, radians, pivot_x, pivot_y);
 }
 
 typedef struct {
@@ -438,24 +460,23 @@ static void screen_to_clip(float *x, float *y, unsigned window_width,
     *y = 1.0f - *y / (float)window_height * 2;
 }
 
-static void st_render_process_queue(st_modctx_t *render_ctx) {
-    st_render_opengl_t *module = render_ctx->data;
-    unsigned            window_width = ST_WINDOW_CALL(module->window.handle,
+static void st_render_process_queue(st_renderctx_t *render_ctx) {
+    unsigned            window_width = ST_WINDOW_CALL(render_ctx->window,
      get_width);
-    unsigned            window_height = ST_WINDOW_CALL(module->window.handle,
+    unsigned            window_height = ST_WINDOW_CALL(render_ctx->window, 
      get_height);
-    const st_drawrec_t *draw_entries = ST_DRAWQ_CALL(module->drawq.handle,
+    const st_drawrec_t *draw_entries = ST_DRAWQ_CALL(render_ctx->queue,
      get_all);
-    size_t              draw_entries_count = ST_DRAWQ_CALL(module->drawq.handle,
+    size_t              draw_entries_count = ST_DRAWQ_CALL(render_ctx->queue,
      len);
 
-    vertices_clear(&module->vertices);
-    batcher_clear(&module->batcher);
+    vertices_clear(render_ctx->vertices);
+    batcher_clear(&render_ctx->batcher);
 
     if (draw_entries_count == 0)
         return;
 
-    ST_DRAWQ_CALL(module->drawq.handle, sort);
+    ST_DRAWQ_CALL(render_ctx->queue, sort);
     for (size_t i = 0; i < draw_entries_count; i++) {
         const st_sprite_t  *sprite = draw_entries[i].sprite;
         const st_texture_t *texture = ST_SPRITE_CALL(sprite, get_texture);
@@ -491,29 +512,32 @@ static void st_render_process_queue(st_modctx_t *render_ctx) {
         bool           do_vshearing = draw_entries[i].vshear != 0;
         bool           do_rotation = draw_entries[i].angle != 0;
 
-        module->matrix3x3.identity(module->matrix3x3.ctx, &matrix);
+        ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, identity, &matrix);
 
-        ST_MATRIX3X3_CALL(&matrix, translate, draw_entries[i].x,
-         draw_entries[i].y);
+        ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, translate, &matrix,
+         draw_entries[i].x, draw_entries[i].y);
 
         if (do_scaling)
-            ST_MATRIX3X3_CALL(&matrix, scale, draw_entries[i].hscale,
-             draw_entries[i].vscale);
+            ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, scale, &matrix,
+             draw_entries[i].hscale, draw_entries[i].vscale);
         if (do_hshearing)
-            ST_MATRIX3X3_CALL(&matrix, rhshear, draw_entries[i].hshear);
+            ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, rhshear, &matrix,
+             draw_entries[i].hshear);
         if (do_vshearing)
-            ST_MATRIX3X3_CALL(&matrix, rvshear, draw_entries[i].vshear);
+            ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, rvshear, &matrix,
+             draw_entries[i].vshear);
         if (do_rotation)
-            ST_MATRIX3X3_CALL(&matrix, rrotate, draw_entries[i].angle);
+            ST_MATRIX3X3CTX_CALL(render_ctx->matrix3x3_ctx, rrotate, &matrix,
+             draw_entries[i].angle);
 
-        module->vec2.apply_matrix3x3(module->vec2.ctx, &tetragon.upper_left.x,
-         &tetragon.upper_left.y, &matrix);
-        module->vec2.apply_matrix3x3(module->vec2.ctx, &tetragon.upper_right.x,
-         &tetragon.upper_right.y, &matrix);
-        module->vec2.apply_matrix3x3(module->vec2.ctx, &tetragon.lower_left.x,
-         &tetragon.lower_left.y, &matrix);
-        module->vec2.apply_matrix3x3(module->vec2.ctx, &tetragon.lower_right.x,
-         &tetragon.lower_right.y, &matrix);
+        ST_VEC2CTX_CALL(render_ctx->vec2_ctx, apply_matrix3x3,
+         &tetragon.upper_left.x, &tetragon.upper_left.y, &matrix);
+        ST_VEC2CTX_CALL(render_ctx->vec2_ctx, apply_matrix3x3,
+         &tetragon.upper_right.x, &tetragon.upper_right.y, &matrix);
+        ST_VEC2CTX_CALL(render_ctx->vec2_ctx, apply_matrix3x3,
+         &tetragon.lower_left.x, &tetragon.lower_left.y, &matrix);
+        ST_VEC2CTX_CALL(render_ctx->vec2_ctx, apply_matrix3x3,
+         &tetragon.lower_right.x, &tetragon.lower_right.y, &matrix);
 
         screen_to_clip(&tetragon.upper_left.x, &tetragon.upper_left.y,
          window_width, window_height);
@@ -524,74 +548,97 @@ static void st_render_process_queue(st_modctx_t *render_ctx) {
         screen_to_clip(&tetragon.lower_right.x, &tetragon.lower_right.y,
          window_width, window_height);
 
-        batcher_process_texture(&module->batcher, texture);
+        batcher_process_texture(&render_ctx->batcher, texture);
 
         ST_SPRITE_CALL(sprite, export_uv, &uv);
 
-        vertices_add(&module->vertices, tetragon.upper_left.x,
+        vertices_add(render_ctx->vertices, tetragon.upper_left.x,
          tetragon.upper_left.y, pos_z, uv.upper_left.u, uv.upper_left.v);
-        vertices_add(&module->vertices, tetragon.upper_right.x,
+        vertices_add(render_ctx->vertices, tetragon.upper_right.x,
          tetragon.upper_right.y, pos_z, uv.upper_right.u, uv.upper_right.v);
-        vertices_add(&module->vertices, tetragon.lower_left.x,
+        vertices_add(render_ctx->vertices, tetragon.lower_left.x,
          tetragon.lower_left.y, pos_z, uv.lower_left.u, uv.lower_left.v);
-        vertices_add(&module->vertices, tetragon.upper_right.x,
+        vertices_add(render_ctx->vertices, tetragon.upper_right.x,
          tetragon.upper_right.y, pos_z, uv.upper_right.u, uv.upper_right.v);
-        vertices_add(&module->vertices, tetragon.lower_left.x,
+        vertices_add(render_ctx->vertices, tetragon.lower_left.x,
          tetragon.lower_left.y, pos_z, uv.lower_left.u, uv.lower_left.v);
-        vertices_add(&module->vertices, tetragon.lower_right.x,
+        vertices_add(render_ctx->vertices, tetragon.lower_right.x,
          tetragon.lower_right.y, pos_z, uv.lower_right.u, uv.lower_right.v);
     }
 
-    batcher_finalize(&module->batcher);
+    batcher_finalize(&render_ctx->batcher);
 }
 
-static void st_render_process(st_modctx_t *render_ctx) {
-    st_render_opengl_t *module = render_ctx->data;
+static GLenum check_and_print_opengl_error(const st_loggerctx_t *logger_ctx, 
+ const st_gldebugctx_t *gldebug_ctx, bool force_err_msg, const char *message) {
+    GLenum error;
 
-    st_render_process_queue(render_ctx);
-
-    ST_GFXCTX_CALL(module->gfxctx.handle, make_current);
-    glClear((GLbitfield)GL_COLOR_BUFFER_BIT | (GLbitfield)GL_DEPTH_BUFFER_BIT);
-
-    shdprog_use(&module->shdprog);
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3)) {
-        vao_bind(&module->vao);
-    } else {
-        vbo_bind(&module->vbo);
-        vertattr_enable(&module->posattr);
-        vertattr_enable(&module->texcrdattr);
+    error = glGetError();
+    if (error != GL_NO_ERROR) {
+        if (gldebug_ctx)
+            ST_LOGGERCTX_CALL(logger_ctx, error,
+                "render_opengl: %s: %s", message,
+                ST_GLDEBUGCTX_CALL(gldebug_ctx, get_error_msg, error));
+        else
+            ST_LOGGERCTX_CALL(logger_ctx, error,
+                "render_opengl: %s", message);
+    } else if (force_err_msg) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "render_opengl: %s", message);
     }
 
-    vbo_set_vertices(&module->vbo, &module->vertices);
+    return error;
+}
 
-    for (size_t i = 0; i < batcher_get_entries_count(&module->batcher); i++) {
-        GLenum error;
+static void st_render_process(st_renderctx_t *render_ctx) {
+    st_render_process_queue(render_ctx);
 
-        if (!batcher_bind_texture(&module->batcher, i, 0))
+    if (!ST_GFXCTX_CALL(render_ctx->gfxctx, make_current)) {
+        check_and_print_opengl_error(render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, true, 
+         "Failed to make OpenGL context current, skipping frame");
+        ST_DRAWQ_CALL(render_ctx->queue, clear);
+        return;
+    }
+    glClear((GLbitfield)GL_COLOR_BUFFER_BIT | (GLbitfield)GL_DEPTH_BUFFER_BIT);
+
+    shdprog_use(&render_ctx->shdprog);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3)) {
+        vao_bind(&render_ctx->vao);
+    } else {
+        vbo_bind(&render_ctx->vbo);
+        vertattr_enable(&render_ctx->posattr);
+        vertattr_enable(&render_ctx->texcrdattr);
+    }
+
+    vbo_set_vertices(&render_ctx->vbo, render_ctx->vertices);
+
+    for (size_t i = 0; i < batcher_get_entries_count(&render_ctx->batcher); i++) {
+        if (!batcher_bind_texture(&render_ctx->batcher, i, 0))
             break;
 
         glDrawArrays(GL_TRIANGLES,
-         batcher_get_first_vertex_index(&module->batcher, i),
-         batcher_get_vertices_count(&module->batcher, i));
+         batcher_get_first_vertex_index(&render_ctx->batcher, i),
+         batcher_get_vertices_count(&render_ctx->batcher, i));
 
-        error = glGetError();
-        if (error != GL_NO_ERROR) {
-            module->logger.error(module->logger.ctx,
-             "render_opengl: Unable to draw array: %s",
-             module->gldebug.get_error_msg(module->gldebug.ctx, error));
-
+        if (check_and_print_opengl_error(render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, false, "Unable to draw array") != GL_NO_ERROR)
             break;
-        }
     }
 
-    if (glapi_least(module->gfxctx.gapi, ST_GAPI_GL3)) {
-        vao_unbind(&module->vao);
+    if (glapi_least(render_ctx->gapi, ST_GAPI_GL3)) {
+        vao_unbind(&render_ctx->vao);
     } else {
-        vertattr_disable(&module->texcrdattr);
-        vertattr_disable(&module->posattr);
-        vbo_unbind(&module->vbo);
+        vertattr_disable(&render_ctx->texcrdattr);
+        vertattr_disable(&render_ctx->posattr);
+        vbo_unbind(&render_ctx->vbo);
     }
-    shdprog_unuse(&module->shdprog);
-    ST_GFXCTX_CALL(module->gfxctx.handle, swap_buffers);
-    ST_DRAWQ_CALL(module->drawq.handle, clear);
+    shdprog_unuse(&render_ctx->shdprog);
+
+    if (!ST_GFXCTX_CALL(render_ctx->gfxctx, swap_buffers)) {
+        check_and_print_opengl_error(render_ctx->logger_ctx,
+         render_ctx->gldebug_ctx, true, "Failed to swap buffers");
+    }
+
+    ST_DRAWQ_CALL(render_ctx->queue, clear);
 }

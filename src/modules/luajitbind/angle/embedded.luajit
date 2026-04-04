@@ -1,0 +1,205 @@
+package.preload["AngleCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_anglectx {
+            st_modctx_t __st_parent;
+        } st_anglectx_t;
+
+        typedef float (*st_angle_rtod_t)(const st_anglectx_t *angle_ctx,
+         float radians);
+        typedef float (*st_angle_dtor_t)(const st_anglectx_t *angle_ctx,
+         float degrees);
+        // typedef void (*st_angle_rnormalize360_t)(const st_anglectx_t *angle_ctx,
+        //  float *radians);
+        typedef float (*st_angle_rnormalized360_t)(
+         const st_anglectx_t *angle_ctx, float radians);
+        // typedef void (*st_angle_dnormalize360_t)(const st_anglectx_t *angle_ctx,
+        //  float *degrees);
+        typedef float (*st_angle_dnormalized360_t)(
+         const st_anglectx_t *angle_ctx, float degrees);
+        typedef float (*st_angle_rdsin_t)(const st_anglectx_t *angle_ctx,
+         float radians);
+        typedef float (*st_angle_dgsin_t)(const st_anglectx_t *angle_ctx,
+         float degrees);
+        typedef float (*st_angle_rdcos_t)(const st_anglectx_t *angle_ctx,
+         float radians);
+        typedef float (*st_angle_dgcos_t)(const st_anglectx_t *angle_ctx,
+         float degrees);
+        typedef float (*st_angle_rdtan_t)(const st_anglectx_t *angle_ctx,
+         float radians);
+        typedef float (*st_angle_dgtan_t)(const st_anglectx_t *angle_ctx,
+         float degrees);
+        typedef float (*st_angle_rdacos_t)(const st_anglectx_t *angle_ctx,
+         float angle_cos);
+        typedef float (*st_angle_dgacos_t)(const st_anglectx_t *angle_ctx,
+         float angle_cos);
+
+        typedef struct {
+            st_modctx_funcs_t         __st_parent_funcs;
+            st_angle_rtod_t           rtod;
+            st_angle_dtor_t           dtor;
+            void                     *__rnormalize360;
+            st_angle_rnormalized360_t rnormalized360;
+            void                     *__dnormalize360;
+            st_angle_dnormalized360_t dnormalized360;
+            st_angle_rdsin_t          rdsin;
+            st_angle_dgsin_t          dgsin;
+            st_angle_rdcos_t          rdcos;
+            st_angle_dgcos_t          dgcos;
+            st_angle_rdtan_t          rdtan;
+            st_angle_dgtan_t          dgtan;
+            st_angle_rdacos_t         rdacos;
+            st_angle_dgacos_t         dgacos;
+        } st_anglectx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_anglectx_t *",
+    }
+
+    M.methods = setmetatable({
+        rtod = function(self, radians)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rtod(self.handle, radians)
+        end,
+
+        dtor = function(self, degrees)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dtor(self.handle, degrees)
+        end,
+
+        -- rnormalize360 = function(self, radians)
+        --     local radians_ptr = ffi.new("float[1]", radians)
+        --     ffi.cast("const st_anglectx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).rnormalize360(self.handle, radians_ptr)
+        --     return radians_ptr[0]
+        -- end,
+
+        rnormalized360 = function(self, radians)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rnormalized360(self.handle, radians)
+        end,
+
+        -- dnormalize360 = function(self, degrees)
+        --     local degrees_ptr = ffi.new("float[1]", degrees)
+        --     ffi.cast("const st_anglectx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).dnormalize360(self.handle, degrees_ptr)
+        --     return degrees_ptr[0]
+        -- end,
+
+        dnormalized360 = function(self, degrees)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dnormalized360(self.handle, degrees)
+        end,
+
+        rdsin = function(self, radians)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rdsin(self.handle, radians)
+        end,
+
+        dgsin = function(self, degrees)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dgsin(self.handle, degrees)
+        end,
+
+        rdcos = function(self, radians)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rdcos(self.handle, radians)
+        end,
+
+        dgcos = function(self, degrees)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dgcos(self.handle, degrees)
+        end,
+
+        rdtan = function(self, radians)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rdtan(self.handle, radians)
+        end,
+
+        dgtan = function(self, degrees)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dgtan(self.handle, degrees)
+        end,
+
+        rdacos = function(self, angle_cos)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).rdacos(self.handle, angle_cos)
+        end,
+
+        dgacos = function(self, angle_cos)
+            return ffi.cast("const st_anglectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).dgacos(self.handle, angle_cos)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_anglectx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local angle_ctor = modsmgr:get_ctor("angle", name)
+        if not angle_ctor then
+            error(string.format(
+                "AngleCtx.new_by_name: constructor not found for angle '%s'", 
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local angle_ctx = angle_ctor(params)
+
+        if not angle_ctx then
+            error(string.format(
+                "AngleCtx.new_by_name: failed to create angle instance '%s'", 
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_anglectx_t *",
+            angle_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("angle", module_name):as("AngleCtx")
+    end
+
+    return M
+end
+

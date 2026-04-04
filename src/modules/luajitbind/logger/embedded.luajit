@@ -1,0 +1,168 @@
+package.preload["LoggerCtx"] = function()
+    local ffi = require "ffi"
+
+    local Object  = require "Object"
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+
+    ffi.cdef[[
+        typedef enum {
+            ST_LL_NONE    = 0x0,
+            ST_LL_ERROR   = 0x8,
+            ST_LL_WARNING = 0x10,
+            ST_LL_INFO    = 0x40,
+            ST_LL_DEBUG   = 0x80,
+            ST_LL_ALL     = 0xFF,
+        } st_loglvl_t;
+
+        typedef struct st_loggerctx {
+            st_modctx_t __st_parent;
+        } st_loggerctx_t;
+
+        typedef void (*st_logcbk_t)(const char *msg, void *userdata);
+        typedef void (*st_logger_generic_msg_t)(const st_loggerctx_t *logger_ctx,
+        const char* format, ...);
+
+        typedef bool (*st_logger_enable_events_t)(st_loggerctx_t *logger_ctx);
+        typedef bool (*st_logger_set_stdout_levels_t)(st_loggerctx_t *logger_ctx,
+        st_loglvl_t levels);
+        typedef bool (*st_logger_set_stderr_levels_t)(st_loggerctx_t *logger_ctx,
+        st_loglvl_t levels);
+        typedef bool (*st_logger_set_log_file_t)(st_loggerctx_t *logger_ctx,
+        const char *filename, st_loglvl_t levels);
+        //typedef bool (*st_logger_set_callback_t)(st_loggerctx_t *logger_ctx,
+        //  st_logcbk_t callback, void *userdata, st_loglvl_t levels);
+        typedef st_logger_generic_msg_t st_logger_debug_t;
+        typedef st_logger_generic_msg_t st_logger_info_t;
+        typedef st_logger_generic_msg_t st_logger_warning_t;
+        typedef st_logger_generic_msg_t st_logger_error_t;
+        typedef void (*st_logger_set_postmortem_msg_t)(st_loggerctx_t *logger_ctx,
+            const char *msg);
+
+        typedef struct {
+            st_modctx_funcs_t              __st_parent_funcs;
+            st_logger_enable_events_t      enable_events;
+            st_logger_set_stdout_levels_t  set_stdout_levels;
+            st_logger_set_stderr_levels_t  set_stderr_levels;
+            st_logger_set_log_file_t       set_log_file;
+            void                          *__set_callback;
+            st_logger_debug_t              debug;
+            st_logger_info_t               info;
+            st_logger_warning_t            warning;
+            st_logger_error_t              error;
+            st_logger_set_postmortem_msg_t set_postmortem_msg;
+        } st_loggerctx_funcs_t;
+    ]]
+    
+    local M = {
+        __ctype = "st_loggerctx_t *",
+        ll_none = ffi.C.ST_LL_NONE,
+        ll_error = ffi.C.ST_LL_ERROR,
+        ll_warning = ffi.C.ST_LL_WARNING,
+        ll_info = ffi.C.ST_LL_INFO,
+        ll_debug = ffi.C.ST_LL_DEBUG,
+        ll_all = ffi.C.ST_LL_ALL,
+    }
+
+    M.methods = setmetatable({
+        enable_events = function(self)
+            return ffi.cast("const st_loggerctx_funcs_t *",
+             ffi.cast("st_object_t *", self.handle).funcs
+            ).enable_events(self.handle)
+        end,
+        set_stdout_levels = function(self, levels)
+            return ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).set_stdout_levels(self.handle, levels)
+        end,
+        set_stderr_levels = function(self, levels)
+            return ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).set_stderr_levels(self.handle, levels)
+        end,
+        set_log_file = function(self, filename, levels)
+            return ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).set_log_file(self.handle, filename, levels)
+        end,
+        -- set_callback = function(self, callback, userdata, levels)
+        --     return ffi.cast("const st_loggerctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).set_callback(self.handle, callback, userdata, levels)
+        -- end,
+        debug = function(self, format, ...)
+            ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).debug(self.handle, string.format(format, ...))
+        end,
+        info = function(self, format, ...)
+            ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).info(self.handle, string.format(format, ...))
+        end,
+        warning = function(self, format, ...)
+            ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).warning(self.handle, string.format(format, ...))
+        end,
+        error = function(self, format, ...)
+            ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).error(self.handle, string.format(format, ...))
+        end,
+        set_postmortem_msg = function(self, msg)
+            ffi.cast("const st_loggerctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).set_postmortem_msg(self.handle, msg)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_loggerctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local logger_ctor = modsmgr:get_ctor("logger", name)
+        if not logger_ctor then
+            error(string.format(
+                "LoggerCtx.new_by_name: constructor not found for logger '%s'", 
+                name or "nil")
+            )
+        end
+    
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local logger_ctx = logger_ctor(params)
+
+        if not logger_ctx then
+            error(string.format(
+                "LoggerCtx.new_by_name: failed to create logger instance '%s'", 
+                name or "nil")
+            )
+        end
+    
+        return Object.__mtnew(M.__mt, ffi.cast("st_loggerctx_t *", 
+            logger_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("logger", module_name):as("LoggerCtx")
+    end
+
+    return M
+end

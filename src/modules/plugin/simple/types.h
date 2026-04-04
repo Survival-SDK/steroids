@@ -1,53 +1,23 @@
 #pragma once
 
-#include "steroids/types/modules/fs.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/pathtools.h"
-#include "steroids/types/modules/so.h"
-#include "steroids/types/modules/spcpaths.h"
-#include "steroids/types/modules/zip.h"
+#include "steroids/modctx.h"
+#include "steroids/modsmgr.h"
+#include "steroids/modules/fs.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/pathtools.h"
+#include "steroids/modules/so.h"
+#include "steroids/modules/spcpaths.h"
+#include "steroids/modules/zip.h"
 
 typedef struct {
-    st_modctx_t  *ctx;
-    st_fs_mkdir_t mkdir;
-} st_plugin_simple_fs_t;
+    st_modctx_t;
+    st_modsmgr_t      *modsmgr;
+    st_fsctx_t        *fs_ctx;
+    st_loggerctx_t    *logger_ctx;
+    st_pathtoolsctx_t *pathtools_ctx;
+    st_soctx_t        *so_ctx;
+    st_spcpathsctx_t  *spcpaths_ctx;
+    st_zipctx_t       *zip_ctx;
+} st_pluginctx_t;
 
-typedef struct {
-    st_modctx_t      *ctx;
-    st_logger_debug_t debug;
-    st_logger_info_t  info;
-    st_logger_error_t error;
-} st_plugin_simple_logger_t;
-
-typedef struct {
-    st_modctx_t                  *ctx;
-    st_pathtools_get_parent_dir_t get_parent_dir;
-    st_pathtools_concat_t         concat;
-} st_plugin_simple_pathtools_t;
-
-typedef struct {
-    st_modctx_t *ctx;
-    st_so_open_t open;
-} st_plugin_simple_so_t;
-
-typedef struct {
-    st_modctx_t                 *ctx;
-    st_spcpaths_get_cache_path_t get_cache_path;
-} st_plugin_simple_spcpaths_t;
-
-typedef struct {
-    st_modctx_t     *ctx;
-    st_zip_open_t    open;
-    st_zip_memopen_t memopen;
-} st_plugin_simple_zip_t;
-
-typedef struct {
-    st_plugin_simple_fs_t        fs;
-    st_plugin_simple_logger_t    logger;
-    st_plugin_simple_pathtools_t pathtools;
-    st_plugin_simple_so_t        so;
-    st_plugin_simple_spcpaths_t  spcpaths;
-    st_plugin_simple_zip_t       zip;
-} st_plugin_simple_t;
-
-#define ST_INI_T_DEFINED
+#define ST_PLUGINCTX_T_DEFINED

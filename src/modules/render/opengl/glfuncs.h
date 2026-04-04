@@ -1,8 +1,8 @@
 #pragma once
 
-#include "steroids/types/modules/gfxctx.h"
-
-#include "modules_data.h"
+#include "steroids/modules/gfxctx.h"
+#include "steroids/modules/glloader.h"
+#include "steroids/modules/logger.h"
 
 typedef struct {
     /* Shader - Main */
@@ -71,8 +71,7 @@ typedef struct {
 } st_glsupported_t;
 
 static bool glfuncs_load_all(st_glfuncs_t *glfuncs,
- st_glsupported_t *glsupported, st_render_opengl_logger_t *logger,
- st_modctx_t *glloader_ctx, st_glloader_get_proc_address_t get_proc_address,
- st_gapi_t gapi);
+ st_glsupported_t *glsupported, st_loggerctx_t *logger_ctx,
+ st_glloaderctx_t *glloader_ctx, st_gapi_t gapi);
 
 #include "glfuncs.imp"

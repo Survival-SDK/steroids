@@ -10,6 +10,7 @@ iwyu
 ketopt
 libpng
 libsir
+libxrandr
 luajit
 lwrb
 make

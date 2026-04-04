@@ -1,10 +1,52 @@
+## Object
+```luau
+Object = require "Object"
+
+object:destroy()
+object:get_owner(): object
+object:get_owner_unsafe(): object
+```
+
+## ModCtx
+```luau
+ModCtx = require "ModCtx"
+
+modctx:get_subsystem(): string
+modctx:get_name(): string
+modctx:as(target: string | table): any
+-- inherited from object
+modctx:destroy()
+modctx:get_owner(): object
+modctx:get_owner_unsafe(): object
+```
+
+## ModsMgr
+```luau
+ModsMgr = require "ModsMgr"
+
+ModsMgr.get_instance(): modsmgr
+
+<!-- modsmgr:get_module_names(dst: table, mods_count: integer, 
+ modname_size: integer, subsystem: string) -->
+modsmgr:get_ctor(subsystem: string, module_name: string): cfunction
+modsmgr:create_singleton(subsystem: string, module_name: string, 
+ params: params): modctx
+modsmgr:have_singleton(subsystem: string, module_name: string): bool
+modsmgr:get_singleton(subsystem: string, module_name: string): modctx
+-- inherited from object
+modsmgr:destroy()
+modsmgr:get_owner(): object
+modsmgr:get_owner_unsafe(): object
+```
+
 ## angle
 ```luau
-Angle = require "Angle"
+AngleCtx = require "AngleCtx"
 
-Angle.new_ctx(logger_ctx: logger_ctx): angle_ctx
+AngleCtx.new(...): angle_ctx
+AngleCtx.new_by_name(module_name: string, ...): angle_ctx
+AngleCtx.get_instance(module_name: ?string): angle_ctx
 
-angle_ctx:destroy()
 angle_ctx:rtod(radians: double): double
 angle_ctx:dtor(degrees: double): double
 angle_ctx:rnormalized360(radians: double): double
@@ -16,52 +58,61 @@ angle_ctx:dgcos(degrees: double): double
 angle_ctx:rdtan(radians: double): double
 angle_ctx:dgtan(degrees: double): double
 angle_ctx:rdacos(cos: double): double
-angle_ctx:dgacos(cos : double): double
+angle_ctx:dgacos(cos: double): double
+-- inherited from modctx
+angle_ctx:get_subsystem(): string
+angle_ctx:get_name(): string
+angle_ctx:as(target: string | table): any
+-- inherited from object
+angle_ctx:destroy()
+angle_ctx:get_owner(): object
+angle_ctx:get_owner_unsafe(): object
 ```
 
-## atlas
+## dpsrvconn
 ```luau
-Atlas = require "Atlas"
+DpsrvConnCtx = require "DpsrvConnCtx"
 
-Atlas.new_ctx(logger_ctx: logger_ctx): atlas_ctx
+DpsrvConnCtx.new(...): dpsrvconn_ctx
+DpsrvConnCtx.new_by_name(module_name: string, ...): dpsrvconn_ctx
+DpsrvConnCtx.get_instance(module_name: ?string): dpsrvconn_ctx
 
-atlas_ctx:destroy()
-```
+dpsrvconn_ctx:get_monitors_count(): integer
+dpsrvconn_ctx:get_primary_monitor_index(): integer
+dpsrvconn_ctx:get_monitor_by_index(index: integer): monitor
+dpsrvconn_ctx:get_monitor_by_id(id: integer): monitor
+dpsrvconn_ctx:get_primary_monitor(): monitor | nil
+dpsrvconn_ctx:open_window(monitor: monitor, x: integer, y: integer, 
+ width: integer, height: integer, fullscreen: bool, title: string): window
+dpsrvconn_ctx:process()
+-- inherited from modctx
+dpsrvconn_ctx:get_subsystem(): string
+dpsrvconn_ctx:get_name(): string
+dpsrvconn_ctx:as(target: string | table): any
+-- inherited from object
+dpsrvconn_ctx:destroy()
+dpsrvconn_ctx:get_owner(): object
+dpsrvconn_ctx:get_owner_unsafe(): object
 
-## bitmap
-```luau
-Bitmap = require "Bitmap"
+monitor:get_width(): integer
+monitor:get_height(): integer
+monitor:get_index(): integer
+monitor:get_name(): string | nil
+monitor:is_primary(): bool
+monitor:get_device_handle(): userdata
+-- inherited from object
+monitor:destroy()
+monitor:get_owner(): object
+monitor:get_owner_unsafe(): object
 
-Bitmap.new_ctx(logger_ctx: logger_ctx): bitmap_ctx
-
-bitmap_ctx:destroy()
-```
-
-## drawq
-```luau
-Drawq = require "Drawq"
-
-Drawq.new_ctx(dynarr_ctx: dynarr_ctx, logger_ctx: logger_ctx, sprite_ctx: sprite_ctx): drawq_ctx
-
-drawq_ctx:destroy()
-```
-
-## dynarr
-```luau
-Dynarr = require "Dynarr"
-
-Dynarr.new_ctx(logger_ctx: logger_ctx): dynarr_ctx
-
-dynarr_ctx:destroy()
-```
-
-## events
-```luau
-Events = require "Events"
-
-Events.new_ctx(logger_ctx: logger_ctx): events_ctx
-
-events_ctx:destroy()
+window:xed(): bool
+window:get_monitor(): monitor | nil
+window:get_width(): integer
+window:get_height(): integer
+-- inherited from object
+window:destroy()
+window:get_owner(): object
+window:get_owner_unsafe(): object
 ```
 
 ## fs
@@ -85,365 +136,237 @@ fs_ctx:mkdir(dirname: string): bool
 
 ## gfxctx
 ```luau
-GfxCtx = require "GfxCtx"
+GfxCtxCtx = require "GfxCtxCtx"
 
-GfxCtx.new_ctx(logger_ctx: logger_ctx, monitor_ctx: monitor_ctx): gfxctx_ctx
-GfxCtx.gapi_gl11: integer
-GfxCtx.gapi_gl12: integer
-GfxCtx.gapi_gl13: integer
-GfxCtx.gapi_gl14: integer
-GfxCtx.gapi_gl15: integer
-GfxCtx.gapi_gl2: integer
-GfxCtx.gapi_gl21: integer
-GfxCtx.gapi_gl3: integer
-GfxCtx.gapi_gl31: integer
-GfxCtx.gapi_gl32: integer
-GfxCtx.gapi_gl33: integer
-GfxCtx.gapi_gl4: integer
-GfxCtx.gapi_gl41: integer
-GfxCtx.gapi_gl42: integer
-GfxCtx.gapi_gl43: integer
-GfxCtx.gapi_gl44: integer
-GfxCtx.gapi_gl45: integer
-GfxCtx.gapi_gl46: integer
-GfxCtx.gapi_es1: integer
-GfxCtx.gapi_es11: integer
-GfxCtx.gapi_es2: integer
-GfxCtx.gapi_es3: integer
-GfxCtx.gapi_es31: integer
-GfxCtx.gapi_es32: integer
+GfxCtxCtx.gapi_gl1: integer
+GfxCtxCtx.gapi_gl11: integer
+GfxCtxCtx.gapi_gl12: integer
+GfxCtxCtx.gapi_gl13: integer
+GfxCtxCtx.gapi_gl14: integer
+GfxCtxCtx.gapi_gl15: integer
+GfxCtxCtx.gapi_gl2: integer
+GfxCtxCtx.gapi_gl21: integer
+GfxCtxCtx.gapi_gl3: integer
+GfxCtxCtx.gapi_gl31: integer
+GfxCtxCtx.gapi_gl32: integer
+GfxCtxCtx.gapi_gl33: integer
+GfxCtxCtx.gapi_gl4: integer
+GfxCtxCtx.gapi_gl41: integer
+GfxCtxCtx.gapi_gl42: integer
+GfxCtxCtx.gapi_gl43: integer
+GfxCtxCtx.gapi_gl44: integer
+GfxCtxCtx.gapi_gl45: integer
+GfxCtxCtx.gapi_gl46: integer
+GfxCtxCtx.gapi_es1: integer
+GfxCtxCtx.gapi_es11: integer
+GfxCtxCtx.gapi_es2: integer
+GfxCtxCtx.gapi_es3: integer
+GfxCtxCtx.gapi_es31: integer
+GfxCtxCtx.gapi_es32: integer
 
-gfxctx_ctx:destroy()
+GfxCtxCtx.new(...): gfxctx_ctx
+GfxCtxCtx.new_by_name(module_name: string, ...): gfxctx_ctx
+GfxCtxCtx.get_instance(module_name: ?string): gfxctx_ctx
+
 gfxctx_ctx:create(monitor: monitor, window: window, api: integer): gfxctx
-gfxctx_ctx:create_shared(monitor: monitor, window: window, gfxctx: gfxctx): gfxctx
+gfxctx_ctx:create_shared(monitor: monitor, window: window, other: gfxctx): 
+ gfxctx
+-- inherited from modctx
+gfxctx_ctx:get_subsystem(): string
+gfxctx_ctx:get_name(): string
+gfxctx_ctx:as(target: string | table): any
+-- inherited from object
+gfxctx_ctx:destroy()
+gfxctx_ctx:get_owner(): object
+gfxctx_ctx:get_owner_unsafe(): object
 
 gfxctx:make_current(): bool
 gfxctx:swap_buffers(): bool
+gfxctx:get_window(): window
 gfxctx:get_api(): integer
+-- inherited from object
 gfxctx:destroy()
+gfxctx:get_owner(): object
+gfxctx:get_owner_unsafe(): object
 ```
 
 ## keyboard
 ```luau
-Keyboard = require "Keyboard"
+KeyboardCtx = require "KeyboardCtx"
 
-Keyboard.new_ctx(events_ctx: events_ctx, logger_ctx: logger_ctx): keyboard_ctx
+KeyboardCtx.new(...): keyboard_ctx
+KeyboardCtx.new_by_name(module_name: string, ...): keyboard_ctx
+KeyboardCtx.get_instance(module_name: ?string): keyboard_ctx
 
-Keyboard.key_space: integer
-Keyboard.key_exclam: integer
-Keyboard.key_quotedbl: integer
-Keyboard.key_numbersign: integer
-Keyboard.key_dollar: integer
-Keyboard.key_percent: integer
-Keyboard.key_ampersand: integer
-Keyboard.key_apostrophe: integer
-Keyboard.key_quoteright: integer
-Keyboard.key_parenleft: integer
-Keyboard.key_parenright: integer
-Keyboard.key_asterisk: integer
-Keyboard.key_plus: integer
-Keyboard.key_comma: integer
-Keyboard.key_minus: integer
-Keyboard.key_period: integer
-Keyboard.key_slash: integer
-Keyboard.key_0: integer
-Keyboard.key_1: integer
-Keyboard.key_2: integer
-Keyboard.key_3: integer
-Keyboard.key_4: integer
-Keyboard.key_5: integer
-Keyboard.key_6: integer
-Keyboard.key_7: integer
-Keyboard.key_8: integer
-Keyboard.key_9: integer
-Keyboard.key_colon: integer
-Keyboard.key_semicolon: integer
-Keyboard.key_less: integer
-Keyboard.key_equal: integer
-Keyboard.key_greater: integer
-Keyboard.key_question: integer
-Keyboard.key_at: integer
-Keyboard.key_a: integer
-Keyboard.key_b: integer
-Keyboard.key_c: integer
-Keyboard.key_d: integer
-Keyboard.key_e: integer
-Keyboard.key_f: integer
-Keyboard.key_g: integer
-Keyboard.key_h: integer
-Keyboard.key_i: integer
-Keyboard.key_j: integer
-Keyboard.key_k: integer
-Keyboard.key_l: integer
-Keyboard.key_m: integer
-Keyboard.key_n: integer
-Keyboard.key_o: integer
-Keyboard.key_p: integer
-Keyboard.key_q: integer
-Keyboard.key_r: integer
-Keyboard.key_s: integer
-Keyboard.key_t: integer
-Keyboard.key_u: integer
-Keyboard.key_v: integer
-Keyboard.key_w: integer
-Keyboard.key_x: integer
-Keyboard.key_y: integer
-Keyboard.key_z: integer
-Keyboard.key_bracketleft: integer
-Keyboard.key_backslash: integer
-Keyboard.key_bracketright: integer
-Keyboard.key_asciicircum: integer
-Keyboard.key_underscore: integer
-Keyboard.key_grave: integer
-Keyboard.key_quoteleft: integer
-Keyboard.key_braceleft: integer
-Keyboard.key_bar: integer
-Keyboard.key_braceright: integer
-Keyboard.key_asciitilde: integer
+KeyboardCtx.key_unknown: integer
+KeyboardCtx.key_space: integer
+KeyboardCtx.key_0: integer
+KeyboardCtx.key_1: integer
+KeyboardCtx.key_2: integer
+KeyboardCtx.key_3: integer
+KeyboardCtx.key_4: integer
+KeyboardCtx.key_5: integer
+KeyboardCtx.key_6: integer
+KeyboardCtx.key_7: integer
+KeyboardCtx.key_8: integer
+KeyboardCtx.key_9: integer
+KeyboardCtx.key_a: integer
+KeyboardCtx.key_b: integer
+KeyboardCtx.key_c: integer
+KeyboardCtx.key_d: integer
+KeyboardCtx.key_e: integer
+KeyboardCtx.key_f: integer
+KeyboardCtx.key_g: integer
+KeyboardCtx.key_h: integer
+KeyboardCtx.key_i: integer
+KeyboardCtx.key_j: integer
+KeyboardCtx.key_k: integer
+KeyboardCtx.key_l: integer
+KeyboardCtx.key_m: integer
+KeyboardCtx.key_n: integer
+KeyboardCtx.key_o: integer
+KeyboardCtx.key_p: integer
+KeyboardCtx.key_q: integer
+KeyboardCtx.key_r: integer
+KeyboardCtx.key_s: integer
+KeyboardCtx.key_t: integer
+KeyboardCtx.key_u: integer
+KeyboardCtx.key_v: integer
+KeyboardCtx.key_w: integer
+KeyboardCtx.key_x: integer
+KeyboardCtx.key_y: integer
+KeyboardCtx.key_z: integer
+KeyboardCtx.key_backspace: integer
+KeyboardCtx.key_tab: integer
+KeyboardCtx.key_return: integer
+KeyboardCtx.key_pause: integer
+KeyboardCtx.key_escape: integer
+KeyboardCtx.key_delete: integer
+KeyboardCtx.key_home: integer
+KeyboardCtx.key_left: integer
+KeyboardCtx.key_up: integer
+KeyboardCtx.key_right: integer
+KeyboardCtx.key_down: integer
+KeyboardCtx.key_page_up: integer
+KeyboardCtx.key_page_down: integer
+KeyboardCtx.key_end: integer
+KeyboardCtx.key_insert: integer
+KeyboardCtx.key_f1: integer
+KeyboardCtx.key_f2: integer
+KeyboardCtx.key_f3: integer
+KeyboardCtx.key_f4: integer
+KeyboardCtx.key_f5: integer
+KeyboardCtx.key_f6: integer
+KeyboardCtx.key_f7: integer
+KeyboardCtx.key_f8: integer
+KeyboardCtx.key_f9: integer
+KeyboardCtx.key_f10: integer
+KeyboardCtx.key_f11: integer
+KeyboardCtx.key_f12: integer
+KeyboardCtx.key_shift_l: integer
+KeyboardCtx.key_shift_r: integer
+KeyboardCtx.key_control_l: integer
+KeyboardCtx.key_control_r: integer
+KeyboardCtx.key_alt_l: integer
+KeyboardCtx.key_alt_r: integer
+KeyboardCtx.key_super_l: integer
+KeyboardCtx.key_super_r: integer
 
-Keyboard.key_backspace: integer
-Keyboard.key_tab: integer
-Keyboard.key_linefeed: integer
-Keyboard.key_clear: integer
-Keyboard.key_return: integer
-Keyboard.key_pause: integer
-Keyboard.key_scroll_lock: integer
-Keyboard.key_sys_req: integer
-Keyboard.key_escape: integer
-Keyboard.key_delete: integer
-
-Keyboard.key_home: integer
-Keyboard.key_left: integer
-Keyboard.key_up: integer
-Keyboard.key_right: integer
-Keyboard.key_down: integer
-Keyboard.key_prior: integer
-Keyboard.key_page_up: integer
-Keyboard.key_next: integer
-Keyboard.key_page_down: integer
-Keyboard.key_end: integer
-Keyboard.key_begin: integer
-
-Keyboard.key_select: integer
-Keyboard.key_print: integer
-Keyboard.key_execute: integer
-Keyboard.key_insert: integer
-Keyboard.key_undo: integer
-Keyboard.key_redo: integer
-Keyboard.key_menu: integer
-Keyboard.key_find: integer
-Keyboard.key_cancel: integer
-Keyboard.key_help: integer
-Keyboard.key_break: integer
-Keyboard.key_mode_switch: integer
-Keyboard.key_script_switch: integer
-Keyboard.key_num_lock: integer
-
-Keyboard.key_kp_space: integer
-Keyboard.key_kp_tab: integer
-Keyboard.key_kp_enter: integer
-Keyboard.key_kp_f1: integer
-Keyboard.key_kp_f2: integer
-Keyboard.key_kp_f3: integer
-Keyboard.key_kp_f4: integer
-Keyboard.key_kp_home: integer
-Keyboard.key_kp_left: integer
-Keyboard.key_kp_up: integer
-Keyboard.key_kp_right: integer
-Keyboard.key_kp_down: integer
-Keyboard.key_kp_prior: integer
-Keyboard.key_kp_page_up: integer
-Keyboard.key_kp_next: integer
-Keyboard.key_kp_page_down: integer
-Keyboard.key_kp_end: integer
-Keyboard.key_kp_begin: integer
-Keyboard.key_kp_insert: integer
-Keyboard.key_kp_delete: integer
-Keyboard.key_kp_equal: integer
-Keyboard.key_kp_multiply: integer
-Keyboard.key_kp_add: integer
-Keyboard.key_kp_separator: integer
-Keyboard.key_kp_subtract: integer
-Keyboard.key_kp_decimal: integer
-Keyboard.key_kp_divide: integer
-
-Keyboard.key_kp_0: integer
-Keyboard.key_kp_1: integer
-Keyboard.key_kp_2: integer
-Keyboard.key_kp_3: integer
-Keyboard.key_kp_4: integer
-Keyboard.key_kp_5: integer
-Keyboard.key_kp_6: integer
-Keyboard.key_kp_7: integer
-Keyboard.key_kp_8: integer
-Keyboard.key_kp_9: integer
-
-Keyboard.key_f1: integer
-Keyboard.key_f2: integer
-Keyboard.key_f3: integer
-Keyboard.key_f4: integer
-Keyboard.key_f5: integer
-Keyboard.key_f6: integer
-Keyboard.key_f7: integer
-Keyboard.key_f8: integer
-Keyboard.key_f9: integer
-Keyboard.key_f10: integer
-Keyboard.key_f11: integer
-Keyboard.key_l1: integer
-Keyboard.key_f12: integer
-Keyboard.key_l2: integer
-Keyboard.key_f13: integer
-Keyboard.key_l3: integer
-Keyboard.key_f14: integer
-Keyboard.key_l4: integer
-Keyboard.key_f15: integer
-Keyboard.key_l5: integer
-Keyboard.key_f16: integer
-Keyboard.key_l6: integer
-Keyboard.key_f17: integer
-Keyboard.key_l7: integer
-Keyboard.key_f18: integer
-Keyboard.key_l8: integer
-Keyboard.key_f19: integer
-Keyboard.key_l9: integer
-Keyboard.key_f20: integer
-Keyboard.key_l10: integer
-Keyboard.key_f21: integer
-Keyboard.key_r1: integer
-Keyboard.key_f22: integer
-Keyboard.key_r2: integer
-Keyboard.key_f23: integer
-Keyboard.key_r3: integer
-Keyboard.key_f24: integer
-Keyboard.key_r4: integer
-Keyboard.key_f25: integer
-Keyboard.key_r5: integer
-Keyboard.key_f26: integer
-Keyboard.key_r6: integer
-Keyboard.key_f27: integer
-Keyboard.key_r7: integer
-Keyboard.key_f28: integer
-Keyboard.key_r8: integer
-Keyboard.key_f29: integer
-Keyboard.key_r9: integer
-Keyboard.key_f30: integer
-Keyboard.key_r10: integer
-Keyboard.key_f31: integer
-Keyboard.key_r11: integer
-Keyboard.key_f32: integer
-Keyboard.key_r12: integer
-Keyboard.key_f33: integer
-Keyboard.key_r13: integer
-Keyboard.key_f34: integer
-Keyboard.key_r14: integer
-Keyboard.key_f35: integer
-Keyboard.key_r15: integer
-
-Keyboard.key_shift_l: integer
-Keyboard.key_shift_r: integer
-Keyboard.key_control_l: integer
-Keyboard.key_control_r: integer
-Keyboard.key_caps_lock: integer
-Keyboard.key_shift_lock: integer
-
-Keyboard.key_meta_l: integer
-Keyboard.key_meta_r: integer
-Keyboard.key_alt_l: integer
-Keyboard.key_alt_r: integer
-Keyboard.key_super_l: integer
-Keyboard.key_super_r: integer
-Keyboard.key_hyper_l: integer
-Keyboard.key_hyper_r: integer
-
-keyboard_ctx:destroy()
 keyboard_ctx:process()
 keyboard_ctx:press(key: integer): bool
 keyboard_ctx:release(key: integer): bool
 keyboard_ctx:pressed(key: integer): bool
 keyboard_ctx:get_input(): ?string
+-- inherited from modctx
+keyboard_ctx:get_subsystem(): string
+keyboard_ctx:get_name(): string
+keyboard_ctx:as(target: string | table): any
+-- inherited from object
+keyboard_ctx:destroy()
+keyboard_ctx:get_owner(): object
+keyboard_ctx:get_owner_unsafe(): object
 ```
 
 ## logger
 ```luau
-Logger = require "Logger"
+LoggerCtx = require "LoggerCtx"
 
-Logger.new_ctx(): logger_ctx
-Logger.get_ctx(): logger_ctx
-Logger.ll_none: integer
-Logger.ll_error: integer
-Logger.ll_warning: integer
-Logger.ll_info: integer
-Logger.ll_debug: integer
-Logger.ll_all: integer
+LoggerCtx.ll_none: integer
+LoggerCtx.ll_error: integer
+LoggerCtx.ll_warning: integer
+LoggerCtx.ll_info: integer
+LoggerCtx.ll_debug: integer
+LoggerCtx.ll_all: integer
 
-logger_ctx:destroy()
+LoggerCtx.new(...): logger_ctx
+LoggerCtx.new_by_name(module_name: string, ...): logger_ctx
+LoggerCtx.get_instance(module_name: ?string): logger_ctx
+
+logger_ctx:enable_events(): bool
 logger_ctx:set_stdout_levels(levels: integer): bool
 logger_ctx:set_stderr_levels(levels: integer): bool
 logger_ctx:set_log_file(filename: string, levels: integer): bool
-logger_ctx:set_callback(): bool
-logger_ctx:debug(msg: string)
-logger_ctx:info(msg: string)
-logger_ctx:warning(msg: string)
-logger_ctx:error(msg: string)
+<!-- logger_ctx:set_callback(callback: function, userdata: ?any, 
+ levels: integer): bool -->
+logger_ctx:debug(format: string, ...)
+logger_ctx:info(format: string, ...)
+logger_ctx:warning(format: string, ...)
+logger_ctx:error(format: string, ...)
 logger_ctx:set_postmortem_msg(msg: string)
-```
-
-## matrix3x3
-```luau
-Matrix3x3 = require "Matrix3x3"
-
-Matrix3x3.new_ctx(logger_ctx: logger_ctx, angle_ctx: angle_ctx): matrix3x3_ctx
-
-matrix3x3_ctx:destroy()
-matrix3x3_ctx:custom(r1c1: double, r1c2: double, r1c3: double, r2c1: double, r2c2: double, r2c3: double): matrix3x3
-matrix3x3_ctx:identity(): matrix3x3
-matrix3x3_ctx:translation(x: double, y: double): matrix3x3
-matrix3x3_ctx:scaling(hscale: double, vscale: double): matrix3x3
-matrix3x3_ctx:rrotation(radians: double): matrix3x3
-matrix3x3_ctx:drotation(degrees: double): matrix3x3
-matrix3x3_ctx:rhshearing(radians: double): matrix3x3
-matrix3x3_ctx:dhshearing(degrees: double): matrix3x3
-matrix3x3_ctx:rvshearing(radians: double): matrix3x3
-matrix3x3_ctx:dvshearing(degrees: double): matrix3x3
-
-matrix3x3:clone(): matrix3x3
-matrix3x3:apply(other: matrix): matrix3x3
-matrix3x3:translate(x: double, y: double): matrix3x3
-matrix3x3:scale(hscale: double, vscale: double): matrix3x3
-matrix3x3:rrotate(radians: double): matrix3x3
-matrix3x3:drotate(degrees: double): matrix3x3
-matrix3x3:rhshear(radians: double): matrix3x3
-matrix3x3:dhshear(degrees: double): matrix3x3
-matrix3x3:rvshear(radians: double): matrix3x3
-matrix3x3:dvshear(degrees: double): matrix3x3
-matrix3x3:get_data(): double, double, double, double, double, double
+-- inherited from modctx
+logger_ctx:get_subsystem(): string
+logger_ctx:get_name(): string
+logger_ctx:as(target: string | table): any
+-- inherited from object
+logger_ctx:destroy()
+logger_ctx:get_owner(): object
+logger_ctx:get_owner_unsafe(): object
 ```
 
 ## monitor
 ```luau
-Monitor = require "Monitor"
+MonitorCtx = require "MonitorCtx"
 
-Monitor.new_ctx(logger_ctx: logger_ctx): monitor_ctx
+MonitorCtx.new(...): monitor_ctx
+MonitorCtx.new_by_name(module_name: string, ...): monitor_ctx
+MonitorCtx.get_instance(module_name: ?string): monitor_ctx
 
-monitor_ctx:destroy()
 monitor_ctx:get_monitors_count(): integer
+monitor_ctx:get_primary_index(): integer
 monitor_ctx:open(index: integer): monitor
+monitor_ctx:open_primary(): monitor
+-- inherited from modctx
+monitor_ctx:get_subsystem(): string
+monitor_ctx:get_name(): string
+monitor_ctx:as(target: string | table): any
+-- inherited from object
+monitor_ctx:destroy()
+monitor_ctx:get_owner(): object
+monitor_ctx:get_owner_unsafe(): object
 
-monitor:release()
 monitor:get_width(): integer
 monitor:get_height(): integer
+monitor:get_index(): integer
+monitor:get_name(): ?string
+monitor:is_primary(): bool
+-- inherited from object
+monitor:destroy()
+monitor:get_owner(): object
+monitor:get_owner_unsafe(): object
 ```
 
 ## mouse
 ```luau
-Mouse = require "Mouse"
+MouseCtx = require "MouseCtx"
 
-Mouse.new_ctx(events_ctx: events_ctx, logger_ctx: logger_ctx): mouse_ctx
-Mouse.mb_left: integer
-Mouse.mb_middle: integer
-Mouse.mb_right: integer
+MouseCtx.new(...): mouse_ctx
+MouseCtx.new_by_name(module_name: string, ...): mouse_ctx
+MouseCtx.get_instance(module_name: ?string): mouse_ctx
 
-mouse_ctx:destroy()
+MouseCtx.mb_left: integer
+MouseCtx.mb_middle: integer
+MouseCtx.mb_right: integer
+
 mouse_ctx:process()
 mouse_ctx:press(button: integer): bool
 mouse_ctx:release(button: integer): bool
@@ -455,22 +378,40 @@ mouse_ctx:leaved(): bool
 mouse_ctx:get_x(): integer
 mouse_ctx:get_y(): integer
 mouse_ctx:get_window(): ?window
+-- inherited from modctx
+mouse_ctx:get_subsystem(): string
+mouse_ctx:get_name(): string
+mouse_ctx:as(target: string | table): any
+-- inherited from object
+mouse_ctx:destroy()
+mouse_ctx:get_owner(): object
+mouse_ctx:get_owner_unsafe(): object
 ```
 
 ## opts
 ```luau
-Opts = require "Opts"
+OptsCtx = require "OptsCtx"
 
-Opts.new_ctx(logger_ctx: logger_ctx): nil
-Opts.get_ctx(): opts_ctx
-Opts.oa_no: integer
-Opts.oa_required: integer
-Opts.oa_optional: integer
+OptsCtx.oa_no: integer
+OptsCtx.oa_required: integer
+OptsCtx.oa_optional: integer
 
-opts_ctx:destroy()
-opts_ctx:add_option(shortopt: string, longopt: ?string, argreq: integer, argfmt: ?string, optdescr: ?string): bool
+OptsCtx.new(...): opts_ctx
+OptsCtx.new_by_name(module_name: string, ...): opts_ctx
+OptsCtx.get_instance(module_name: ?string): opts_ctx
+
+opts_ctx:add_option(short_option: ?string, long_option: ?string, arg: integer, 
+ arg_fmt: ?string, option_descr: ?string): bool
 opts_ctx:get_str(opt: string): ?string
 opts_ctx:get_help(columns: integer): ?string
+-- inherited from modctx
+opts_ctx:get_subsystem(): string
+opts_ctx:get_name(): string
+opts_ctx:as(target: string | table): any
+-- inherited from object
+opts_ctx:destroy()
+opts_ctx:get_owner(): object
+opts_ctx:get_owner_unsafe(): object
 ```
 
 ## pathtools
@@ -503,91 +444,127 @@ render_ctx:process()
 
 ## sprite
 ```luau
-Sprite = require "Sprite"
+SpriteCtx = require "SpriteCtx"
 
-Sprite.new_ctx(logger_ctx: logger_ctx): sprite_ctx
+SpriteCtx.new(...): sprite_ctx
+SpriteCtx.new_by_name(module_name: string, ...): sprite_ctx
+SpriteCtx.get_instance(module_name: ?string): sprite_ctx
 
-sprite_ctx:destroy()
 sprite_ctx:from_texture(texture: texture): sprite
-sprite:destroy()
+-- inherited from modctx
+sprite_ctx:get_subsystem(): string
+sprite_ctx:get_name(): string
+sprite_ctx:as(target: string | table): any
+-- inherited from object
+sprite_ctx:destroy()
+sprite_ctx:get_owner(): object
+sprite_ctx:get_owner_unsafe(): object
+
+sprite:get_texture(): texture
 sprite:get_width(): integer
 sprite:get_height(): integer
+-- inherited from object
+sprite:destroy()
+sprite:get_owner(): object
+sprite:get_owner_unsafe(): object
 ```
 
 ## timer
 ```luau
-Timer = require "Timer"
+TimerCtx = require "TimerCtx"
 
-Timer.new_ctx(logger_ctx: logger_ctx): timer_ctx
+TimerCtx.new(...): timer_ctx
+TimerCtx.new_by_name(module_name: string, ...): timer_ctx
+TimerCtx.get_instance(module_name: ?string): timer_ctx
 
-timer_ctx:destroy()
 timer_ctx:start(): integer
 timer_ctx:get_elapsed(start: integer): integer
 timer_ctx:sleep(ms: integer)
 timer_ctx:sleep_for_fps(fps: integer)
+-- inherited from modctx
+timer_ctx:get_subsystem(): string
+timer_ctx:get_name(): string
+timer_ctx:as(target: string | table): any
+-- inherited from object
+timer_ctx:destroy()
+timer_ctx:get_owner(): object
+timer_ctx:get_owner_unsafe(): object
 ```
 
 ## terminal
 ```luau
-Terminal = require "Terminal"
+TerminalCtx = require "TerminalCtx"
 
-Terminal.new_ctx(logger_ctx: logger_ctx): terminal_ctx
+TerminalCtx.new(...): terminal_ctx
+TerminalCtx.new_by_name(module_name: string, ...): terminal_ctx
+TerminalCtx.get_instance(module_name: ?string): terminal_ctx
 
-terminal_ctx:destroy()
 terminal_ctx:get_rows_count(): integer
 terminal_ctx:get_cols_count(): integer
+-- inherited from modctx
+terminal_ctx:get_subsystem(): string
+terminal_ctx:get_name(): string
+terminal_ctx:as(target: string | table): any
+-- inherited from object
+terminal_ctx:destroy()
+terminal_ctx:get_owner(): object
+terminal_ctx:get_owner_unsafe(): object
 ```
 
 ## texture
 ```luau
-Texture = require "Texture"
+TextureCtx = require "TextureCtx"
 
-Texture.new_ctx(bitmap_ctx: bitmap_ctx, logger_ctx: logger_ctx, gfxctx: gfxctx): texture_ctx
+TextureCtx.new(...): texture_ctx
+TextureCtx.new_by_name(module_name: string, ...): texture_ctx
+TextureCtx.get_instance(module_name: ?string): texture_ctx
 
-texture_ctx:destroy()
 texture_ctx:load(filename: string): texture
-texture:destroy()
+<!-- texture_ctx:memload(data: cdata, size: integer): texture -->
+-- inherited from modctx
+texture_ctx:get_subsystem(): string
+texture_ctx:get_name(): string
+texture_ctx:as(target: string | table): any
+-- inherited from object
+texture_ctx:destroy()
+texture_ctx:get_owner(): object
+texture_ctx:get_owner_unsafe(): object
+
+texture:bind(unit: integer): bool
 texture:get_width(): integer
 texture:get_height(): integer
-```
-
-## vec2
-```luau
-Vec2 = require "Vec2"
-
-Vec2.new_ctx(logger_ctx: logger_ctx, angle_ctx: angle_ctx): vec2_ctx
-
-vec2_ctx:destroy()
-vec2_ctx:sum(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:diff(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:product(first_x: double, first_y: double, second_x: double, second_y: double): double, double
-vec2_ctx:len(x: double, y: double): double
-vec2_ctx:distance(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:unit(x: double, y: double): double, double
-vec2_ctx:dot_product(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:rangle(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:dangle(first_x: double, first_y: double, second_x: double, second_y: double): double
-vec2_ctx:rrotation(x: double, y: double, radians: double): double, double
-vec2_ctx:drotation(x: double, y: double, degrees: double): double, double
-vec2_ctx:rotation90(x: double, y: double): double, double
-vec2_ctx:rotation180(x: double, y: double): double, double
-vec2_ctx:rotation270(x: double, y: double): double, double
-vec2_ctx:applying_matrix3x3(x: double, y: double, matrix: matrix3x3): double, double
-vec2_ctx:default_basis_xvec(): double, double
-vec2_ctx:default_basis_yvec(): double, double
+-- inherited from object
+texture:destroy()
+texture:get_owner(): object
+texture:get_owner_unsafe(): object
 ```
 
 ## window
 ```luau
-Window = require "Window"
+WindowCtx = require "WindowCtx"
 
-Window.new_ctx(events_ctx: events_ctx, logger_ctx: logger_ctx, monitor_ctx: monitor_ctx): window_ctx
+WindowCtx.new(...): window_ctx
+WindowCtx.new_by_name(module_name: string, ...): window_ctx
+WindowCtx.get_instance(module_name: ?string): window_ctx
 
-window_ctx:destroy()
-window_ctx:create(monitor_ctx: monitor_ctx, x: integer, y: integer, width: integer, height: integer, fullscreen: bool, title: string): window
+window_ctx:create(monitor: monitor, x: integer, y: integer, width: integer, 
+ height: integer, fullscreen: bool, title: string): window
 window_ctx:process()
-window:destroy()
+-- inherited from modctx
+window_ctx:get_subsystem(): string
+window_ctx:get_name(): string
+window_ctx:as(target: string | table): any
+-- inherited from object
+window_ctx:destroy()
+window_ctx:get_owner(): object
+window_ctx:get_owner_unsafe(): object
+
 window:xed(): bool
+window:get_monitor(): monitor
 window:get_width(): integer
 window:get_height(): integer
+-- inherited from object
+window:destroy()
+window:get_owner(): object
+window:get_owner_unsafe(): object
 ```

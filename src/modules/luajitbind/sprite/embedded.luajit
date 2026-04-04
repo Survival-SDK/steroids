@@ -1,0 +1,173 @@
+-- Sprite context and sprite object
+package.preload["SpriteCtx"] = function()
+    local ffi = require "ffi"
+    
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+    local Texture = require "TextureCtx"
+
+    ffi.cdef[[
+        // typedef struct {
+        //     float u;
+        //     float v;
+        // } st_uvcoord_t;
+
+        // typedef struct {
+        //     st_uvcoord_t upper_left;
+        //     st_uvcoord_t upper_right;
+        //     st_uvcoord_t lower_left;
+        //     st_uvcoord_t lower_right;
+        // } st_uv_t;
+
+        typedef struct st_spritectx {
+            st_modctx_t __st_parent;
+        } st_spritectx_t;
+
+        typedef struct st_sprite {
+            st_object_t __st_parent;
+        } st_sprite_t;
+
+        typedef st_sprite_t *(*st_sprite_from_texture_t)(
+         st_spritectx_t *sprite_ctx, const st_texture_t *texture);
+        typedef const st_texture_t *(*st_sprite_get_texture_t)(
+         const st_sprite_t *sprite);
+        typedef unsigned (*st_sprite_get_width_t)(const st_sprite_t *sprite);
+        typedef unsigned (*st_sprite_get_height_t)(const st_sprite_t *sprite);
+        // typedef void (*st_sprite_export_uv_t)(const st_sprite_t *sprite,
+        //  st_uv_t *dstuv);
+
+        typedef struct {
+            st_modctx_funcs_t        __st_parent_funcs;
+            st_sprite_from_texture_t from_texture;
+        } st_spritectx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t        __st_parent_funcs;
+            st_sprite_get_texture_t  get_texture;
+            st_sprite_get_width_t    get_width;
+            st_sprite_get_height_t   get_height;
+            void                    *__export_uv;
+        } st_sprite_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_spritectx_t *",
+    }
+
+    -- Internal table for sprite object wrapper
+    M.__sprite = {}
+
+    M.__sprite.methods = setmetatable({
+        get_texture = function(self)
+            return ffi.cast("const st_sprite_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_texture(self.handle)
+        end,
+
+        get_width = function(self)
+            return ffi.cast("const st_sprite_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_width(self.handle)
+        end,
+
+        get_height = function(self)
+            return ffi.cast("const st_sprite_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_height(self.handle)
+        end,
+
+        -- export_uv = function(self)
+        --     local uv = ffi.new("st_uv_t[1]")
+        --     ffi.cast("const st_sprite_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).export_uv(self.handle, uv)
+            
+        --     return {
+        --         upper_left = { u = uv[0].upper_left.u, v = uv[0].upper_left.v },
+        --         upper_right = { u = uv[0].upper_right.u, v = uv[0].upper_right.v },
+        --         lower_left = { u = uv[0].lower_left.u, v = uv[0].lower_left.v },
+        --         lower_right = { u = uv[0].lower_right.u, v = uv[0].lower_right.v },
+        --     }
+        -- end,
+    }, { __index = Object.methods })
+
+    M.__sprite.__mt = ffi.metatype(
+        "struct { st_sprite_t *handle; bool owned; }", {
+        __index = M.__sprite.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.methods = setmetatable({
+        from_texture = function(self, texture)
+            local texture_handle = ffi.cast("st_texture_t *", texture.handle)
+            local sprite_handle = ffi.cast("const st_spritectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).from_texture(self.handle, texture_handle)
+
+            if sprite_handle == nil then
+                error("SpriteCtx.from_texture: failed to create sprite from texture")
+            end
+
+            return Object.__mtnew(M.__sprite.__mt, sprite_handle, true)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_spritectx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local sprite_ctor = modsmgr:get_ctor("sprite", name)
+        if not sprite_ctor then
+            error(string.format(
+                "SpriteCtx.new_by_name: constructor not found for sprite '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local sprite_ctx = sprite_ctor(params)
+
+        if not sprite_ctx then
+            error(string.format(
+                "SpriteCtx.new_by_name: failed to create sprite instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_spritectx_t *",
+            sprite_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("sprite", module_name):as("SpriteCtx")
+    end
+
+    return M
+end
+

@@ -5,11 +5,32 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
-ST_MODULE_DEF_GET_FUNC(fs_simple)
-ST_MODULE_DEF_INIT_FUNC(fs_simple)
+static st_fsctx_t *st_fs_init(const st_param_t params[]);
+static void st_fs_quit(st_fsctx_t *fs_ctx);
+
+static st_filetype_t st_fs_get_file_type(st_fsctx_t *fs_ctx,
+ const char *filename);
+static bool st_fs_mkdir(st_fsctx_t *fs_ctx, const char *dirname);
+
+static st_fsctx_funcs_t fsctx_funcs = {
+    st_modctx_funcs,
+    .get_file_type = st_fs_get_file_type,
+    .mkdir         = st_fs_mkdir,
+};
+
+static const st_modprerq_t mod_prereqs[] = {
+    { "logger",    NULL, },
+    { "pathtools", NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_fs_simple_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("fs", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_fs_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -18,65 +39,39 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static bool st_fs_import_functions(st_modctx_t *fs_ctx, st_modctx_t *logger_ctx,
- st_modctx_t *pathtools_ctx) {
-    st_fs_simple_t *module = fs_ctx->data;
+static st_fsctx_t *st_fs_init(const st_param_t params[]) {
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "pathtools", NULL);
+    st_fsctx_t        *fs_ctx = (st_fsctx_t *)st_modctx_new("fs", "simple",
+    sizeof(st_fsctx_t), NULL, &fsctx_funcs, (st_object_dtor_t)st_fs_quit);
 
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "fs_simple: Unable to load function \"error\" from module \"logger\"\n"
-        );
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION_FROM_CTX("fs_simple", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("fs_simple", logger, info);
-
-    ST_LOAD_FUNCTION_FROM_CTX("fs_simple", pathtools, resolve);
-
-    return true;
-}
-
-static st_modctx_t *st_fs_init(st_modctx_t *logger_ctx,
- st_modctx_t *pathtools_ctx) {
-    st_modctx_t    *fs_ctx;
-    st_fs_simple_t *fs;
-
-    fs_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_fs_simple_data, sizeof(st_fs_simple_t));
-
-    if (!fs_ctx)
-        return NULL;
-
-    fs_ctx->funcs = &st_fs_simple_funcs;
-
-    fs = fs_ctx->data;
-    fs->logger.ctx = logger_ctx;
-    fs->pathtools.ctx = pathtools_ctx;
-
-    if (!st_fs_import_functions(fs_ctx, logger_ctx, pathtools_ctx)) {
-        global_modsmgr_funcs.free_module_ctx(global_modsmgr, fs_ctx);
+    if (!fs_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "fs_simple: unable to create new fs ctx object");
 
         return NULL;
     }
 
-    fs->logger.info(fs->logger.ctx, "fs_simple: Filesystem mgr initialized.");
+    fs_ctx->logger_ctx = logger_ctx;
+    fs_ctx->pathtools_ctx = pathtools_ctx;
+
+    ST_LOGGERCTX_CALL(logger_ctx, info,
+     "fs_simple: file system manager context initialized");
 
     return fs_ctx;
 }
 
-static void st_fs_quit(st_modctx_t *fs_ctx) {
-    st_fs_simple_t *fs = fs_ctx->data;
-
-    fs->logger.info(fs->logger.ctx, "fs_simple: Filesystem mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, fs_ctx);
+static void st_fs_quit(st_fsctx_t *fs_ctx) {
+    ST_LOGGERCTX_CALL(fs_ctx->logger_ctx, info,
+     "fs_simple: file system manager context destroyed");
+    free(fs_ctx);
 }
 
 static st_filetype_t st_fs_get_file_type(
- __attribute__((unused)) st_modctx_t *fs_ctx, const char *filename) {
+ __attribute__((unused)) st_fsctx_t *fs_ctx, const char *filename) {
     struct stat path_stat;
 
     if (stat(filename, &path_stat) == -1)
@@ -102,15 +97,14 @@ static st_filetype_t st_fs_get_file_type(
     }
 }
 
-static bool st_fs_mkdir(st_modctx_t *fs_ctx, const char *dirname) {
-    st_fs_simple_t *module = fs_ctx->data;
-    char            path[PATH_MAX] = "";
-    char           *ch = path;
-    bool            last_is_slash;
+static bool st_fs_mkdir(st_fsctx_t *fs_ctx, const char *dirname) {
+    char  path[PATH_MAX] = "";
+    char *ch = path;
+    bool  last_is_slash;
 
-    if (!module->pathtools.resolve(module->pathtools.ctx, path, PATH_MAX,
+    if (!ST_PATHTOOLSCTX_CALL(fs_ctx->pathtools_ctx, resolve, path, PATH_MAX,
      dirname)) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(fs_ctx->logger_ctx, error,
          "fs_simple: Unable to get resolved path for directory \"%s\"",
          dirname);
 
@@ -118,7 +112,7 @@ static bool st_fs_mkdir(st_modctx_t *fs_ctx, const char *dirname) {
     }
 
     if (path[0] && !path[1]) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(fs_ctx->logger_ctx, error,
          "fs_simple: Unable to create directory with name \"%s\"", path);
 
         return false;
@@ -137,11 +131,9 @@ static bool st_fs_mkdir(st_modctx_t *fs_ctx, const char *dirname) {
 
         *ch = '\0';
 
-
-
         if (path[0] != '.' && path[1] && stat(path, &unused) != 0 &&
          mkdir(path, S_IRWXU | S_IRGRP | S_IROTH) == -1) { // NOLINT(hicpp-signed-bitwise)
-            module->logger.error(module->logger.ctx,
+            ST_LOGGERCTX_CALL(fs_ctx->logger_ctx, error,
              "fs_simple: Unable to create directory \"%s\"", path);
 
             return false;

@@ -1,0 +1,35 @@
+#pragma once
+
+#include <stdbool.h>
+
+#include "steroids/modctx.h"
+#include "steroids/object.h"
+
+#ifndef ST_FSCTX_T_DEFINED
+    typedef st_modctx_t st_fsctx_t;
+#endif
+
+typedef enum {
+    ST_FT_UNKNOWN,
+    ST_FT_REG,
+    ST_FT_DIR,
+    ST_FT_CHR,
+    ST_FT_BLK,
+    ST_FT_FIFO,
+    ST_FT_LINK,
+    ST_FT_SOCK,
+} st_filetype_t;
+
+typedef st_filetype_t (*st_fs_get_file_type_t)(st_fsctx_t *fs_ctx,
+ const char *filename);
+typedef bool (*st_fs_mkdir_t)(st_fsctx_t *fs_ctx, const char *dirname);
+
+typedef struct {
+    st_modctx_funcs_t;
+    st_fs_get_file_type_t get_file_type;
+    st_fs_mkdir_t         mkdir;
+} st_fsctx_funcs_t;
+
+#define ST_FSCTX_CALL(object, func, ...) \
+    ((st_fsctx_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
+     ## __VA_ARGS__)

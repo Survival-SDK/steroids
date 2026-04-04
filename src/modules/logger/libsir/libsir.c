@@ -10,11 +10,52 @@
 #pragma GCC diagnostic pop
 #include <sir/errors.h>
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
-ST_MODULE_DEF_GET_FUNC(logger_libsir)
-ST_MODULE_DEF_INIT_FUNC(logger_libsir)
+static st_loggerctx_t *st_logger_init(const st_param_t params[]);
+static void st_logger_quit(st_loggerctx_t *logger_ctx);
+
+static bool st_logger_enable_events(st_loggerctx_t *logger_ctx);
+static bool st_logger_set_stdout_levels(st_loggerctx_t *logger_ctx,
+ st_loglvl_t levels);
+static bool st_logger_set_stderr_levels(st_loggerctx_t *logger_ctx,
+ st_loglvl_t levels);
+static bool st_logger_set_log_file(st_loggerctx_t *logger_ctx,
+ const char *filename, st_loglvl_t levels);
+static bool st_logger_set_callback(st_loggerctx_t *logger_ctx, st_logcbk_t func,
+ void *userdata, st_loglvl_t levels);
+static void st_logger_debug(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_info(const st_loggerctx_t *logger_ctx, const char* format,
+ ...);
+static void st_logger_warning(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_error(const st_loggerctx_t *logger_ctx,
+ const char* format, ...);
+static void st_logger_set_postmortem_msg(st_loggerctx_t *logger_ctx,
+ const char *msg);
+
+static st_loggerctx_funcs_t loggerctx_funcs = {
+    st_modctx_funcs,
+    .enable_events      = st_logger_enable_events,
+    .set_stdout_levels  = st_logger_set_stdout_levels,
+    .set_stderr_levels  = st_logger_set_stderr_levels,
+    .set_log_file       = st_logger_set_log_file,
+    .set_callback       = st_logger_set_callback,
+    .debug              = st_logger_debug,
+    .info               = st_logger_info,
+    .warning            = st_logger_warning,
+    .error              = st_logger_error,
+    .set_postmortem_msg = st_logger_set_postmortem_msg,
+};
+
+static const st_modprerq_t mod_prereqs[] = { {0} };
+
+st_moddata_t *st_module_logger_libsir_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("logger", "libsir", ST_MODULE_TYPE, mod_prereqs,
+     st_logger_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -29,9 +70,9 @@ static void log_file_destroy(void *plog_file) {
     sir_remfile(log_file->file);
 }
 
-static st_modctx_t *st_logger_init(st_modctx_t *events_ctx) {
-    st_logger_libsir_t *module;
-    sirinit             init_options = {
+static st_loggerctx_t *st_logger_init(const st_param_t params[]) {
+    st_loggerctx_t *logger_ctx;
+    sirinit         init_options = {
         .d_stdout = {
             .levels = ST_LL_NONE,
             .opts = (sir_options)SIRO_NOHOST | (sir_options)SIRO_NONAME |
@@ -50,151 +91,126 @@ static st_modctx_t *st_logger_init(st_modctx_t *events_ctx) {
         },
         .name = "steroids", /* TODO(edomin): move name management to module */
     };
-    st_modctx_t *logger_ctx;
+    st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+
+    if (!modsmgr)
+        return NULL;
 
     if (sir_isinitialized())
         return NULL;
 
-    logger_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_logger_libsir_data, sizeof(st_logger_libsir_t));
+    logger_ctx = (st_loggerctx_t *)st_modctx_new("logger", "libsir",
+     sizeof(st_loggerctx_t), NULL, &loggerctx_funcs,
+     (st_object_dtor_t)st_logger_quit);
+    if (!logger_ctx) {
+        fprintf(stderr,
+         "logger_libsir: unable to create new logger ctx object\n");
 
-    if (!logger_ctx)
         return NULL;
+    }
 
-    logger_ctx->funcs = &st_logger_libsir_funcs;
+    if (!sir_init(&init_options)) {
+        fprintf(stderr, "logger_libsir: unable to initialize libsir\n");
+        free(logger_ctx);
 
-    module = logger_ctx->data;
-
-    if (!sir_init(&init_options))
         return NULL;
+    }
 
-    module->events.ctx = events_ctx;
+    logger_ctx->modsmgr = modsmgr;
 
-    module->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
+    if (!st_logger_enable_events(logger_ctx))
+        st_logger_info(logger_ctx, "logger_libsir: Events subsystem context is "
+         "not created yet. Logging events is not enabled");
+
+    logger_ctx->callbacks = st_dlist_create(sizeof(st_logger_libsir_callback_t),
      NULL);
-    if (!module->callbacks)
+    if (!logger_ctx->callbacks)
         st_logger_warning(logger_ctx, "logger_libsir: Unable to initialize "
          "dlist for callbacks. Logging callbacks is not available on this run");
 
-    module->log_files = st_dlist_create(sizeof(st_logger_libsir_log_file_t),
+    logger_ctx->log_files = st_dlist_create(sizeof(st_logger_libsir_log_file_t),
      log_file_destroy);
-    if (!module->log_files)
+    if (!logger_ctx->log_files)
         st_logger_warning(logger_ctx, "logger_libsir: Unable to initialize "
          "dlist for log files. Logging to file is not available on this run");
 
-    if (events_ctx && !st_logger_enable_events(logger_ctx, events_ctx))
-        module->events.ctx = NULL;
+    memset(logger_ctx->postmortem_msg, '\0', ST_POSTMORTEM_MSG_SIZE_MAX);
 
     st_logger_info(logger_ctx, "logger_libsir: Logger initialized");
 
     return logger_ctx;
 }
 
-static void st_logger_quit(st_modctx_t *logger_ctx) {
-    st_logger_libsir_t *module = logger_ctx->data;
-
+static void st_logger_quit(st_loggerctx_t *logger_ctx) {
     if (!sir_isinitialized())
         return;
 
     st_logger_info(logger_ctx, "logger_libsir: Destroying logger");
 
-    if (module->callbacks)
-        st_dlist_destroy(module->callbacks);
+    if (logger_ctx->callbacks)
+        st_dlist_destroy(logger_ctx->callbacks);
 
-    if (module->log_files)
-        st_dlist_destroy(module->log_files);
+    if (logger_ctx->log_files)
+        st_dlist_destroy(logger_ctx->log_files);
 
     sir_cleanup();
 
-    printf("%s", module->postmortem_msg);
+    printf("%s", logger_ctx->postmortem_msg);
 
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, logger_ctx);
+    free(logger_ctx);
+    fprintf(stderr, "logger_libsir: Logger destroyed\n");
 }
 
-#define ST_LOGGER_LOAD_FUNCTION(mod, function)                               \
-    module->mod.function = global_modsmgr_funcs.get_function_from_ctx(       \
-     global_modsmgr, mod##_ctx, #function);                                  \
-    if (!module->mod.function) {                                             \
-        st_logger_error(logger_ctx,                                          \
-         "logger_libsir: Unable to load function \"%s\" from module \"%s\"", \
-         #function, #mod);                                                   \
-        return false;                                                        \
+static bool st_logger_enable_events(st_loggerctx_t *logger_ctx) {
+    logger_ctx->events_ctx = (st_eventsctx_t *)ST_MODSMGR_CALL(
+     logger_ctx->modsmgr, get_singleton, "events", NULL);
+
+    if (logger_ctx->events_ctx) {
+        logger_ctx->ev_log_output_debug = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_debug",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_info = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_info",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_warning = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_warning",
+            sizeof(st_evlogmsg_t));
+        logger_ctx->ev_log_output_error = ST_EVENTSCTX_CALL(
+            logger_ctx->events_ctx, register_type, "log_output_error",
+            sizeof(st_evlogmsg_t));
+
+        return true;
     }
 
-static bool st_logger_import_events_functions(st_modctx_t *logger_ctx,
- st_modctx_t *events_ctx) {
-    st_logger_libsir_t *module = logger_ctx->data;
-
-    ST_LOGGER_LOAD_FUNCTION(events, register_type);
-    ST_LOGGER_LOAD_FUNCTION(events, push);
-
-    return true;
-}
-
-static bool st_logger_enable_events(st_modctx_t *logger_ctx,
- st_modctx_t *events_ctx) {
-    st_logger_libsir_t *module = logger_ctx->data;
-
-    if (!st_logger_import_events_functions(logger_ctx, events_ctx))
-        goto import_fail;
-
-    module->events.ctx = events_ctx;
-    module->ev_log_output_debug = module->events.register_type(
-     module->events.ctx, "log_output_debug", ST_EV_LOG_MSG_SIZE);
-    if (module->ev_log_output_debug == ST_EVTYPE_ID_NONE)
-        goto register_fail;
-
-    module->ev_log_output_info = module->events.register_type(
-     module->events.ctx, "log_output_info", ST_EV_LOG_MSG_SIZE);
-    if (module->ev_log_output_info == ST_EVTYPE_ID_NONE)
-        goto register_fail;
-
-    module->ev_log_output_warning = module->events.register_type(
-     module->events.ctx, "log_output_warning", ST_EV_LOG_MSG_SIZE);
-    if (module->ev_log_output_warning == ST_EVTYPE_ID_NONE)
-        goto register_fail;
-
-    module->ev_log_output_error = module->events.register_type(
-     module->events.ctx, "log_output_error", ST_EV_LOG_MSG_SIZE);
-    if (module->ev_log_output_error == ST_EVTYPE_ID_NONE)
-        goto register_fail;
-
-    st_logger_info(logger_ctx, "logger_libsir: Events enabled");
-
-    return true;
-
-register_fail:
-    module->events.ctx = NULL;
-import_fail:
-    st_logger_error(logger_ctx, "logger_libsir: Unable to enable events");
+    logger_ctx->ev_log_output_debug = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_info = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_warning = ST_EVTYPE_ID_NONE;
+    logger_ctx->ev_log_output_error = ST_EVTYPE_ID_NONE;
 
     return false;
 }
 
-static bool st_logger_set_stdout_levels( st_modctx_t *logger_ctx,
- st_loglvl_t levels) {
+static bool st_logger_set_stdout_levels(
+ __attribute__((unused)) st_loggerctx_t *logger_ctx, st_loglvl_t levels) {
     return sir_stdoutlevels((sir_levels)levels);
 }
 
-static bool st_logger_set_stderr_levels(st_modctx_t *logger_ctx,
- st_loglvl_t levels) {
+static bool st_logger_set_stderr_levels(
+ __attribute__((unused)) st_loggerctx_t *logger_ctx, st_loglvl_t levels) {
     return sir_stderrlevels((sir_levels)levels);
 }
 
-static bool st_logger_set_log_file(st_modctx_t *logger_ctx,
+static bool st_logger_set_log_file(st_loggerctx_t *logger_ctx,
  const char *filename, st_loglvl_t levels) {
-    st_logger_libsir_t *module;
-    st_dlnode_t        *node;
+    st_dlnode_t *node;
 
     if (!logger_ctx || !filename)
         return false;
 
-    module = logger_ctx->data;
-
-    if (!module->log_files)
+    if (!logger_ctx->log_files)
         return false;
 
-    node = st_dlist_get_head(module->log_files);
+    node = st_dlist_get_head(logger_ctx->log_files);
 
     while (node) {
         st_logger_libsir_log_file_t *log_file = st_dlist_get_data(node);
@@ -272,7 +288,7 @@ static bool st_logger_set_log_file(st_modctx_t *logger_ctx,
             return false;
         }
 
-        if (!!st_dlist_push_back(module->log_files, &log_file)) {
+        if (!!st_dlist_push_back(logger_ctx->log_files, &log_file)) {
             sir_remfile(log_file.file);
 
             st_logger_error(logger_ctx,
@@ -286,20 +302,17 @@ static bool st_logger_set_log_file(st_modctx_t *logger_ctx,
     return true;
 }
 
-static bool st_logger_set_callback(st_modctx_t *logger_ctx, st_logcbk_t func,
+static bool st_logger_set_callback(st_loggerctx_t *logger_ctx, st_logcbk_t func,
  void *userdata, st_loglvl_t levels) {
-    st_logger_libsir_t *module;
-    st_dlnode_t        *node;
+    st_dlnode_t *node;
 
     if (!logger_ctx || !func)
         return false;
 
-    module = logger_ctx->data;
-
-    if (!module->callbacks)
+    if (!logger_ctx->callbacks)
         return false;
 
-    node = st_dlist_get_head(module->callbacks);
+    node = st_dlist_get_head(logger_ctx->callbacks);
 
     while (node) {
         st_logger_libsir_callback_t *callback = st_dlist_get_data(node);
@@ -323,7 +336,7 @@ static bool st_logger_set_callback(st_modctx_t *logger_ctx, st_logcbk_t func,
             .log_levels = levels,
         };
 
-        if (!!st_dlist_push_back(module->callbacks, &callback)) {
+        if (!!st_dlist_push_back(logger_ctx->callbacks, &callback)) {
             st_logger_error(logger_ctx,
              "libsir: Unable to add callback entry to the list");
 
@@ -337,13 +350,12 @@ static bool st_logger_set_callback(st_modctx_t *logger_ctx, st_logcbk_t func,
 #define ST_LOGGER_MESSAGE_LEN_MAX 4096
 #define ST_LOGGER_OUTPUT_FUNC(st_func, sir_func, log_level, evtype_id_field) \
     static __attribute__ ((format (printf, 2, 0))) void st_func(             \
-     const st_modctx_t *logger_ctx, const char* format, va_list args) {      \
-        st_logger_libsir_t *module = logger_ctx->data;                       \
+     const st_loggerctx_t *logger_ctx, const char* format, va_list args) {   \
         char                message[ST_LOGGER_MESSAGE_LEN_MAX];              \
         vsnprintf(message, ST_LOGGER_MESSAGE_LEN_MAX, format, args);         \
         sir_func("%s", message);                                             \
-        if (module->callbacks) {                                             \
-            st_dlnode_t *node = st_dlist_get_head(module->callbacks);        \
+        if (logger_ctx->callbacks) {                                         \
+            st_dlnode_t *node = st_dlist_get_head(logger_ctx->callbacks);    \
             while (node) {                                                   \
                 st_logger_libsir_callback_t *callback = st_dlist_get_data(   \
                  node);                                                      \
@@ -352,13 +364,15 @@ static bool st_logger_set_callback(st_modctx_t *logger_ctx, st_logcbk_t func,
                 node = st_dlist_get_next(node);                              \
             }                                                                \
         }                                                                    \
-        if (module->events.ctx) {                                            \
+        if (logger_ctx->events_ctx) {                                        \
+            st_evlogmsg_t event_data;                                        \
             size_t min_size = ST_EV_LOG_MSG_SIZE < ST_LOGGER_MESSAGE_LEN_MAX \
                 ? ST_EV_LOG_MSG_SIZE                                         \
                 : ST_LOGGER_MESSAGE_LEN_MAX;                                 \
-            message[min_size - 1] = '\0';                                    \
-            module->events.push(module->events.ctx, module->evtype_id_field, \
-             message);                                                       \
+            strncpy(event_data.message, message, ST_EV_LOG_MSG_SIZE - 1);    \
+            event_data.message[min_size - 1] = '\0';                         \
+            ST_EVENTSCTX_CALL(logger_ctx->events_ctx, push,                  \
+             logger_ctx->evtype_id_field, &event_data);                      \
         }                                                                    \
     }
 
@@ -373,8 +387,7 @@ ST_LOGGER_OUTPUT_FUNC(st_logger_error_output, sir_error, ST_LL_ERROR, // NOLINT(
 
 #define ST_LOGGER_LOG_FUNC(st_func, st_output_func) \
     static __attribute__((format (printf, 2, 3))) void st_func(   \
-     const st_modctx_t *logger_ctx, const char* format, ...) {    \
-        st_logger_libsir_t *module = logger_ctx->data;            \
+     const st_loggerctx_t *logger_ctx, const char* format, ...) {    \
         va_list             args;                                 \
         va_start(args, format);                                   \
         st_output_func(logger_ctx, format, args);                 \
@@ -386,9 +399,7 @@ ST_LOGGER_LOG_FUNC(st_logger_info,    st_logger_info_output);
 ST_LOGGER_LOG_FUNC(st_logger_warning, st_logger_warning_output);
 ST_LOGGER_LOG_FUNC(st_logger_error,   st_logger_error_output);
 
-static void st_logger_set_postmortem_msg(st_modctx_t *logger_ctx,
+static void st_logger_set_postmortem_msg(st_loggerctx_t *logger_ctx,
  const char *msg) {
-    st_logger_libsir_t *module = logger_ctx->data;
-
-    snprintf(module->postmortem_msg, ST_POSTMORTEM_MSG_SIZE_MAX, "%s", msg);
+    snprintf(logger_ctx->postmortem_msg, ST_POSTMORTEM_MSG_SIZE_MAX, "%s", msg);
 }

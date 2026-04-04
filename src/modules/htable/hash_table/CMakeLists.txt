@@ -44,7 +44,7 @@ bb_find_library(
   REQUIRED
 )
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "hash_table.c"
 )

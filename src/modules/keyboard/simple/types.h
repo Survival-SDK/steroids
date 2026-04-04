@@ -1,9 +1,10 @@
 #pragma once
 
-#include "steroids/types/modules/events.h"
-#include "steroids/types/modules/htable.h"
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/keyboard.h"
+#include "steroids/modctx.h"
+#include "steroids/modsmgr.h"
+#include "steroids/modules/events.h"
+#include "steroids/modules/htable.h"
+#include "steroids/modules/logger.h"
 
 #define INPUT_SIZE 4
 
@@ -16,32 +17,16 @@ typedef enum {
 } evtype_index_t;
 
 typedef struct {
-    st_modctx_t             *ctx;
-    st_events_get_type_id_t  get_type_id;
-    st_events_create_queue_t create_queue;
-} st_keyboard_simple_events_t;
+    st_modctx_t;
+    st_modsmgr_t   *modsmgr;
+    st_eventsctx_t *events_ctx;
+    st_loggerctx_t *logger_ctx;
+    st_htablectx_t *htable_ctx;
+    st_evtypeid_t   evtypes[EV_MAX];
+    st_evq_t       *evq;
+    st_htable_t    *prev_state;
+    st_htable_t    *cur_state;
+    char            input[INPUT_SIZE];
+} st_keyboardctx_t;
 
-typedef struct {
-    st_modctx_t      *ctx;
-    st_logger_debug_t debug;
-    st_logger_info_t  info;
-    st_logger_error_t error;
-} st_keyboard_simple_logger_t;
-
-typedef struct {
-    st_modctx_t       *ctx;
-    st_htable_init_t   init;
-    st_htable_quit_t   quit;
-    st_htable_create_t create;
-} st_keyboard_simple_htable_t;
-
-typedef struct {
-    st_keyboard_simple_events_t events;
-    st_keyboard_simple_logger_t logger;
-    st_keyboard_simple_htable_t htable;
-    st_evtypeid_t               evtypes[EV_MAX];
-    st_evq_t                   *evq;
-    st_htable_t                *prev_state;
-    st_htable_t                *cur_state;
-    char                        input[INPUT_SIZE];
-} st_keyboard_simple_t;
+#define ST_KEYBOARDCTX_T_DEFINED

@@ -1,0 +1,275 @@
+-- GfxCtx context and gfxctx object
+package.preload["GfxCtxCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx        = require "ModCtx"
+    local ModsMgr       = require "ModsMgr"
+    local DpsrvConnCtx  = require "DpSrvConnCtx"
+    local Object        = require "Object"
+
+    ffi.cdef[[
+        typedef enum {
+            ST_GAPI_GL1,
+            ST_GAPI_GL11,
+            ST_GAPI_GL12,
+            ST_GAPI_GL13,
+            ST_GAPI_GL14,
+            ST_GAPI_GL15,
+            ST_GAPI_GL2,
+            ST_GAPI_GL21,
+            ST_GAPI_GL3,
+            ST_GAPI_GL31,
+            ST_GAPI_GL32,
+            ST_GAPI_GL33,
+            ST_GAPI_GL4,
+            ST_GAPI_GL41,
+            ST_GAPI_GL42,
+            ST_GAPI_GL43,
+            ST_GAPI_GL44,
+            ST_GAPI_GL45,
+            ST_GAPI_GL46,
+            ST_GAPI_ES1,
+            ST_GAPI_ES11,
+            ST_GAPI_ES2,
+            ST_GAPI_ES3,
+            ST_GAPI_ES31,
+            ST_GAPI_ES32,
+            ST_GAPI_MAX,
+            ST_GAPI_UNKNOWN
+        } st_gapi_t;
+
+        typedef struct st_gfxctxctx {
+            st_modctx_t __st_parent;
+        } st_gfxctxctx_t;
+
+        typedef struct st_gfxctx {
+            st_object_t __st_parent;
+        } st_gfxctx_t;
+
+        typedef st_gfxctx_t *(*st_gfxctx_create_t)(st_gfxctxctx_t *gfxctx_ctx,
+        st_monitor_t *monitor, st_window_t *window, st_gapi_t api);
+        typedef st_gfxctx_t *(*st_gfxctx_create_shared_t)(
+        st_gfxctxctx_t *gfxctx_ctx, st_monitor_t *monitor, st_window_t *window,
+        st_gfxctx_t *other);
+        typedef bool (*st_gfxctx_make_current_t)(st_gfxctx_t *gfxctx);
+        typedef bool (*st_gfxctx_swap_buffers_t)(st_gfxctx_t *gfxctx);
+        typedef st_window_t *(*st_gfxctx_get_window_t)(st_gfxctx_t *gfxctx);
+        typedef st_gapi_t (*st_gfxctx_get_api_t)(const st_gfxctx_t *gfxctx);
+        // typedef unsigned (*st_gfxctx_get_shared_index_t)(
+        //  const st_gfxctx_t *gfxctx);
+        // typedef bool (*st_gfxctx_debug_enabled_t)(const st_gfxctx_t *gfxctx);
+        // typedef void (*st_gfxctx_set_userdata_t)(const st_gfxctx_t *gfxctx,
+        //  const char *key, uintptr_t value);
+        // typedef bool (*st_gfxctx_get_userdata_t)(const st_gfxctx_t *gfxctx,
+        //  uintptr_t *dst, const char *key);
+
+        typedef struct {
+            st_modctx_funcs_t         __st_parent_funcs;
+            st_gfxctx_create_t        create;
+            st_gfxctx_create_shared_t create_shared;
+        } st_gfxctxctx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t             __st_parent_funcs;
+            st_gfxctx_make_current_t      make_current;
+            st_gfxctx_swap_buffers_t      swap_buffers;
+            st_gfxctx_get_window_t        get_window;
+            st_gfxctx_get_api_t           get_api;
+            void                         *__get_shared_index;
+            void                         *__debug_enabled;
+            void                         *__set_userdata;
+            void                         *__get_userdata;
+        } st_gfxctx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_gfxctxctx_t *",
+    }
+
+    -- API constants
+    M.gapi_gl1 = ffi.C.ST_GAPI_GL1
+    M.gapi_gl11 = ffi.C.ST_GAPI_GL11
+    M.gapi_gl12 = ffi.C.ST_GAPI_GL12
+    M.gapi_gl13 = ffi.C.ST_GAPI_GL13
+    M.gapi_gl14 = ffi.C.ST_GAPI_GL14
+    M.gapi_gl15 = ffi.C.ST_GAPI_GL15
+    M.gapi_gl2 = ffi.C.ST_GAPI_GL2
+    M.gapi_gl21 = ffi.C.ST_GAPI_GL21
+    M.gapi_gl3 = ffi.C.ST_GAPI_GL3
+    M.gapi_gl31 = ffi.C.ST_GAPI_GL31
+    M.gapi_gl32 = ffi.C.ST_GAPI_GL32
+    M.gapi_gl33 = ffi.C.ST_GAPI_GL33
+    M.gapi_gl4 = ffi.C.ST_GAPI_GL4
+    M.gapi_gl41 = ffi.C.ST_GAPI_GL41
+    M.gapi_gl42 = ffi.C.ST_GAPI_GL42
+    M.gapi_gl43 = ffi.C.ST_GAPI_GL43
+    M.gapi_gl44 = ffi.C.ST_GAPI_GL44
+    M.gapi_gl45 = ffi.C.ST_GAPI_GL45
+    M.gapi_gl46 = ffi.C.ST_GAPI_GL46
+    M.gapi_es1 = ffi.C.ST_GAPI_ES1
+    M.gapi_es11 = ffi.C.ST_GAPI_ES11
+    M.gapi_es2 = ffi.C.ST_GAPI_ES2
+    M.gapi_es3 = ffi.C.ST_GAPI_ES3
+    M.gapi_es31 = ffi.C.ST_GAPI_ES31
+    M.gapi_es32 = ffi.C.ST_GAPI_ES32
+
+    -- Internal table for gfxctx object wrapper
+    M.__gfxctx = {}
+
+    M.__gfxctx.methods = setmetatable({
+        make_current = function(self)
+            return ffi.cast("const st_gfxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).make_current(self.handle)
+        end,
+
+        swap_buffers = function(self)
+            return ffi.cast("const st_gfxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).swap_buffers(self.handle)
+        end,
+
+        get_window = function(self)
+            local window_handle = ffi.cast("const st_gfxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_window(self.handle)
+
+            if window_handle == nil then
+                error("GfxCtxCtx.get_window: failed to get window from gfxctx")
+            end
+
+            -- Create wrapper with owned=false since dpsrvconn_ctx owns the 
+            -- window object
+            return Object.__mtnew(DpsrvConnCtx.__window.__mt, window_handle,
+             false)
+        end,
+
+        get_api = function(self)
+            return ffi.cast("const st_gfxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_api(self.handle)
+        end,
+
+        -- get_shared_index = function(self)
+        --     return ffi.cast("const st_gfxctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).get_shared_index(self.handle)
+        -- end,
+
+        -- debug_enabled = function(self)
+        --     return ffi.cast("const st_gfxctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).debug_enabled(self.handle)
+        -- end,
+
+        -- set_userdata = function(self, key, value)
+        --     ffi.cast("const st_gfxctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).set_userdata(self.handle, key, value)
+        -- end,
+
+        -- get_userdata = function(self, key)
+        --     local result = ffi.new("uintptr_t[1]")
+        --     if ffi.cast("const st_gfxctx_funcs_t *",
+        --         ffi.cast("st_object_t *", self.handle).funcs
+        --     ).get_userdata(self.handle, result, key) then
+        --         return tonumber(result[0])
+        --     else
+        --         return nil
+        --     end
+        -- end,
+    }, { __index = Object.methods })
+
+    M.__gfxctx.__mt = ffi.metatype(
+        "struct { st_gfxctx_t *handle; bool owned; }", {
+        __index = M.__gfxctx.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.methods = setmetatable({
+        create = function(self, monitor, window, api)
+            local gfxctx_handle = ffi.cast("const st_gfxctxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).create(self.handle, monitor.handle, window.handle, api)
+
+            if gfxctx_handle == nil then
+                error("GfxCtxCtx.create: failed to create gfxctx")
+            end
+
+            return Object.__mtnew(M.__gfxctx.__mt, gfxctx_handle, true)
+        end,
+
+        create_shared = function(self, monitor, window, other)
+            local gfxctx_handle = ffi.cast("const st_gfxctxctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).create_shared(self.handle, monitor.handle, window.handle,
+             other.handle)
+
+            if gfxctx_handle == nil then
+                error("GfxCtxCtx.create_shared: failed to create shared gfxctx")
+            end
+
+            return Object.__mtnew(M.__gfxctx.__mt, gfxctx_handle, true)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_gfxctxctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local gfxctx_ctor = modsmgr:get_ctor("gfxctx", name)
+        if not gfxctx_ctor then
+            error(string.format(
+                "GfxCtxCtx.new_by_name: constructor not found for gfxctx '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local gfxctx_ctx = gfxctx_ctor(params)
+
+        if not gfxctx_ctx then
+            error(string.format(
+                "GfxCtxCtx.new_by_name: failed to create gfxctx instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_gfxctxctx_t *",
+            gfxctx_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("gfxctx", module_name):as("GfxCtxCtx")
+    end
+
+    return M
+end
+
+
+

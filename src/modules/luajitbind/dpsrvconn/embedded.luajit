@@ -1,0 +1,336 @@
+-- DpsrvConn context with monitor and window objects
+package.preload["DpSrvConnCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_dpsrvconnctx {
+            st_modctx_t __st_parent;
+        } st_dpsrvconnctx_t;
+
+        typedef struct st_monitor {
+            st_object_t __st_parent;
+        } st_monitor_t;
+
+        typedef struct st_window {
+            st_object_t __st_parent;
+        } st_window_t;
+
+        typedef int (*st_dpsrvconn_get_monitors_count_t)(
+         const st_dpsrvconnctx_t *dpsrvconn_ctx);
+        typedef int (*st_dpsrvconn_get_primary_monitor_index_t)(
+         const st_dpsrvconnctx_t *dpsrvconn_ctx);
+        typedef const st_monitor_t *(*st_dpsrvconn_get_monitor_by_index_t)(
+         const st_dpsrvconnctx_t *dpsrvconn_ctx, unsigned index);
+        typedef const st_monitor_t *(*st_dpsrvconn_get_monitor_by_id_t)(
+         const st_dpsrvconnctx_t *dpsrvconn_ctx, uintptr_t id);
+        typedef const st_monitor_t *(*st_dpsrvconn_get_primary_monitor_t)(
+         const st_dpsrvconnctx_t *dpsrvconn_ctx);
+        typedef st_window_t *(*st_dpsrvconn_open_window_t)(
+         st_dpsrvconnctx_t *dpsrvconn_ctx, st_monitor_t *monitor, int x, int y,
+         unsigned width, unsigned height, bool fullscreen, const char *title);
+        typedef void (*st_dpsrvconn_process_t)(st_dpsrvconnctx_t *dpsrvconn_ctx);
+
+        typedef unsigned (*st_dpsrvconn_get_monitor_width_t)(
+         const st_monitor_t *monitor);
+        typedef unsigned (*st_dpsrvconn_get_monitor_height_t)(
+         const st_monitor_t *monitor);
+        typedef int (*st_dpsrvconn_get_monitor_index_t)(
+         const st_monitor_t *monitor);
+        typedef const char *(*st_dpsrvconn_get_monitor_name_t)(
+         const st_monitor_t *monitor);
+        typedef bool (*st_dpsrvconn_is_monitor_primary_t)(
+         const st_monitor_t *monitor);
+        // typedef void *(*st_dpsrvconn_get_device_handle_t)(
+        //  const st_monitor_t *monitor);
+
+        typedef bool (*st_dpsrvconn_is_window_xed_t)(const st_window_t *window);
+        typedef const st_monitor_t *(*st_dpsrvconn_get_window_monitor_t)(
+         const st_window_t *window);
+        // typedef void *(*st_dpsrvconn_get_window_handle_t)(
+        //  const st_window_t *window);
+        typedef unsigned (*st_dpsrvconn_get_window_width_t)(
+         const st_window_t *window);
+        typedef unsigned (*st_dpsrvconn_get_window_height_t)(
+         const st_window_t *window);
+
+        typedef struct {
+            st_modctx_funcs_t                         __st_parent_funcs;
+            st_dpsrvconn_get_monitors_count_t         get_monitors_count;
+            st_dpsrvconn_get_primary_monitor_index_t  get_primary_monitor_index;
+            st_dpsrvconn_get_monitor_by_index_t       get_monitor_by_index;
+            st_dpsrvconn_get_monitor_by_id_t          get_monitor_by_id;
+            st_dpsrvconn_get_primary_monitor_t        get_primary_monitor;
+            st_dpsrvconn_open_window_t                open_window;
+            st_dpsrvconn_process_t                    process;
+        } st_dpsrvconnctx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t                    __st_parent_funcs;
+            st_dpsrvconn_get_monitor_width_t     get_width;
+            st_dpsrvconn_get_monitor_height_t    get_height;
+            st_dpsrvconn_get_monitor_index_t     get_index;
+            st_dpsrvconn_get_monitor_name_t      get_name;
+            st_dpsrvconn_is_monitor_primary_t    is_primary;
+            void                                *__get_device_handle;
+            void                                *__get_native_device_handle;
+        } st_monitor_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t                      __st_parent_funcs;
+            st_dpsrvconn_is_window_xed_t           xed;
+            st_dpsrvconn_get_window_monitor_t      get_monitor;
+            void                                  *__get_handle;
+            void                                  *__get_native_handle;
+            st_dpsrvconn_get_window_width_t        get_width;
+            st_dpsrvconn_get_window_height_t       get_height;
+        } st_window_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_dpsrvconnctx_t *",
+    }
+
+    -- Internal table for monitor object wrapper
+    M.__monitor = {}
+
+    M.__monitor.methods = setmetatable({
+        get_width = function(self)
+            return ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_width(self.handle)
+        end,
+
+        get_height = function(self)
+            return ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_height(self.handle)
+        end,
+
+        get_index = function(self)
+            return ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_index(self.handle)
+        end,
+
+        get_name = function(self)
+            local name_ptr = ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_name(self.handle)
+            if name_ptr ~= nil then
+                return ffi.string(name_ptr)
+            else
+                return nil
+            end
+        end,
+
+        is_primary = function(self)
+            return ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).is_primary(self.handle)
+        end,
+
+        get_device_handle = function(self)
+            return ffi.cast("const st_monitor_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_device_handle(self.handle)
+        end,
+    }, { __index = Object.methods })
+
+    M.__monitor.__mt = ffi.metatype(
+        "struct { st_monitor_t *handle; bool owned; }", {
+        __index = M.__monitor.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    -- Internal table for window object wrapper
+    M.__window = {}
+
+    M.__window.methods = setmetatable({
+        xed = function(self)
+            return ffi.cast("const st_window_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).xed(self.handle)
+        end,
+
+        get_monitor = function(self)
+            local monitor_handle = ffi.cast("const st_window_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_monitor(self.handle)
+
+            if monitor_handle == nil then
+                return nil
+            end
+
+            -- Monitor owned by dpsrvconn_ctx, not by window
+            return Object.__mtnew(M.__monitor.__mt, 
+                ffi.cast("st_monitor_t *", monitor_handle), false)
+        end,
+
+        get_width = function(self)
+            return ffi.cast("const st_window_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_width(self.handle)
+        end,
+
+        get_height = function(self)
+            return ffi.cast("const st_window_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_height(self.handle)
+        end,
+    }, { __index = Object.methods })
+
+    M.__window.__mt = ffi.metatype(
+        "struct { st_window_t *handle; bool owned; }", {
+        __index = M.__window.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    -- Context methods
+    M.methods = setmetatable({
+        get_monitors_count = function(self)
+            return ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_monitors_count(self.handle)
+        end,
+
+        get_primary_monitor_index = function(self)
+            return ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_primary_monitor_index(self.handle)
+        end,
+
+        get_monitor_by_index = function(self, index)
+            local monitor_handle = ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_monitor_by_index(self.handle, index)
+
+            if monitor_handle == nil then
+                error(string.format(
+                    "DpsrvConnCtx.get_monitor_by_index: no monitor at index %d",
+                    index)
+                )
+            end
+
+            -- Monitor owned by context, not by caller
+            return Object.__mtnew(M.__monitor.__mt, 
+                ffi.cast("st_monitor_t *", monitor_handle), false)
+        end,
+
+        get_monitor_by_id = function(self, id)
+            local monitor_handle = ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_monitor_by_id(self.handle, id)
+
+            if monitor_handle == nil then
+                error(string.format(
+                    "DpsrvConnCtx.get_monitor_by_id: no monitor with id %d",
+                    id)
+                )
+            end
+
+            return Object.__mtnew(M.__monitor.__mt, 
+                ffi.cast("st_monitor_t *", monitor_handle), false)
+        end,
+
+        get_primary_monitor = function(self)
+            local monitor_handle = ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_primary_monitor(self.handle)
+
+            if monitor_handle == nil then
+                return nil
+            end
+
+            return Object.__mtnew(M.__monitor.__mt, 
+                ffi.cast("st_monitor_t *", monitor_handle), false)
+        end,
+
+        open_window = function(self, monitor, x, y, width, height, fullscreen, 
+         title)
+            local window_handle = ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).open_window(self.handle, ffi.cast("st_monitor_t *", monitor.handle),
+             x, y, width, height, fullscreen, title)
+
+            if window_handle == nil then
+                error("DpsrvConnCtx.open_window: failed to create window")
+            end
+
+            return Object.__mtnew(M.__window.__mt, window_handle, true)
+        end,
+
+        process = function(self)
+            ffi.cast("const st_dpsrvconnctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).process(self.handle)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_dpsrvconnctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local dpsrvconn_ctor = modsmgr:get_ctor("dpsrvconn", name)
+        if not dpsrvconn_ctor then
+            error(string.format(
+                "DpsrvConnCtx.new_by_name: constructor not found for '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local dpsrvconn_ctx = dpsrvconn_ctor(params)
+
+        if not dpsrvconn_ctx then
+            error(string.format(
+                "DpsrvConnCtx.new_by_name: failed to create instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_dpsrvconnctx_t *",
+            dpsrvconn_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("dpsrvconn", module_name):as("DpsrvConnCtx")
+    end
+
+    return M
+end

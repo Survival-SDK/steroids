@@ -7,6 +7,7 @@ inih
 ketopt
 libpng
 libsir
+libxrandr
 luajit
 lwrb
 make

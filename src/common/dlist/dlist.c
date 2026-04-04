@@ -160,7 +160,6 @@ st_dlnode_t *st_dlist_push_back(st_dlist_t *list, const void *data) {
 
 void st_dlist_remove(st_dlnode_t *node) {
     st_dlist_t  *list;
-    st_dlnode_t *cur_node;
     st_dlnode_t *prev;
     st_dlnode_t *next;
 
@@ -194,7 +193,7 @@ bool st_dlist_clear(st_dlist_t *list) {
         return false;
 
     while (list->head)
-        st_dlist_remove(list->head);
+        st_dlist_remove(list->head); // NOLINT(clang-analyzer-unix.Malloc)
 
     return true;
 }
@@ -225,6 +224,11 @@ bool st_dlist_export_data(void *data, const st_dlnode_t *node) {
     memcpy(data, node->data, node->list->data_size);
 
     return true;
+}
+
+/* For cases where data stores pointer */
+void *st_dlist_export_ptr(const st_dlnode_t *node) {
+    return node ? *(void **)node->data : NULL;
 }
 
 void *st_dlist_get_data(st_dlnode_t *node) {

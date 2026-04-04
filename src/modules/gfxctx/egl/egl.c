@@ -3,11 +3,14 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "steroids/types/modules/monitor.h"
+#include "steroids/moddata.h"
+#include "steroids/modsmgr.h"
 
 #define ERRMSGBUF_SIZE    128
 #define GAPI_STR_SIZE_MAX  32
@@ -40,116 +43,191 @@ typedef struct {
     EGLint context_opengl_debug;
 } ctx_attrs_t;
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]);
+static void st_gfxctx_quit(st_gfxctxctx_t *gfxctx_ctx);
+
+static st_gfxctx_t *st_gfxctx_create(st_gfxctxctx_t *gfxctx_ctx,
+ st_monitor_t *monitor, st_window_t *window, st_gapi_t api);
+static st_gfxctx_t *st_gfxctx_create_shared(st_gfxctxctx_t *gfxctx_ctx,
+ st_monitor_t *monitor, st_window_t *window, st_gfxctx_t *other);
+
+static bool st_gfxctx_make_current(st_gfxctx_t *gfxctx);
+static bool st_gfxctx_swap_buffers(st_gfxctx_t *gfxctx);
+static st_window_t *st_gfxctx_get_window(st_gfxctx_t *gfxctx);
+static st_gapi_t st_gfxctx_get_api(const st_gfxctx_t *gfxctx);
+static unsigned st_gfxctx_get_shared_index(const st_gfxctx_t *gfxctx);
+static void st_gfxctx_destroy(st_gfxctx_t *gfxctx);
+static bool st_gfxctx_debug_enabled(const st_gfxctx_t *gfxctx);
+static void st_gfxctx_set_userdata(const st_gfxctx_t *gfxctx,
+ const char *key, uintptr_t value);
+static bool st_gfxctx_get_userdata(const st_gfxctx_t *gfxctx,
+ uintptr_t *dst, const char *key);
+
+static st_gfxctxctx_funcs_t gfxctxctx_funcs = {
+    st_modctx_funcs,
+    .create        = st_gfxctx_create,
+    .create_shared = st_gfxctx_create_shared,
+};
 
 static st_gfxctx_funcs_t gfxctx_funcs = {
+    st_object_funcs,
     .make_current     = st_gfxctx_make_current,
     .swap_buffers     = st_gfxctx_swap_buffers,
     .get_window       = st_gfxctx_get_window,
     .get_api          = st_gfxctx_get_api,
     .get_shared_index = st_gfxctx_get_shared_index,
-    .destroy          = st_gfxctx_destroy,
     .debug_enabled    = st_gfxctx_debug_enabled,
     .set_userdata     = st_gfxctx_set_userdata,
     .get_userdata     = st_gfxctx_get_userdata,
 };
 
-ST_MODULE_DEF_GET_FUNC(gfxctx_egl)
-ST_MODULE_DEF_INIT_FUNC(gfxctx_egl)
+static const st_modprerq_t mod_prereqs[] = {
+    {"fnv1a", NULL},
+    {"htable", NULL},
+    {"logger", NULL},
+    {"dpsrvconn", NULL},
+    {0}
+};
+
+st_moddata_t *st_module_gfxctx_egl_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("gfxctx", "egl", ST_MODULE_TYPE, mod_prereqs,
+     st_gfxctx_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_gfxctx_egl_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_gfxctx_egl_init(modsmgr);
 }
 #endif
 
-static bool st_gfxctx_import_functions(st_modctx_t *gfxctx_ctx,
- st_modctx_t *logger_ctx) {
-    st_gfxctx_egl_t *module = gfxctx_ctx->data;
-
-    module->logger.error = global_modsmgr_funcs.get_function_from_ctx(
-     global_modsmgr, logger_ctx, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "gfxctx_egl: Unable to load function \"error\" from module "
-         "\"logger\"\n"
-        );
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION("gfxctx_egl", fnv1a, NULL, get_u32hashstr_func);
-
-    ST_LOAD_FUNCTION("gfxctx_egl", htable, NULL, create);
-    ST_LOAD_FUNCTION("gfxctx_egl", htable, NULL, init);
-    ST_LOAD_FUNCTION("gfxctx_egl", htable, NULL, quit);
-
-    ST_LOAD_FUNCTION_FROM_CTX("gfxctx_egl", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("gfxctx_egl", logger, info);
-    ST_LOAD_FUNCTION_FROM_CTX("gfxctx_egl", logger, warning);
-
-    return true;
-}
+static const char *st_module_subsystem = "gfxctx";
+static const char *st_module_name = "egl";
 
 static bool st_keyeqfunc(const void *left, const void *right) {
     return left && right && strcmp(left, right) == 0;
 }
 
-static st_modctx_t *st_gfxctx_init(st_modctx_t *logger_ctx,
- st_modctx_t *monitor_ctx) {
-    st_modctx_t     *gfxctx_ctx;
-    st_gfxctx_egl_t *module;
+static st_gfxctxctx_t *st_gfxctx_init(const st_param_t params[]) {
+    st_gfxctxctx_t    *gfxctx_ctx;
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    bool               software_opengl = st_modctx_get_param_as_bool(params, 
+     "software");
+    st_loggerctx_t    *logger_ctx;
+    st_dpsrvconnctx_t *dpsrvconn_ctx;
+    st_fnv1actx_t     *fnv1a_ctx;
+    st_htablectx_t    *htable_ctx;
+    char              *env_libgl_always_software;
+    char              *env_gallium_driver;
 
-    gfxctx_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_gfxctx_egl_data, sizeof(st_gfxctx_egl_t));
-
-    if (!gfxctx_ctx)
+    if (!modsmgr)
         return NULL;
 
-    gfxctx_ctx->funcs = &st_gfxctx_egl_funcs;
+    logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    if (!logger_ctx)
+        return NULL;
 
-    module = gfxctx_ctx->data;
-    module->logger.ctx = logger_ctx;
-    module->monitor.ctx = monitor_ctx;
-    module->debug_enabled = false;
-    module->must_quit = false;
-    module->gfxctxs_count = 0;
+    dpsrvconn_ctx = (st_dpsrvconnctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "dpsrvconn", NULL);
+    if (!dpsrvconn_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to get dpsrvconn context", st_module_subsystem,
+         st_module_name);
 
-    if (!st_gfxctx_import_functions(gfxctx_ctx, logger_ctx))
-        goto import_fail;
+        return NULL;
+    }
 
-    module->htable.ctx = module->htable.init(module->logger.ctx);
-    if (!module->htable.ctx)
-        goto ht_ctx_init_fail;
+    fnv1a_ctx = (st_fnv1actx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "fnv1a", NULL);
+    if (!fnv1a_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to get fnv1a context", st_module_subsystem,
+         st_module_name);
 
-    module->logger.info(module->logger.ctx,
-     "gfxctx_egl: Graphics context mgr initialized");
+        return NULL;
+    }
+
+    htable_ctx = (st_htablectx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "htable", NULL);
+    if (!htable_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to get htable context", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+
+    gfxctx_ctx = (st_gfxctxctx_t *)st_modctx_new("gfxctx", "egl",
+     sizeof(st_gfxctxctx_t), NULL, &gfxctxctx_funcs,
+     (st_object_dtor_t)st_gfxctx_quit);
+    if (!gfxctx_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "%s_%s: Unable to create new gfxctx ctx object", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+
+    gfxctx_ctx->modsmgr = modsmgr;
+    gfxctx_ctx->logger_ctx = logger_ctx;
+    gfxctx_ctx->dpsrvconn_ctx = dpsrvconn_ctx;
+    gfxctx_ctx->fnv1a_ctx = fnv1a_ctx;
+    gfxctx_ctx->htable_ctx = htable_ctx;
+    gfxctx_ctx->debug_enabled = false;
+    gfxctx_ctx->must_quit = false;
+    gfxctx_ctx->gfxctxs_count = 0;
+    gfxctx_ctx->software_opengl = software_opengl;
+
+    if (software_opengl) {
+        env_libgl_always_software = getenv("LIBGL_ALWAYS_SOFTWARE");
+        env_gallium_driver = getenv("GALLIUM_DRIVER");
+
+        gfxctx_ctx->old_envs.libgl_always_software.was_set = 
+        !!env_libgl_always_software;
+        gfxctx_ctx->old_envs.gallium_driver.was_set = !!env_gallium_driver;
+
+        strncpy(gfxctx_ctx->old_envs.libgl_always_software.value, 
+        env_libgl_always_software ? env_libgl_always_software : "", 
+        OLD_ENVS_SIZE_MAX);
+        strncpy(gfxctx_ctx->old_envs.gallium_driver.value, 
+        env_gallium_driver ? env_gallium_driver : "", OLD_ENVS_SIZE_MAX);
+
+        setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1);
+        setenv("GALLIUM_DRIVER", "llvmpipe", 1);
+    }
+
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
+     "%s_%s: Graphics context mgr initialized", st_module_subsystem,
+     st_module_name);
 
     return gfxctx_ctx;
-
-ht_ctx_init_fail:
-import_fail:
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, gfxctx_ctx);
-
-    return NULL;
 }
 
-static void st_gfxctx_quit(st_modctx_t *gfxctx_ctx) {
-    st_gfxctx_egl_t *module = gfxctx_ctx->data;
-
-    if (module->gfxctxs_count > 0) {
-        module->must_quit = true;
+static void st_gfxctx_quit(st_gfxctxctx_t *gfxctx_ctx) {
+    if (gfxctx_ctx->gfxctxs_count > 0) {
+        gfxctx_ctx->must_quit = true;
 
         return;
     }
 
-    module->htable.quit(module->htable.ctx);
+    if (gfxctx_ctx->software_opengl) {
+        if (gfxctx_ctx->old_envs.libgl_always_software.was_set)
+            setenv("LIBGL_ALWAYS_SOFTWARE", 
+            gfxctx_ctx->old_envs.libgl_always_software.value, 1);
+        else
+            unsetenv("LIBGL_ALWAYS_SOFTWARE");
 
-    module->logger.info(module->logger.ctx,
-     "gfxctx_egl: Graphics context mgr destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, gfxctx_ctx);
+        if (gfxctx_ctx->old_envs.gallium_driver.was_set)
+            setenv("GALLIUM_DRIVER", gfxctx_ctx->old_envs.gallium_driver.value, 1);
+        else
+            unsetenv("GALLIUM_DRIVER");
+    }
+
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
+     "%s_%s: Graphics context mgr destroyed", st_module_subsystem,
+     st_module_name);
+
+    free(gfxctx_ctx);
 }
 
 static EGLenum getegl_api_by_gapi(st_gapi_t api) {
@@ -531,52 +609,53 @@ static unsigned st_shared_data_get_free_index(const st_dlist_t *shared_data) {
     return free_index;
 }
 
-static st_logger_generic_msg_t msgtype_to_logger_func(st_gfxctx_egl_t *module,
- EGLint message_type) {
-    switch (message_type) {
-        case EGL_DEBUG_MSG_CRITICAL_KHR:
-        case EGL_DEBUG_MSG_ERROR_KHR:
-            return module->logger.error;
-        case EGL_DEBUG_MSG_WARN_KHR:
-            return module->logger.warning;
-        case EGL_DEBUG_MSG_INFO_KHR:
-        default:
-            return module->logger.info;
-    };
-
-    return module->logger.info;
-}
-
 static void st_debug_callback(__attribute__((unused)) EGLenum error,
  const char *command, EGLint message_type, EGLLabelKHR thread_label,
  __attribute__((unused)) EGLLabelKHR object_label, const char* message) {
-    st_gfxctx_egl_t *module = thread_label;
+    st_gfxctxctx_t *gfxctx_ctx = thread_label;
 
-    msgtype_to_logger_func(module, message_type)(module->logger.ctx,
-     "gfxctx_egl: \"%s\": %s", command, message);
+    switch (message_type) {
+        case EGL_DEBUG_MSG_CRITICAL_KHR:
+        case EGL_DEBUG_MSG_ERROR_KHR:
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: \"%s\": %s", st_module_subsystem, st_module_name,
+             command, message);
+            break;
+        case EGL_DEBUG_MSG_WARN_KHR:
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+             "%s_%s: \"%s\": %s", st_module_subsystem, st_module_name,
+             command, message);
+            break;
+        case EGL_DEBUG_MSG_INFO_KHR:
+        default:
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
+             "%s_%s: \"%s\": %s", st_module_subsystem, st_module_name,
+             command, message);
+            break;
+    }
 }
 
-void st_try_to_enable_debug(st_gfxctx_t *gfxctx) {
-    st_gfxctx_egl_t *module = ((st_modctx_t *)st_object_get_owner(gfxctx))->data;
-    EGLint           ret;
+static void st_try_to_enable_debug(st_gfxctx_t *gfxctx,
+ st_gfxctxctx_t *gfxctx_ctx) {
+    EGLint ret;
 
-    if (module->debug_enabled)
+    if (gfxctx_ctx->debug_enabled)
         return;
 
     if (!extension_supported(gfxctx->display, "EGL_KHR_debug"))
         return;
 
-    module->egl_debug_message_control_khr = (void *)eglGetProcAddress(
+    gfxctx_ctx->egl_debug_message_control_khr = (void *)eglGetProcAddress(
      "eglDebugMessageControlKHR");
-    if (!module->egl_debug_message_control_khr)
-        return;
-    
-    module->egl_label_object_khr = (void *)eglGetProcAddress(
-     "eglLabelObjectKHR");
-    if (!module->egl_label_object_khr)
+    if (!gfxctx_ctx->egl_debug_message_control_khr)
         return;
 
-    ret = module->egl_debug_message_control_khr(st_debug_callback,
+    gfxctx_ctx->egl_label_object_khr = (void *)eglGetProcAddress(
+     "eglLabelObjectKHR");
+    if (!gfxctx_ctx->egl_label_object_khr)
+        return;
+
+    ret = gfxctx_ctx->egl_debug_message_control_khr(st_debug_callback,
      (EGLAttrib[]){
         EGL_DEBUG_MSG_INFO_KHR,     EGL_TRUE,
         EGL_DEBUG_MSG_WARN_KHR,     EGL_TRUE,
@@ -588,18 +667,18 @@ void st_try_to_enable_debug(st_gfxctx_t *gfxctx) {
     if (ret != EGL_SUCCESS)
         return;
 
-    ret = module->egl_label_object_khr(NULL, EGL_OBJECT_THREAD_KHR, NULL,
-     module);
+    ret = gfxctx_ctx->egl_label_object_khr(NULL, EGL_OBJECT_THREAD_KHR, NULL,
+     gfxctx_ctx);
 
-    module->logger.info(module->logger.ctx, "gfxctx_egl: EGL debug enabled");
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, info,
+     "%s_%s: EGL debug enabled", st_module_subsystem, st_module_name);
 
-    module->debug_enabled = true;
+    gfxctx_ctx->debug_enabled = true;
 }
 
-static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
+static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
  st_monitor_t *monitor, st_window_t *window, EGLint renderable_type,
  EGLint major, EGLint minor, st_gfxctx_t *shared) {
-    st_gfxctx_egl_t *module = gfxctx_ctx->data;
     cfg_attrs_t cfg_attrs = {
         .red_size        = RED_BITS,
         .green_size      = GREEN_BITS,
@@ -622,44 +701,40 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
     bool             version_changed = false;
     bool             debug_changed = false;
 
-    gfxctx = malloc(sizeof(st_gfxctx_t));
+    gfxctx = (st_gfxctx_t *)st_object_new(sizeof(st_gfxctx_t), &gfxctx_funcs,
+     (st_object_dtor_t)st_gfxctx_destroy, (st_object_t *)gfxctx_ctx);
     if (!gfxctx) {
-        char errbuf[ERRMSGBUF_SIZE];
-
-        if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to allocate memory for gfx context: %s",
-             errbuf);
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+         "%s_%s: Unable to allocate memory for gfx context", st_module_subsystem,
+         st_module_name);
 
         return NULL;
     }
 
-    st_object_make(gfxctx, gfxctx_ctx, &gfxctx_funcs);
-
-    gfxctx->userdata = module->htable.create(module->htable.ctx,
-     (unsigned int (*)(const void *))module->fnv1a.get_u32hashstr_func(NULL),
+    gfxctx->userdata = ST_HTABLECTX_CALL(gfxctx_ctx->htable_ctx, create,
+     (unsigned int (*)(const void *))ST_FNV1ACTX_CALL(gfxctx_ctx->fnv1a_ctx,
+      get_u32hashstr_func),
      st_keyeqfunc, free, NULL);
     if (!gfxctx->userdata)
         goto udata_fail;
 
     gfxctx->display = eglGetDisplay(
-     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_handle));
+     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_native_device_handle));
 
     if (gfxctx->display == EGL_NO_DISPLAY) {
-        module->logger.error(module->logger.ctx,
-         "gfxctx_egl: Unable to get EGL display");
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+         "%s_%s: Unable to get EGL display", st_module_subsystem,
+         st_module_name);
 
         goto get_display_fail;
     }
 
-
-
     if (eglInitialize(gfxctx->display, &egl_version_major, &egl_version_minor)
      == EGL_FALSE) {
-        if (!module->debug_enabled)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to initialize EGL: %s",
-             get_egl_error_str(eglGetError()));
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to initialize EGL: %s", st_module_subsystem,
+             st_module_name, get_egl_error_str(eglGetError()));
 
         goto egl_init_fail;
     }
@@ -668,16 +743,16 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
      && renderable_type == EGL_OPENGL_BIT
      && ((major == 1 && minor > MINIMAL_OPENGL_MINOR) || major > 1)
      && !shared) {
-        module->logger.warning(module->logger.ctx,
-             "gfxctx_egl: EGL 1.%i doesn't able to export core OpenGL %i.%i "
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+             "%s_%s: EGL 1.%i doesn't able to export core OpenGL %i.%i "
              "functions. Try to use another gfxctx module if available",
-             egl_version_minor, major, minor);
+             st_module_subsystem, st_module_name, egl_version_minor, major, minor);
     }
 
-    st_try_to_enable_debug(gfxctx);
+    st_try_to_enable_debug(gfxctx, gfxctx_ctx);
 
-    if (module->debug_enabled)
-        module->egl_label_object_khr(gfxctx->display, EGL_OBJECT_DISPLAY_KHR,
+    if (gfxctx_ctx->debug_enabled)
+        gfxctx_ctx->egl_label_object_khr(gfxctx->display, EGL_OBJECT_DISPLAY_KHR,
          gfxctx->display, monitor);
 
     egl_khr_create_context_supported = extension_supported(gfxctx->display,
@@ -687,18 +762,19 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
      egl_version_minor, egl_khr_create_context_supported);
 
     if (version_changed && !shared) {
-        module->logger.warning(module->logger.ctx,
-         "gfxctx_egl: Unable to create context with required version. Possible "
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+         "%s_%s: Unable to create context with required version. Possible "
          "reasons: required version of context or minor version of context may "
          "be not supported by current version of EGL or EGL_KHR_create_context "
-         "extension is not present");
+         "extension is not present", st_module_subsystem, st_module_name);
     }
 
     if (debug_changed && !shared) {
-        module->logger.warning(module->logger.ctx,
-         "gfxctx_egl: Debug context is not supported. Possible "
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+         "%s_%s: Debug context is not supported. Possible "
          "reasons: debug context is not supported by current version of EGL or "
-         "EGL_KHR_create_context extension is not present");
+         "EGL_KHR_create_context extension is not present", st_module_subsystem,
+         st_module_name);
     }
 
     gfxctx->debug = !debug_changed;
@@ -708,10 +784,12 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
 
         attrs_fill_gapi_str(gapi_str, &cfg_attrs, &ctx_attrs);
 
-        module->logger.warning(module->logger.ctx,
-         "gfxctx_egl: Current version of EGL: 1.%i", egl_version_minor);
-        module->logger.warning(module->logger.ctx,
-         "gfxctx_egl: Fallback context created: %s", gapi_str);
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+         "%s_%s: Current version of EGL: 1.%i", st_module_subsystem,
+         st_module_name, egl_version_minor);
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+         "%s_%s: Fallback context created: %s", st_module_subsystem,
+         st_module_name, gapi_str);
     }
 
     fill_cfg_attrs(egl_cfg_attrs, &cfg_attrs, egl_version_minor);
@@ -725,88 +803,96 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_modctx_t *gfxctx_ctx,
 
     if (eglChooseConfig(gfxctx->display, egl_cfg_attrs, &gfxctx->cfg, 1,
      &configs_count) == EGL_FALSE || configs_count != 1) {
-        if (!module->debug_enabled)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to get matching frame buffer configuration: "
-             "%s",
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to get matching frame buffer configuration: %s",
+             st_module_subsystem, st_module_name,
              get_egl_error_str(eglGetError()));
 
         goto choose_config_fail;
     }
 
     if (eglBindAPI(getegl_api_by_gapi((st_gapi_t)gfxctx->gapi)) == EGL_FALSE) {
-        if (!module->debug_enabled)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to bind EGL API: %s",
-             get_egl_error_str(eglGetError()));
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to bind EGL API: %s", st_module_subsystem,
+             st_module_name, get_egl_error_str(eglGetError()));
 
         goto bind_api_fail;
     }
 
     gfxctx->surface = eglCreateWindowSurface(gfxctx->display,
      gfxctx->cfg,
-     (EGLNativeWindowType)*(void *[]){ ST_WINDOW_CALL(window, get_handle) }, NULL);
+     (EGLNativeWindowType)*(void *[]){ 
+      ST_WINDOW_CALL(window, get_native_handle) }, 
+     NULL);
     if (gfxctx->surface == EGL_NO_SURFACE) {
-        if (!module->debug_enabled)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to create EGL window surface: %s",
-             get_egl_error_str(eglGetError()));
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to create EGL window surface: %s", st_module_subsystem,
+             st_module_name, get_egl_error_str(eglGetError()));
 
         goto create_surface_fail;
     }
 
-    if (module->debug_enabled)
-        module->egl_label_object_khr(gfxctx->display, EGL_OBJECT_DISPLAY_KHR,
+    if (gfxctx_ctx->debug_enabled)
+        gfxctx_ctx->egl_label_object_khr(gfxctx->display, EGL_OBJECT_DISPLAY_KHR,
          gfxctx->surface, window);
 
     gfxctx->handle = eglCreateContext(gfxctx->display, gfxctx->cfg,
      shared ? shared->handle : EGL_NO_CONTEXT, egl_ctx_attrs);
     if (gfxctx->handle == EGL_NO_CONTEXT) {
-        if (!module->debug_enabled)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to create EGL render context: %s",
-             get_egl_error_str(eglGetError()));
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to create EGL render context: %s", st_module_subsystem,
+             st_module_name, get_egl_error_str(eglGetError()));
 
         goto create_context_fail;
     }
 
-    if (module->debug_enabled)
-        module->egl_label_object_khr(gfxctx->display, EGL_OBJECT_CONTEXT_KHR,
+    if (gfxctx_ctx->debug_enabled)
+        gfxctx_ctx->egl_label_object_khr(gfxctx->display, EGL_OBJECT_CONTEXT_KHR,
          gfxctx->handle, gfxctx);
 
     gfxctx->window = window;
     if (!shared) {
-        gfxctx->shared_data = st_dlist_create(sizeof(st_gfxctx_shared_data_t),
-         NULL);
+        gfxctx->shared_data = st_dlist_create(
+         sizeof(st_gfxctx_shared_data_t *), NULL);
         if (gfxctx->shared_data) {
-            st_dlist_push_back(gfxctx->shared_data, &(st_gfxctx_shared_data_t){
-                .ctx   = gfxctx,
-                .index = 0,
-            });
+            st_gfxctx_shared_data_t *data = malloc(
+             sizeof(st_gfxctx_shared_data_t));
+            if (data) {
+                data->ctx = gfxctx;
+                data->index = 0;
+                st_dlist_push_back(gfxctx->shared_data, &data);
+            }
         } else {
-            module->logger.warning(module->logger.ctx,
-             "gfxctx_egl: Unable to create structure for shared contexts data. "
-             "This context will not able to be shared");
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+             "%s_%s: Unable to create structure for shared contexts data. "
+             "This context will not able to be shared", st_module_subsystem,
+             st_module_name);
         }
     } else {
         gfxctx->shared_data = shared->shared_data;
-        st_dlist_push_back(gfxctx->shared_data, &(st_gfxctx_shared_data_t){
-            .ctx   = gfxctx,
-            .index = st_shared_data_get_free_index(gfxctx->shared_data),
-        });
+        st_gfxctx_shared_data_t *data = malloc(sizeof(st_gfxctx_shared_data_t));
+        if (data) {
+            data->ctx = gfxctx;
+            data->index = st_shared_data_get_free_index(gfxctx->shared_data);
+            st_dlist_push_back(gfxctx->shared_data, &data);
+        }
     }
 
     if (!shared)
         eglMakeCurrent(gfxctx->display, gfxctx->surface, gfxctx->surface,
          gfxctx->handle);
     if (eglSwapInterval(gfxctx->display, 1) == EGL_FALSE) {
-        if (!module->debug_enabled)
-            module->logger.warning(module->logger.ctx,
-             "gfxctx_egl: Unable to set swap interval: %s",
-             get_egl_error_str(eglGetError()));
+        if (!gfxctx_ctx->debug_enabled)
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, warning,
+             "%s_%s: Unable to set swap interval: %s", st_module_subsystem,
+             st_module_name, get_egl_error_str(eglGetError()));
     }
 
-    module->gfxctxs_count++;
+    gfxctx_ctx->gfxctxs_count++;
 
     return gfxctx;
 
@@ -825,13 +911,11 @@ udata_fail:
     return NULL;
 }
 
-static st_gfxctx_t *st_gfxctx_create(st_modctx_t *gfxctx_ctx,
+static st_gfxctx_t *st_gfxctx_create(st_gfxctxctx_t *gfxctx_ctx,
  st_monitor_t *monitor, st_window_t *window, st_gapi_t api) {
-    st_gfxctx_egl_t *module = gfxctx_ctx->data;
-
     if (api < ST_GAPI_GL11 || api > ST_GAPI_ES32) {
-        module->logger.error(module->logger.ctx,
-         "gfxctx_egl: Unsupported gfx API");
+        ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+         "%s_%s: Unsupported gfx API", st_module_subsystem, st_module_name);
 
         return NULL;
     }
@@ -841,7 +925,7 @@ static st_gfxctx_t *st_gfxctx_create(st_modctx_t *gfxctx_ctx,
      get_minor_version_by_gapi(api), NULL);
 }
 
-static st_gfxctx_t *st_gfxctx_create_shared(st_modctx_t *gfxctx_ctx,
+static st_gfxctx_t *st_gfxctx_create_shared(st_gfxctxctx_t *gfxctx_ctx,
  st_monitor_t *monitor, st_window_t *window, st_gfxctx_t *other) {
     if (!monitor || !window || !other || !other->shared_data)
         return NULL;
@@ -865,7 +949,7 @@ static st_window_t *st_gfxctx_get_window(st_gfxctx_t *gfxctx) {
     return gfxctx->window;
 }
 
-static st_gapi_t st_gfxctx_get_api(st_gfxctx_t *gfxctx) {
+static st_gapi_t st_gfxctx_get_api(const st_gfxctx_t *gfxctx) {
     return (st_gapi_t)gfxctx->gapi;
 }
 
@@ -886,8 +970,8 @@ static unsigned st_gfxctx_get_shared_index(const st_gfxctx_t *gfxctx) {
 }
 
 static void st_gfxctx_destroy(st_gfxctx_t *gfxctx) {
-    st_modctx_t     *gfxctx_ctx = st_object_get_owner(gfxctx);
-    st_gfxctx_egl_t *module = gfxctx_ctx->data;
+    st_gfxctxctx_t *gfxctx_ctx = (st_gfxctxctx_t *)st_object_get_owner(
+     (st_object_t *)gfxctx);
 
     if (eglGetCurrentContext() == gfxctx->handle)
         eglMakeCurrent(gfxctx->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
@@ -902,7 +986,8 @@ static void st_gfxctx_destroy(st_gfxctx_t *gfxctx) {
         st_dlnode_t *node = st_dlist_get_head(gfxctx->shared_data);
 
         while (node) {
-            st_gfxctx_shared_data_t *data = st_dlist_get_data(node);
+            st_gfxctx_shared_data_t **data_ptr = st_dlist_get_data(node);
+            st_gfxctx_shared_data_t *data = *data_ptr;
 
             if (data->ctx == gfxctx) {
                 st_dlist_remove(node);
@@ -916,12 +1001,9 @@ static void st_gfxctx_destroy(st_gfxctx_t *gfxctx) {
 
     ST_HTABLE_CALL(gfxctx->userdata, destroy);
 
-    free(gfxctx);
-
-    module->gfxctxs_count--;
-    if (module->must_quit)
+    gfxctx_ctx->gfxctxs_count--;
+    if (gfxctx_ctx->must_quit)
         st_gfxctx_quit(gfxctx_ctx);
-
 }
 
 static bool st_gfxctx_debug_enabled(const st_gfxctx_t *gfxctx) {
@@ -930,8 +1012,9 @@ static bool st_gfxctx_debug_enabled(const st_gfxctx_t *gfxctx) {
 
 static void st_gfxctx_set_userdata(const st_gfxctx_t *gfxctx, const char *key,
  uintptr_t value) {
-    st_gfxctx_egl_t *module = ((st_modctx_t *)st_object_get_owner(gfxctx))->data;
-    char            *keydup = strdup(key);
+    st_gfxctxctx_t *gfxctx_ctx = (st_gfxctxctx_t *)st_object_get_owner(
+     (const st_object_t *)gfxctx);
+    char           *keydup = strdup(key);
 
     if (keydup) {
         ST_HTABLE_CALL(gfxctx->userdata, insert, NULL, keydup, (void *)value);
@@ -939,17 +1022,16 @@ static void st_gfxctx_set_userdata(const st_gfxctx_t *gfxctx, const char *key,
         char errbuf[ERRMSGBUF_SIZE];
 
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
-             "gfxctx_egl: Unable to allocate memory for userdata of gfxctx "
-             "\"%s\": %s", key, errbuf);
+            ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
+             "%s_%s: Unable to allocate memory for userdata of gfxctx "
+             "\"%s\": %s", st_module_subsystem, st_module_name, key, errbuf);
     }
 }
 
 static bool st_gfxctx_get_userdata(const st_gfxctx_t *gfxctx, uintptr_t *dst,
  const char *key) {
-    st_gfxctx_egl_t *module = ((st_modctx_t *)st_object_get_owner(gfxctx))->data;
-    st_htiter_t      it;
-    void            *userdata;
+    st_htiter_t it;
+    void       *userdata;
 
     if (!ST_HTABLE_CALL(gfxctx->userdata, find, &it, key))
         return false;

@@ -2,52 +2,42 @@
 
 #define INITIAL_VERTICES_CAPACITY 1048576
 
-static bool vertices_init(st_modctx_t *render_ctx) {
-    st_render_opengl_t *module = render_ctx->data;
-    st_vertices_t      *vertices = &module->vertices;
-
-    vertices->handle = module->dynarr.create(module->dynarr.ctx,
+static bool vertices_init(st_dynarr_t **vertices, st_loggerctx_t *logger_ctx, 
+ st_dynarrctx_t *dynarr_ctx) {
+    *vertices = ST_DYNARRCTX_CALL(dynarr_ctx, create,
      sizeof(float), INITIAL_VERTICES_CAPACITY);
 
-    if (!vertices->handle) {
-        module->logger.error(module->logger.ctx,
+    if (!*vertices) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
          "render_opengl: Unable to create dynamic array for vertices data");
 
         return false;
     }
 
-    vertices->module = module;
-
     return true;
 }
 
-static void vertices_free(st_vertices_t *vertices) {
-    vertices->module->dynarr.destroy(vertices->handle);
+static void vertices_free(st_dynarr_t *vertices) {
+    ST_DYNARR_CALL(vertices, destroy);
 }
 
-static bool vertices_add(st_vertices_t *vertices, float x, float y, float z,
+static bool vertices_add(st_dynarr_t *vertices, float x, float y, float z,
  float u, float v) {
-    st_render_opengl_t *module = vertices->module;
-
-    return module->dynarr.append(vertices->handle, &x)
-        && module->dynarr.append(vertices->handle, &y)
-        && module->dynarr.append(vertices->handle, &z)
-        && module->dynarr.append(vertices->handle, &u)
-        && module->dynarr.append(vertices->handle, &v);
+    return ST_DYNARR_CALL(vertices, append, &x)
+        && ST_DYNARR_CALL(vertices, append, &y)
+        && ST_DYNARR_CALL(vertices, append, &z)
+        && ST_DYNARR_CALL(vertices, append, &u)
+        && ST_DYNARR_CALL(vertices, append, &v);
 }
 
-static bool vertices_clear(st_vertices_t *vertices) {
-    return vertices->module->dynarr.clear(vertices->handle);
+static bool vertices_clear(st_dynarr_t *vertices) {
+    return ST_DYNARR_CALL(vertices, clear);
 }
 
-static const void *vertices_get_all(const st_vertices_t *vertices) {
-    st_render_opengl_t *module = vertices->module;
-
-    return module->dynarr.get_all(vertices->handle);
+static const void *vertices_get_all(st_dynarr_t *vertices) {
+    return ST_DYNARR_CALL(vertices, get_all);
 }
 
-static size_t vertices_size(const st_vertices_t *vertices) {
-    st_render_opengl_t *module = vertices->module;
-
-    return module->dynarr.get_elements_count(vertices->handle) * sizeof(float);
+static size_t vertices_size(const st_dynarr_t *vertices) {
+    return ST_DYNARR_CALL(vertices, get_elements_count) * sizeof(float);
 }

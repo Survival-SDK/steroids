@@ -1,19 +1,9 @@
 #pragma once
 
-#include "steroids/types/modules/logger.h"
-#include "steroids/types/modules/texture.h"
-#include "steroids/types/object.h"
-
-typedef struct {
-    st_modctx_t      *ctx;
-    st_logger_debug_t debug;
-    st_logger_info_t  info;
-    st_logger_error_t error;
-} st_sprite_simple_logger_t;
-
-typedef struct {
-    st_sprite_simple_logger_t  logger;
-} st_sprite_simple_t;
+#include "steroids/modctx.h"
+#include "steroids/modules/logger.h"
+#include "steroids/modules/texture.h"
+#include "steroids/object.h"
 
 typedef struct {
     float u;
@@ -27,12 +17,19 @@ typedef struct {
     st_uvcoord_t lower_right;
 } st_uv_t;
 
-ST_CLASS (
+typedef struct {
+    st_modctx_t;
+    st_loggerctx_t *logger_ctx;
+} st_spritectx_t;
+
+typedef struct {
+    st_object_t;
     const st_texture_t *texture;
     unsigned            width;
     unsigned            height;
     st_uv_t             uv;
-) st_sprite_t;
+} st_sprite_t;
 
 #define ST_UV_T_DEFINED
+#define ST_SPRITECTX_T_DEFINED
 #define ST_SPRITE_T_DEFINED

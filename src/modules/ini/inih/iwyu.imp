@@ -1,4 +1,4 @@
 [
-    { include: ["\"steroids/types/modules/ini.h\"", "private", "\"steroids/ini.h\"", "public"] },
+    { include: ["\"steroids/modules/ini.h\"", "private", "\"steroids/ini.h\"", "public"] },
     { include: ["\"steroids/module.h\""           , "private", "\"steroids/ini.h\"", "public"] },
 ]

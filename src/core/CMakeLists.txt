@@ -13,7 +13,7 @@ bb_add_more_warnings(
 
 bb_add_executable(steroids)
 
-target_compile_options(steroids PRIVATE ${C_COMPILE_OPTIONS})
+target_compile_options(steroids PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(steroids PRIVATE
     main.c
     modules_manager.c
@@ -40,6 +40,6 @@ target_link_libraries(steroids PRIVATE
 file(WRITE ${CMAKE_BINARY_DIR}/steroids.ini
 "[steroids.runner]
 plugin_path=cmake_build/plugins
-run_module=lua:luajit
-script=main.lua"
+run_module=luajit:luajit
+script=main.luajit"
 )

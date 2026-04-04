@@ -75,12 +75,20 @@ build-container:
 
 run:
 	distrobox enter --root steroids-deps-$(TRIPLET) -- ./cmake_build/steroids \
-     --cfg=./cmake_build/steroids.ini
+      --cfg=./cmake_build/steroids.ini
+
+run-verbose-dev:
+	distrobox enter --root steroids-deps-$(TRIPLET) --verbose -- \
+      ./cmake_build/steroids --cfg=./cmake_build/steroids.ini
+
+run-help:
+	distrobox enter --root steroids-deps-$(TRIPLET) -- ./cmake_build/steroids \
+     --cfg=./cmake_build/steroids.ini --help
 
 run-debug-shell:
 	distrobox enter --root steroids-deps-$(TRIPLET)
 
 valgrind:
-	DEBUGINFOD_URLS="https://debuginfod.archlinux.org" distrobox enter --root \
+	distrobox enter --root \
      steroids-deps-$(TRIPLET) -- valgrind --tool=memcheck ./cmake_build/steroids \
      --cfg=./cmake_build/steroids.ini

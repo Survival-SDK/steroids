@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${BB_MODULE_PATH})
@@ -25,7 +25,7 @@ add_custom_target(copy_plugins
     COMMAND
         ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/plugins
     COMMAND
-        ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/*.stp ${CMAKE_BINARY_DIR}/plugins
+        ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/copy-plugins.cmake
 )
 
 set(ST_INTERNAL_MODULES_COUNT 0)
@@ -37,6 +37,10 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/libpng"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/libpng")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/bmcodec/stb_image"
  "${CMAKE_BINARY_DIR}/src/modules/bmcodec/stb_image")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dpsrvconn/sdl3"
+ "${CMAKE_BINARY_DIR}/src/modules/dpsrvconn/sdl3")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dpsrvconn/libxrandr"
+ "${CMAKE_BINARY_DIR}/src/modules/dpsrvconn/libxrandr")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/drawq/simple"
  "${CMAKE_BINARY_DIR}/src/modules/drawq/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/dynarr/scv"
@@ -61,56 +65,42 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/keyboard/simple"
  "${CMAKE_BINARY_DIR}/src/modules/keyboard/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/logger/libsir"
  "${CMAKE_BINARY_DIR}/src/modules/logger/libsir")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/lua/luajit"
- "${CMAKE_BINARY_DIR}/src/modules/lua/luajit")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/angle"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/angle")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/bitmap"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/bitmap")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/drawq"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/drawq")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/dynarr"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/dynarr")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/events"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/events")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/gfxctx"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/gfxctx")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/keyboard"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/keyboard")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/logger"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/logger")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/matrix3x3"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/matrix3x3")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/monitor"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/monitor")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/mouse"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/mouse")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/opts"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/opts")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/pathtools"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/render"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/render")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/sprite"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/sprite")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/terminal"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/terminal")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/texture"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/texture")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/timer"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/timer")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/vec2"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/vec2")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/window"
- "${CMAKE_BINARY_DIR}/src/modules/luabind/window")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajit/luajit"
+ "${CMAKE_BINARY_DIR}/src/modules/luajit/luajit")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/angle"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/angle")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/dpsrvconn"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/dpsrvconn")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
+#  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/gfxctx")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/keyboard"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/keyboard")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/logger"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/logger")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/mouse"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/mouse")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/opts")
+# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/pathtools"
+#  "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/render"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/render")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/sprite"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/sprite")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/terminal"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/terminal")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/texture"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/texture")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/timer"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/timer")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/matrix3x3/simple"
  "${CMAKE_BINARY_DIR}/src/modules/matrix3x3/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/monitor/xlib"
- "${CMAKE_BINARY_DIR}/src/modules/monitor/xlib")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mouse/simple"
  "${CMAKE_BINARY_DIR}/src/modules/mouse/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/mpool/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/mpool/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/opts/ketopt"
  "${CMAKE_BINARY_DIR}/src/modules/opts/ketopt")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/pathtools/cwalk"
@@ -123,6 +113,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/rbuf/lwrb"
  "${CMAKE_BINARY_DIR}/src/modules/rbuf/lwrb")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/runner/simple"
  "${CMAKE_BINARY_DIR}/src/modules/runner/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sdl3loader/sdl3"
+ "${CMAKE_BINARY_DIR}/src/modules/sdl3loader/sdl3")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
  "${CMAKE_BINARY_DIR}/src/modules/so/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
@@ -137,8 +129,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/timer/simple"
  "${CMAKE_BINARY_DIR}/src/modules/timer/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/vec2/simple"
  "${CMAKE_BINARY_DIR}/src/modules/vec2/simple")
-add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/window/xlib"
- "${CMAKE_BINARY_DIR}/src/modules/window/xlib")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
  "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
 
@@ -146,7 +136,7 @@ foreach(ST_INTERNAL_MODULE ${ST_INTERNAL_MODULES})
     set(INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES
      "${INTERNAL_MODULES_INIT_FUNCS_PROTOTYPES}\
      extern st_moddata_t *st_module_${ST_INTERNAL_MODULE}_init(\
-      st_modsmgr_t *, st_modsmgr_funcs_t *);\n"
+      st_modsmgr_t *);\n"
     )
     set(ST_INTERNAL_MODULES_INIT_FUNCS
      "${ST_INTERNAL_MODULES_INIT_FUNCS}\

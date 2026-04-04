@@ -8,22 +8,35 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ERRMSGBUF_SIZE            128
 #define DEFAULT_CONFIG_FILENAME   "steroids.ini"
 #define DEFAULT_DIRECTORY_NAME    "."
+#define ERRMSGBUF_SIZE            128
 #define RUNNABLE_MODULE_NAME_SIZE 256
 
-typedef st_modctx_t *(*runnable_init_func_t)(st_modctx_t *logger_ctx,
- st_modctx_t *opts_ctx);
-typedef void (*runnable_quit_func_t)(st_modctx_t *runnable_ctx);
-typedef void (*runnable_run_func_t)(st_modctx_t *runner_ctx,
- const void *params);
+static st_runnerctx_t *st_runner_init(const st_param_t params[]);
+static void st_runner_quit(st_runnerctx_t *runner_ctx);
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
+static bool st_runner_run(st_runnablectx_t *runner_ctx,
+ const st_param_t params[]);
 
-ST_MODULE_DEF_GET_FUNC(runner_simple)
-ST_MODULE_DEF_INIT_FUNC(runner_simple)
+static st_runnerctx_funcs_t runnerctx_funcs = {
+    st_modctx_funcs,
+    .run = st_runner_run,
+};
+
+static const st_modprerq_t mod_prereqs[] = {
+    { "ini",       NULL, },
+    { "logger",    NULL, },
+    { "opts",      NULL, },
+    { "pathtools", NULL, },
+    { "plugin",    NULL, },
+    {0},
+};
+
+st_moddata_t *st_module_runner_simple_init(st_modsmgr_t *modsmgr) {
+    return st_moddata_new("runner", "simple", ST_MODULE_TYPE, mod_prereqs,
+     st_runner_init, modsmgr);
+}
 
 #ifdef ST_MODULE_TYPE_shared
 st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
@@ -32,98 +45,77 @@ st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
 }
 #endif
 
-static bool st_runner_import_functions(st_modctx_t *runner_ctx,
- st_modctx_t *ini_ctx, st_modctx_t *logger_ctx, st_modctx_t *opts_ctx,
- st_modctx_t *pathtools_ctx, st_modctx_t *plugin_ctx) {
-    st_runner_simple_t *module = runner_ctx->data;
+static st_runnerctx_t *st_runner_init(const st_param_t params[]) {
+    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    const char        *default_configfile = st_modctx_get_param_as_ptr(
+     params, "default-configfile");
+    const char        *default_directory = st_modctx_get_param_as_ptr(
+     params, "default-directory");
+    st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "logger", NULL);
+    st_inictx_t       *ini_ctx = (st_inictx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "ini", NULL);
+    st_optsctx_t      *opts_ctx = (st_optsctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "opts", NULL);
+    st_pathtoolsctx_t *pathtools_ctx = (st_pathtoolsctx_t *)ST_MODSMGR_CALL(
+     modsmgr, get_singleton, "pathtools", NULL);
+    st_pluginctx_t    *plugin_ctx = (st_pluginctx_t *)ST_MODSMGR_CALL(modsmgr,
+     get_singleton, "plugin", NULL);
+    st_runnerctx_t    *runner_ctx = (st_runnerctx_t *)st_modctx_new("runner",
+     "simple", sizeof(st_runnerctx_t), NULL, &runnerctx_funcs,
+     (st_object_dtor_t)st_runner_quit);
 
-    module->logger.error = global_modsmgr_funcs.get_function(global_modsmgr,
-     "logger", NULL, "error");
-    if (!module->logger.error) {
-        fprintf(stderr,
-         "runner_simple: Unable to load function \"error\" from module "
-         "\"logger\"\n");
-
-        return false;
-    }
-
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", ini, load);
-
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", logger, debug);
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", logger, info);
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", logger, warning);
-
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", opts, add_option);
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", opts, get_str);
-
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", pathtools, concat);
-
-    ST_LOAD_FUNCTION_FROM_CTX("runner_simple", plugin, load);
-
-    return true;
-}
-
-static st_modctx_t *st_runner_init(st_modctx_t *ini_ctx,
- st_modctx_t *logger_ctx, st_modctx_t *opts_ctx, st_modctx_t *pathtools_ctx,
- st_modctx_t *plugin_ctx) {
-    st_modctx_t        *runner_ctx;
-    st_runner_simple_t *module;
-
-    runner_ctx = global_modsmgr_funcs.init_module_ctx(global_modsmgr,
-     &st_module_runner_simple_data, sizeof(st_runner_simple_t));
-    if (!runner_ctx)
-        return NULL;
-
-    runner_ctx->funcs = &st_runner_simple_funcs;
-
-    module = runner_ctx->data;
-    module->ini.ctx       = ini_ctx;
-    module->logger.ctx    = logger_ctx;
-    module->opts.ctx      = opts_ctx;
-    module->pathtools.ctx = pathtools_ctx;
-    module->plugin.ctx    = plugin_ctx;
-
-    if (!st_runner_import_functions(runner_ctx, ini_ctx, logger_ctx, opts_ctx,
-     pathtools_ctx, plugin_ctx)) {
-        global_modsmgr_funcs.free_module_ctx(global_modsmgr, runner_ctx);
+    if (!runner_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "runner_simple: Unable to create new runner ctx object");
 
         return NULL;
     }
 
-    module->logger.info(module->logger.ctx,
-     "runner_simple: Runner initialized.");
+    runner_ctx->modsmgr            = modsmgr;
+    runner_ctx->ini_ctx            = ini_ctx;
+    runner_ctx->logger_ctx         = logger_ctx;
+    runner_ctx->opts_ctx           = opts_ctx;
+    runner_ctx->pathtools_ctx      = pathtools_ctx;
+    runner_ctx->plugin_ctx         = plugin_ctx;
+    runner_ctx->default_configfile = default_configfile
+     ?: DEFAULT_CONFIG_FILENAME;
+    runner_ctx->default_directory  = default_directory
+     ?: DEFAULT_DIRECTORY_NAME;
+
+    ST_LOGGERCTX_CALL(logger_ctx, info, "runner_simple: Runner initialized");
 
     return runner_ctx;
 }
 
-static void st_runner_quit(st_modctx_t *runner_ctx) {
-    st_runner_simple_t *module = runner_ctx->data;
-
-    module->logger.info(module->logger.ctx, "runner_simple: Runner destroyed");
-    global_modsmgr_funcs.free_module_ctx(global_modsmgr, runner_ctx);
+static void st_runner_quit(st_runnerctx_t *runner_ctx) {
+    ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, info,
+     "runner_simple: Runner destroyed");
+    free(runner_ctx);
 }
 
-static bool get_config_filename(st_runner_simple_t *module,
+static bool get_config_filename(st_runnerctx_t *runner_ctx,
  char filename[PATH_MAX]) {
     int ret;
 
-    if (module->opts.add_option(module->opts.ctx, 'c', "cfg", ST_OA_REQUIRED,
-     "filename", "Config file")) {
-        if (module->opts.get_str(module->opts.ctx, "cfg", filename, PATH_MAX))
+    if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, add_option, 'c', "cfg",
+     ST_OA_REQUIRED, "filename", "Config file")) {
+        if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, get_str, "cfg", filename,
+         PATH_MAX))
             return true;
 
-        module->logger.warning(module->logger.ctx,
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, warning,
          "runner_simple: Unable to get cmdline option for config filename. "
-         "Using default config file \"%s\"", DEFAULT_CONFIG_FILENAME);
+         "Using default config file \"%s\"", runner_ctx->default_configfile);
     } else {
-        module->logger.warning(module->logger.ctx,
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, warning,
          "runner_simple: Unable to set cmdline option for config filename. "
-         "Using default config file \"%s\"", DEFAULT_CONFIG_FILENAME);
+         "Using default config file \"%s\"", runner_ctx->default_configfile);
     }
 
-    ret = snprintf(filename, PATH_MAX, "%s", DEFAULT_CONFIG_FILENAME);
+    ret = snprintf(filename, PATH_MAX, "%s", runner_ctx->default_configfile);
     if (ret < 0 || ret == PATH_MAX) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
          "ini_inih: Unable to copy default config filename");
 
         return false;
@@ -132,12 +124,12 @@ static bool get_config_filename(st_runner_simple_t *module,
     return true;
 }
 
-static bool get_directory_name(st_runner_simple_t *module,
+static bool get_directory_name(st_runnerctx_t *runner_ctx,
  char dirname[PATH_MAX], const st_ini_t *ini) {
-    if (module->opts.add_option(module->opts.ctx, 'p', "plugin-path",
+    if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, add_option, 'p', "plugin-path",
      ST_OA_REQUIRED, "path", "Path where plugins stored")) {
-        if (module->opts.get_str(module->opts.ctx, "plugin-path", dirname,
-         PATH_MAX))
+        if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, get_str, "plugin-path",
+         dirname, PATH_MAX))
             return true;
     }
 
@@ -145,15 +137,15 @@ static bool get_directory_name(st_runner_simple_t *module,
      "plugin_path")) {
         int ret;
 
-        module->logger.warning(module->logger.ctx,
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, warning,
          "runner_simple: Unable to get plugin directory name. Using default "
-         "directory \"%s\"", DEFAULT_DIRECTORY_NAME);
+         "directory \"%s\"", runner_ctx->default_directory);
 
-        ret = snprintf(dirname, PATH_MAX, "%s", DEFAULT_DIRECTORY_NAME);
+        ret = snprintf(dirname, PATH_MAX, "%s", runner_ctx->default_directory);
         if (ret < 0 || ret == PATH_MAX) {
-            module->logger.error(module->logger.ctx,
+            ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
              "runner_simple: Unable to copy default plugin directory name "
-             "\"%s\"", DEFAULT_DIRECTORY_NAME);
+             "\"%s\"", runner_ctx->default_directory);
 
             return false;
         }
@@ -162,18 +154,19 @@ static bool get_directory_name(st_runner_simple_t *module,
     return !!ini;
 }
 
-static bool get_runnable_module_name(st_runner_simple_t *module,
+static bool get_runnable_module_name(st_runnerctx_t *runner_ctx,
  char runnable[RUNNABLE_MODULE_NAME_SIZE], const st_ini_t *ini) {
-    if (module->opts.add_option(module->opts.ctx, 'r', "run", ST_OA_REQUIRED,
-     "module_name", "Name of the mudule that must be launched")) {
-        if (module->opts.get_str(module->opts.ctx, "run", runnable,
+    if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, add_option, 'r', "run",
+     ST_OA_REQUIRED, "module_name",
+     "Name of the mudule that must be launched")) {
+        if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, get_str, "run", runnable,
          RUNNABLE_MODULE_NAME_SIZE))
             return true;
     }
 
     if (ini && !ST_INI_CALL(ini, fill_str, runnable, RUNNABLE_MODULE_NAME_SIZE,
      "steroids.runner", "run_module")) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
          "runner_simple: Unable to get runnable module name");
 
         return false;
@@ -182,12 +175,12 @@ static bool get_runnable_module_name(st_runner_simple_t *module,
     return !!ini;
 }
 
-static bool get_script_name(st_runner_simple_t *module,
+static bool get_script_name(st_runnerctx_t *runner_ctx,
  char script_name[PATH_MAX], const st_ini_t *ini) {
-    if (module->opts.add_option(module->opts.ctx, 's', "script",
+    if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, add_option, 's', "script",
      ST_OA_REQUIRED, "filename", "Name of the script that must be launched")) {
-        if (module->opts.get_str(module->opts.ctx, "script", script_name,
-         PATH_MAX))
+        if (ST_OPTSCTX_CALL(runner_ctx->opts_ctx, get_str, "script",
+         script_name, PATH_MAX))
             return true;
     }
 
@@ -198,7 +191,7 @@ static bool get_script_name(st_runner_simple_t *module,
     return !!ini;
 }
 
-static bool load_plugins(st_runner_simple_t *module,
+static bool load_plugins(st_runnerctx_t *runner_ctx,
  const char dirname[PATH_MAX]) {
     struct dirent *entry;
     DIR           *dir = opendir(dirname);
@@ -207,7 +200,7 @@ static bool load_plugins(st_runner_simple_t *module,
         char errbuf[ERRMSGBUF_SIZE];
 
         if (strerror_r(errno, errbuf, ERRMSGBUF_SIZE) == 0)
-            module->logger.error(module->logger.ctx,
+            ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
              "runner_simple: Unable to open directory \"%s\": %s", dirname,
              errbuf);
 
@@ -219,10 +212,11 @@ static bool load_plugins(st_runner_simple_t *module,
         if (entry->d_type == DT_REG) {
             char filename[PATH_MAX];
 
-            if (module->pathtools.concat(module->pathtools.ctx, filename,
-             PATH_MAX, dirname, entry->d_name)) {
-                if (!module->plugin.load(module->plugin.ctx, filename, true))
-                    module->logger.error(module->logger.ctx,
+            if (ST_PATHTOOLSCTX_CALL(runner_ctx->pathtools_ctx, concat,
+             filename, PATH_MAX, dirname, entry->d_name)) {
+                if (!ST_PLUGINCTX_CALL(runner_ctx->plugin_ctx, load, filename,
+                 true))
+                    ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
                      "runner_simple: Unable to load plugin \"%s\"", filename);
             }
         }
@@ -230,82 +224,65 @@ static bool load_plugins(st_runner_simple_t *module,
         entry = readdir(dir);
     }
 
-    global_modsmgr_funcs.process_deps(global_modsmgr);
+    ST_MODSMGR_CALL(runner_ctx->modsmgr, process_deps);
 
     closedir(dir);
 
     return true;
 }
 
-static void run_runnable(st_runner_simple_t *module,
+static bool run_runnable(st_runnerctx_t *runner_ctx,
  const char *module_subsystem, const char *module_name,
  const char script_name[PATH_MAX]) {
-    runnable_init_func_t runnable_init_func;
-    runnable_quit_func_t runnable_quit_func;
-    runnable_run_func_t  runnable_run_func;
-    st_modctx_t         *runnable_ctx;
+    st_ctx_ctor_t     runnable_ctor;
+    st_runnablectx_t *runnable_ctx;
+    bool              result;
 
-    runnable_init_func = global_modsmgr_funcs.get_function(global_modsmgr,
-     module_subsystem, module_name, "init");
-    if (!runnable_init_func) {
-        module->logger.error(module->logger.ctx,
-         "runner_simple: Unable to load function \"init\" from module "
-         "\"%s_%s\"", module_subsystem, module_name);
+    runnable_ctor = ST_MODSMGR_CALL(runner_ctx->modsmgr, get_ctor,
+     module_subsystem, module_name);
+    if (!runnable_ctor) {
+        ST_LOGGERCTX_CALL(runner_ctx->logger_ctx, error,
+         "runner_simple: Unable to load ctor from module \"%s_%s\"",
+         module_subsystem, module_name);
 
-        return;
+        return false;
     }
 
-    runnable_quit_func = global_modsmgr_funcs.get_function(global_modsmgr,
-     module_subsystem, module_name, "quit");
-    if (!runnable_init_func) {
-        module->logger.error(module->logger.ctx,
-         "runner_simple: Unable to load function \"quit\" from module "
-         "\"%s_%s\"", module_subsystem, module_name);
-
-        return;
-    }
-
-    runnable_run_func = global_modsmgr_funcs.get_function(global_modsmgr,
-     module_subsystem, module_name, "run");
-    if (!runnable_init_func) {
-        module->logger.error(module->logger.ctx,
-         "runner_simple: Unable to load function \"run\" from module "
-         "\"%s_%s\"", module_subsystem, module_name);
-
-        return;
-    }
-
-    runnable_ctx = runnable_init_func(module->logger.ctx, module->opts.ctx);
+    runnable_ctx = runnable_ctor(
+     (st_param_t[]){{"modsmgr", (uintptr_t)runner_ctx->modsmgr}, {0}});
     if (!runnable_ctx)
-        return;
+        return false;
 
-    runnable_run_func(runnable_ctx, script_name);
-    runnable_quit_func(runnable_ctx);
+    result = ST_RUNNABLECTX_CALL(runnable_ctx, run,
+     (st_param_t[]){{"script", (uintptr_t)script_name}, {0}});
+    ST_RUNNABLECTX_CALL(runnable_ctx, destroy);
+
+    return result;
 }
 
-static void st_runner_run(st_modctx_t *runner_ctx,
- __attribute__((unused)) const void *params) {
-    st_runner_simple_t *module = runner_ctx->data;
-    char                cfg_filename[PATH_MAX];
-    st_ini_t           *ini;
-    char                dirname[PATH_MAX];
-    char                runnable[RUNNABLE_MODULE_NAME_SIZE];
-    char                script_name[PATH_MAX] = "";
-    char               *runnable_subsystem = runnable;
-    char               *runnable_name;
+static bool st_runner_run(st_runnablectx_t *runner_ctx,
+ __attribute__((unused)) const st_param_t params[]) {
+    char      cfg_filename[PATH_MAX];
+    st_ini_t *ini;
+    char      dirname[PATH_MAX];
+    char      runnable[RUNNABLE_MODULE_NAME_SIZE];
+    char      script_name[PATH_MAX] = "";
+    char     *runnable_subsystem = runnable;
+    char     *runnable_name;
 
-    if (!get_config_filename(module, cfg_filename))
-        return;
+    if (!get_config_filename((st_runnerctx_t *)runner_ctx, cfg_filename))
+        return false;
 
-    ini = module->ini.load(module->ini.ctx, cfg_filename);
+    ini = ST_INICTX_CALL(((st_runnerctx_t *)runner_ctx)->ini_ctx, load,
+     cfg_filename);
 
-    if (!get_directory_name(module, dirname, ini) ||
-     !get_runnable_module_name(module, runnable, ini))
+    if (!get_directory_name((st_runnerctx_t *)runner_ctx, dirname, ini) ||
+     !get_runnable_module_name((st_runnerctx_t *)runner_ctx, runnable, ini))
         goto fail;
 
     runnable_name = strchr(runnable, ':');
     if (!runnable_name) {
-        module->logger.error(module->logger.ctx,
+        ST_LOGGERCTX_CALL(((st_runnerctx_t *)runner_ctx)->logger_ctx, error,
          "runner_simple: Missing name of runnable module");
 
         goto fail;
@@ -313,14 +290,17 @@ static void st_runner_run(st_modctx_t *runner_ctx,
 
     *runnable_name++ = '\0';
 
-    get_script_name(module, script_name, ini);
+    get_script_name((st_runnerctx_t *)runner_ctx, script_name, ini);
 
-    if (!load_plugins(module, dirname))
+    if (!load_plugins((st_runnerctx_t *)runner_ctx, dirname))
         goto fail;
 
-    run_runnable(module, runnable_subsystem, runnable_name, script_name);
+    return run_runnable((st_runnerctx_t *)runner_ctx, runnable_subsystem,
+     runnable_name, script_name);
 
 fail:
     if (ini)
         ST_INI_CALL(ini, destroy);
+
+    return false;
 }

@@ -1,0 +1,92 @@
+package.preload["TerminalCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_terminalctx {
+            st_modctx_t __st_parent;
+        } st_terminalctx_t;
+
+        typedef int (*st_terminal_get_rows_count_t)(
+            const st_terminalctx_t *terminal_ctx);
+        typedef int (*st_terminal_get_cols_count_t)(
+            const st_terminalctx_t *terminal_ctx);
+
+        typedef struct {
+            st_modctx_funcs_t           __st_parent_funcs;
+            st_terminal_get_rows_count_t get_rows_count;
+            st_terminal_get_cols_count_t get_cols_count;
+        } st_terminalctx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_terminalctx_t *",
+    }
+
+    M.methods = setmetatable({
+        get_rows_count = function(self)
+            return ffi.cast("const st_terminalctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_rows_count(self.handle)
+        end,
+        get_cols_count = function(self)
+            return ffi.cast("const st_terminalctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_cols_count(self.handle)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_terminalctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local terminal_ctor = modsmgr:get_ctor("terminal", name)
+        if not terminal_ctor then
+            error(string.format(
+                "TerminalCtx.new_by_name: constructor not found for terminal '%s'", 
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local terminal_ctx = terminal_ctor(params)
+
+        if not terminal_ctx then
+            error(string.format(
+                "TerminalCtx.new_by_name: failed to create terminal instance '%s'", 
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_terminalctx_t *",
+            terminal_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+        
+        return modsmgr:get_singleton("terminal", module_name):as("TerminalCtx")
+    end
+
+    return M
+end
+
