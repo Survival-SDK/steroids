@@ -33,10 +33,13 @@ typedef st_modctx_t *(*st_ctx_ctor_t)(const st_param_t params[]);
 static const char *st_modctx_get_subsystem(const st_modctx_t *modctx);
 static const char *st_modctx_get_name(const st_modctx_t *modctx);
 
+#define ST_MODCTX_FUNCS                       \
+    ST_OBJECT_FUNCS,                          \
+    .get_subsystem = st_modctx_get_subsystem, \
+    .get_name      = st_modctx_get_name
+
 static const st_modctx_funcs_t st_modctx_funcs = {
-    st_object_funcs,
-    .get_subsystem = st_modctx_get_subsystem,
-    .get_name      = st_modctx_get_name,
+    ST_MODCTX_FUNCS,
 };
 
 static inline st_modctx_t *st_modctx_new(const char *subsystem, 

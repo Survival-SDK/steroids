@@ -28,12 +28,12 @@ static size_t st_dynarr_get_elements_count(const st_dynarr_t *dynarr);
 static bool st_dynarr_is_empty(const st_dynarr_t *dynarr);
 
 static st_dynarrctx_funcs_t dynarrctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create = st_dynarr_create,
 };
 
 static st_dynarr_funcs_t dynarr_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .append             = st_dynarr_append,
     .set                = st_dynarr_set,
     .clear              = st_dynarr_clear,

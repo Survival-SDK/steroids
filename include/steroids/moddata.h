@@ -48,7 +48,7 @@ static const st_modprerq_t *st_moddata_get_prereqs(
 static st_ctx_ctor_t st_moddata_get_ctx_ctor(const struct st_moddata *moddata);
 
 static const st_moddata_funcs_t st_moddata_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .get_subsystem = st_moddata_get_subsystem,
     .get_name      = st_moddata_get_name,
     .get_type      = st_moddata_get_type,

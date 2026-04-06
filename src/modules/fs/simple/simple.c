@@ -16,7 +16,7 @@ static st_filetype_t st_fs_get_file_type(st_fsctx_t *fs_ctx,
 static bool st_fs_mkdir(st_fsctx_t *fs_ctx, const char *dirname);
 
 static st_fsctx_funcs_t fsctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_file_type = st_fs_get_file_type,
     .mkdir         = st_fs_mkdir,
 };

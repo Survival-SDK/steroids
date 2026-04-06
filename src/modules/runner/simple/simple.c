@@ -20,7 +20,7 @@ static bool st_runner_run(st_runnablectx_t *runner_ctx,
  const st_param_t params[]);
 
 static st_runnerctx_funcs_t runnerctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .run = st_runner_run,
 };
 

@@ -17,7 +17,7 @@ static void *st_glloader_get_proc_address(st_glloaderctx_t *glloader_ctx,
  const char *funcname);
 
 static st_glloaderctx_funcs_t glloaderctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_proc_address = st_glloader_get_proc_address,
 };
 

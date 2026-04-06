@@ -46,14 +46,14 @@ static bool st_luajit_run_string(st_luajitstate_t *state, const char *string);
 static bool st_luajit_run_file(st_luajitstate_t *state, const char *filename);
 
 static st_luajitctx_funcs_t luajitctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .run       = st_luajit_run,
     .new_state = st_luajit_newstate,
     .get_state = st_luajit_getstate,
 };
 
 static st_luajitstate_funcs_t luajitstate_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .new_thread       = st_luajit_newthread,
     .run_named_string = st_luajit_run_named_string,
     .run_string       = st_luajit_run_string,

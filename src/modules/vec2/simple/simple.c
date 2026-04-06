@@ -68,7 +68,7 @@ static void st_vec2_default_basis_yvec(const st_vec2ctx_t *vec2_ctx,
  float *dst_x, float *dst_y);
 
 static st_vec2ctx_funcs_t vec2ctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .add                = st_vec2_add,
     .sum                = st_vec2_sum,
     .sub                = st_vec2_sub,

@@ -34,7 +34,7 @@ static st_modctx_t *st_modsmgr_get_singleton(const st_modsmgr_t *modsmgr,
 static void st_modsmgr_destroy(st_modsmgr_t *modsmgr);
 
 static st_modsmgr_funcs_t modsmgr_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .load_module      = st_modsmgr_load_module,
     .process_deps     = st_modsmgr_process_deps,
     .get_module_names = st_modsmgr_get_module_names,

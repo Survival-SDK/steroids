@@ -32,12 +32,12 @@ static bool st_drawq_sort(st_drawq_t *drawq);
 static bool st_drawq_clear(st_drawq_t *drawq);
 
 static st_drawqctx_funcs_t drawqctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create = st_drawq_create,
 };
 
 static st_drawq_funcs_t drawq_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .len          = st_drawq_len,
     .empty        = st_drawq_empty,
     .export_entry = st_drawq_export_entry,

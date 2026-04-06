@@ -33,13 +33,13 @@ static unsigned st_texture_get_width(const st_texture_t *texture);
 static unsigned st_texture_get_height(const st_texture_t *texture);
 
 static st_texturectx_funcs_t texturectx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .load    = st_texture_load,
     .memload = st_texture_memload,
 };
 
 static st_texture_funcs_t texture_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .bind       = st_texture_bind,
     .get_width  = st_texture_get_width,
     .get_height = st_texture_get_height,

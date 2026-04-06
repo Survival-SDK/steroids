@@ -54,7 +54,7 @@ static unsigned st_dpsrvconn_get_window_width(const st_window_t *window);
 static unsigned st_dpsrvconn_get_window_height(const st_window_t *window);
 
 static st_dpsrvconnctx_funcs_t dpsrvconnctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_monitors_count        = st_dpsrvconn_get_monitors_count,
     .get_primary_monitor_index = st_dpsrvconn_get_primary_monitor_index,
     .get_monitor_by_index      = st_dpsrvconn_get_monitor_by_index,
@@ -65,7 +65,7 @@ static st_dpsrvconnctx_funcs_t dpsrvconnctx_funcs = {
 };
 
 static st_monitor_funcs_t monitor_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .get_width                = st_dpsrvconn_get_monitor_width,
     .get_height               = st_dpsrvconn_get_monitor_height,
     .get_index                = st_dpsrvconn_get_monitor_index,
@@ -76,7 +76,7 @@ static st_monitor_funcs_t monitor_funcs = {
 };
 
 static st_window_funcs_t window_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .xed               = st_dpsrvconn_is_window_xed,
     .get_monitor       = st_dpsrvconn_get_window_monitor,
     .get_handle        = st_dpsrvconn_get_window_handle,

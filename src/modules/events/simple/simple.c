@@ -32,7 +32,7 @@ static bool st_events_drop(st_evq_t *queue);
 static bool st_events_clear(st_evq_t *queue);
 
 static st_eventsctx_funcs_t eventsctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .register_type = st_events_register_type,
     .get_type_id   = st_events_get_type_id,
     .create_queue  = st_events_create_queue,
@@ -40,7 +40,7 @@ static st_eventsctx_funcs_t eventsctx_funcs = {
 };
 
 static st_evq_funcs_t evq_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .subscribe       = st_events_subscribe,
     .unsubscribe     = st_events_unsubscribe,
     .unsubscribe_all = st_events_unsubscribe_all,

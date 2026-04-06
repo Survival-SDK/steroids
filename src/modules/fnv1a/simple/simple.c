@@ -24,7 +24,7 @@ static st_u32hashbytesfunc_t st_fnv1a_get_u32hashbytes_func(
  st_fnv1actx_t *fnv1a_ctx);
 
 static st_fnv1actx_funcs_t fnv1actx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .u32hash_string        = st_fnv1a_u32hash_string,
     .u32hash_bytes         = st_fnv1a_u32hash_bytes,
     .get_u32hashstr_func   = st_fnv1a_get_u32hashstr_func,

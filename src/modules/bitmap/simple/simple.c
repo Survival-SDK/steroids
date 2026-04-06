@@ -35,14 +35,14 @@ static unsigned st_bitmap_get_height(const st_bitmap_t *bitmap);
 static st_pxfmt_t st_bitmap_get_pixel_format(const st_bitmap_t *bitmap);
 
 static st_bitmapctx_funcs_t bitmapctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .load    = st_bitmap_load,
     .memload = st_bitmap_memload,
     .import  = st_bitmap_import,
 };
 
 static st_bitmap_funcs_t bitmap_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .save             = st_bitmap_save,
     .memsave          = st_bitmap_memsave,
     .get_data         = st_bitmap_get_data,

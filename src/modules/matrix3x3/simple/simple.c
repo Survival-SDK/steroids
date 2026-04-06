@@ -57,7 +57,7 @@ static void st_matrix3x3_get_data(const st_matrix3x3ctx_t *matrix3x3_ctx,
  float *r2c1, float *r2c2, float *r2c3);
 
 static st_matrix3x3ctx_funcs_t matrix3x3ctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .clone       = st_matrix3x3_clone,
     .custom      = st_matrix3x3_custom,
     .identity    = st_matrix3x3_identity,

@@ -36,7 +36,7 @@ static bool st_bmcodec_memsave(st_bmcodecctx_t *bmcodec_ctx, void *dst,
  size_t *size, const st_bitmap_t *bitmap, const char *format);
 
 static st_bmcodecctx_funcs_t bmcodecctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_priority = st_bmcodec_get_priority,
     .load         = st_bmcodec_load,
     .memload      = st_bmcodec_memload,

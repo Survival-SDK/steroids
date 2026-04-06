@@ -64,13 +64,13 @@ static bool st_gfxctx_get_userdata(const st_gfxctx_t *gfxctx,
  uintptr_t *dst, const char *key);
 
 static st_gfxctxctx_funcs_t gfxctxctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create        = st_gfxctx_create,
     .create_shared = st_gfxctx_create_shared,
 };
 
 static st_gfxctx_funcs_t gfxctx_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .make_current     = st_gfxctx_make_current,
     .swap_buffers     = st_gfxctx_swap_buffers,
     .get_window       = st_gfxctx_get_window,

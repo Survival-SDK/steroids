@@ -64,7 +64,7 @@ static void st_render_put_sprite_dvsheared(const st_renderctx_t *render_ctx,
 static void st_render_process(st_renderctx_t *render_ctx);
 
 static st_renderctx_funcs_t st_render_opengl_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .put_sprite           = st_render_put_sprite,
     .put_sprite_rdangled  = st_render_put_sprite_rdangled,
     .put_sprite_dgangled  = st_render_put_sprite_dgangled,

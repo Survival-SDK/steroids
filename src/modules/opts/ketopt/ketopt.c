@@ -29,7 +29,7 @@ static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
  size_t columns);
 
 static st_optsctx_funcs_t optsctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .add_option = st_opts_add_option,
     .get_str    = st_opts_get_str,
     .get_help   = st_opts_get_help,

@@ -23,12 +23,12 @@ static unsigned st_sprite_get_height(const st_sprite_t *sprite);
 static void st_sprite_export_uv(const st_sprite_t *sprite, st_uv_t *dstuv);
 
 static st_spritectx_funcs_t spritectx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .from_texture = st_sprite_from_texture,
 };
 
 static st_sprite_funcs_t sprite_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .get_texture = st_sprite_get_texture,
     .get_width   = st_sprite_get_width,
     .get_height  = st_sprite_get_height,

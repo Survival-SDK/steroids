@@ -30,10 +30,13 @@ static const st_object_t *st_object_get_owner(const void *obj);
 static st_object_t *st_object_get_owner_unsafe(void *obj);
 static void st_object_destroy(void *obj);
 
+#define ST_OBJECT_FUNCS                             \
+    .get_owner        = st_object_get_owner,        \
+    .get_owner_unsafe = st_object_get_owner_unsafe, \
+    .destroy          = st_object_destroy
+
 static const st_object_funcs_t st_object_funcs = {
-    .get_owner        = st_object_get_owner,
-    .get_owner_unsafe = st_object_get_owner_unsafe,
-    .destroy          = st_object_destroy,
+    ST_OBJECT_FUNCS,
 };
 
 static st_object_t *st_object_init(st_object_t *obj, const void *funcs,

@@ -17,7 +17,7 @@ static void st_timer_sleep_for_fps(const st_timerctx_t *timer_ctx,
  unsigned fps);
 
 static st_timerctx_funcs_t timerctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .start         = st_timer_start,
     .get_elapsed   = st_timer_get_elapsed,
     .sleep         = st_timer_sleep,
