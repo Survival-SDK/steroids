@@ -30,8 +30,7 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_LUAJIT_LUAJIT})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LUAJIT REQUIRED luajit)
+find_package(luajit REQUIRED)
 
 target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
@@ -47,10 +46,9 @@ target_include_directories(${ST_MODULE_TARGET} PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/src"
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${LUAJIT_INCLUDE_DIRS}
 )
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
     dlist
-    ${LUAJIT_STATIC_LDFLAGS}
+    luajit::luajit
 )

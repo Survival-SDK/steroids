@@ -676,6 +676,38 @@ static void st_try_to_enable_debug(st_gfxctx_t *gfxctx,
     gfxctx_ctx->debug_enabled = true;
 }
 
+static EGLDisplay st_get_egl_display(EGLNativeDisplayType native_display) {
+#if defined(__linux__)
+    PFNEGLGETPLATFORMDISPLAYPROC platform_display =
+     (PFNEGLGETPLATFORMDISPLAYPROC)eglGetProcAddress("eglGetPlatformDisplay");
+    PFNEGLGETPLATFORMDISPLAYEXTPROC platform_display_ext =
+     (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress(
+      "eglGetPlatformDisplayEXT");
+
+    if (platform_display || platform_display_ext) {
+        #ifdef EGL_PLATFORM_WAYLAND_KHR
+            EGLDisplay display = platform_display
+                ? platform_display(EGL_PLATFORM_WAYLAND_KHR, native_display, 
+                   NULL)
+                : platform_display_ext(EGL_PLATFORM_WAYLAND_KHR, native_display,
+                   NULL);
+            if (display != EGL_NO_DISPLAY)
+                return display;
+        #endif
+        #ifdef EGL_PLATFORM_X11_KHR
+            display = platform_display
+                ? platform_display(EGL_PLATFORM_X11_KHR, native_display, NULL)
+                : platform_display_ext(EGL_PLATFORM_X11_KHR, native_display, 
+                   NULL);
+            if (display != EGL_NO_DISPLAY)
+                return display;
+        #endif
+    }
+#endif
+
+    return eglGetDisplay(native_display);
+}
+
 static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
  st_monitor_t *monitor, st_window_t *window, EGLint renderable_type,
  EGLint major, EGLint minor, st_gfxctx_t *shared) {
@@ -718,13 +750,15 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
     if (!gfxctx->userdata)
         goto udata_fail;
 
-    gfxctx->display = eglGetDisplay(
+    gfxctx->display = st_get_egl_display(
      (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_native_device_handle));
 
     if (gfxctx->display == EGL_NO_DISPLAY) {
+        EGLint egl_error = eglGetError();
+
         ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
-         "%s_%s: Unable to get EGL display", st_module_subsystem,
-         st_module_name);
+         "%s_%s: Unable to get EGL display: %s (0x%x)", st_module_subsystem,
+         st_module_name, get_egl_error_str(egl_error), egl_error);
 
         goto get_display_fail;
     }

@@ -37,7 +37,6 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
-    "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )

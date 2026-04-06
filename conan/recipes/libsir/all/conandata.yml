@@ -1,0 +1,4 @@
+sources:
+  "2.2.5":
+    url: "https://github.com/aremmell/libsir/archive/refs/tags/v2.2.5.tar.gz"
+    sha256: "5aa8a3b71d0a22893888a771309d53df8bd5aa7ebedf277f3251538b8d618814"

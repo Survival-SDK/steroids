@@ -1,19 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_MODULE_PATH ${BB_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+project(steroids LANGUAGES C)
 
 include(barebones/barebones)
 include(options)
 include(build-module)
-
-project(steroids LANGUAGES C)
-
-set(CMAKE_MODULE_PATH
-    "${CMAKE_SOURCE_DIR}/cmake"
-    "${CMAKE_SOURCE_DIR}/cmake/modules"
-)
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/common/slist"
  "${CMAKE_BINARY_DIR}/src/common/slist")

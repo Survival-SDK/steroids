@@ -40,8 +40,9 @@ function(st_build_luajitbind_module MODULE_NAME MODULE_TYPE_VAR)
     st_add_module(${ST_MODULE_TARGET} ${${MODULE_TYPE_VAR}})
     st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LUAJIT REQUIRED luajit)
+    find_package(luajit REQUIRED)
+    get_target_property(LUAJIT_INCLUDE_DIRS luajit::luajit 
+        INTERFACE_INCLUDE_DIRECTORIES)
 
     target_compile_options(${ST_MODULE_TARGET} PRIVATE 
         ${C_COMPILE_OPTIONS} -fms-extensions)
@@ -55,14 +56,10 @@ function(st_build_luajitbind_module MODULE_NAME MODULE_TYPE_VAR)
     bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
     target_include_directories(${ST_MODULE_TARGET} PRIVATE
+        ${LUAJIT_INCLUDE_DIRS}
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/.."
         ${CMAKE_CURRENT_BINARY_DIR}
-        ${LUAJIT_INCLUDE_DIRS}
-    )
-
-    target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-        ${LUAJIT_STATIC_LDFLAGS}
     )
 endfunction()

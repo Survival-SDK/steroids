@@ -232,7 +232,11 @@ static bool init_sdl3(st_dpsrvconnctx_t *dpsrvconn_ctx) {
 static void update_current_video_driver(st_dpsrvconnctx_t *dpsrvconn_ctx) {
     const char *video_driver = dpsrvconn_ctx->sdl3.get_current_video_driver();
     
-    if (!video_driver) {        
+    if (video_driver) {
+        ST_LOGGERCTX_CALL(dpsrvconn_ctx->logger_ctx, debug,
+         "%s_%s: Current SDL3video backend: %s", st_module_subsystem,
+         st_module_name, video_driver);
+    } else {        
         ST_LOGGERCTX_CALL(dpsrvconn_ctx->logger_ctx, error,
          "%s_%s: Unable to detect current video backend. Using native device "
          "handle is not supported on this run", st_module_subsystem,
@@ -843,6 +847,16 @@ static st_window_t *st_dpsrvconn_open_window(st_dpsrvconnctx_t *dpsrvconn_ctx,
                 window->native_handle = dpsrvconn_ctx->sdl3.
                  get_pointer_property(actual_props,
                   SDL_PROP_WINDOW_WAYLAND_EGL_WINDOW_POINTER, NULL);
+
+                if (!dpsrvconn_ctx->native_display)
+                    ST_LOGGERCTX_CALL(dpsrvconn_ctx->logger_ctx, error,
+                     "%s_%s: Unable to get Wayland display pointer", 
+                     st_module_subsystem, st_module_name);
+
+                if (!window->native_handle)
+                    ST_LOGGERCTX_CALL(dpsrvconn_ctx->logger_ctx, error,
+                     "%s_%s: Unable to get Wayland EGL window pointer", 
+                     st_module_subsystem, st_module_name);
 
                 break;
             }

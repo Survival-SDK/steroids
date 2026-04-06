@@ -16,46 +16,91 @@ run-image:
 	docker run --net=host -i -t -v ~/.vgazer:/root/.vgazer \
      -v `pwd`:/mnt/steroids --entrypoint sh steroids-deps-$(TRIPLET)
 
-release:
-	docker run --net=host -i -t \
-     -v ~/.vgazer:/root/.vgazer -v `pwd`:/mnt/steroids \
-     --entrypoint sh steroids-deps-$(TRIPLET) \
-     -E -c "make bb_build_release $(TOOLCHAIN_OPT) $(INCLUDE_OPT)" \
-    | tee build.log
+# release:
+# 	docker run --net=host -i -t \
+#      -v `pwd`:/mnt/steroids \
+#      --entrypoint sh steroids-deps-$(TRIPLET) \
+#      -E -c "cd /mnt/steroids && \
+#             mkdir -p cmake_build && \
+#             conan install ./conan \
+#              --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+#              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+#              --output-folder=cmake_build --build=missing && \
+#             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Release \
+#              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake && \
+#             cmake --build cmake_build" | tee build.log
 
 debug:
 	docker run --net=host -i -t \
-     -v ~/.vgazer:/root/.vgazer -v `pwd`:/mnt/steroids \
+     -v `pwd`:/mnt/steroids \
      --entrypoint sh steroids-deps-$(TRIPLET) \
-     -E -c "make bb_build_debug $(TOOLCHAIN_OPT) $(INCLUDE_OPT)" | tee build.log
+     -E -c "cd /mnt/steroids && \
+            mkdir -p cmake_build && \
+            conan install ./conan \
+             --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+             --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+             --output-folder=cmake_build --build=missing && \
+            cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
+             -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
+             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+             -DBB_MORE_WARNINGS=ON && \
+            cmake --build cmake_build" | tee build.log
 
-coverage:
-	docker run --net=host -i -t \
-     -v ~/.vgazer:/root/.vgazer -v `pwd`:/mnt/steroids \
-     --entrypoint sh steroids-deps-$(TRIPLET) \
-     -E -c "make bb_build_coverage $(TOOLCHAIN_OPT) $(INCLUDE_OPT)" \
-    | tee build.log
+# coverage:
+# 	docker run --net=host -i -t \
+#      -v `pwd`:/mnt/steroids \
+#      --entrypoint sh steroids-deps-$(TRIPLET) \
+#      -E -c "cd /mnt/steroids && \
+#             mkdir -p cmake_build && \
+#             conan install ./conan \
+#              --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+#              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+#              --output-folder=cmake_build --build=missing && \
+#             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
+#              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
+#              -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage' 
+          #    -DBB_MORE_WARNINGS=ON && \
+#             cmake --build cmake_build" | tee build.log
 
-lint:
-	docker run --net=host -i -t \
-     -v ~/.vgazer:/root/.vgazer -v `pwd`:/mnt/steroids \
-     --entrypoint sh steroids-deps-$(TRIPLET) \
-     -E -c "make bb_build_lint $(TOOLCHAIN_OPT) $(INCLUDE_OPT)" | tee build.log
+# lint:
+# 	docker run --net=host -i -t \
+#      -v `pwd`:/mnt/steroids \
+#      --entrypoint sh steroids-deps-$(TRIPLET) \
+#      -E -c "cd /mnt/steroids && \
+#             mkdir -p cmake_build && \
+#             conan install ./conan \
+#              --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+#              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+#              --output-folder=cmake_build --build=missing && \
+#             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
+#              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
+#              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+#              -DCMAKE_C_CLANG_TIDY='clang-tidy' 
+          #    -DBB_MORE_WARNINGS=ON && \
+#             cmake --build cmake_build" | tee build.log
 
-iwyu:
-	docker run --net=host -i -t \
-     -v ~/.vgazer:/root/.vgazer -v `pwd`:/mnt/steroids \
-     --entrypoint sh steroids-deps-$(TRIPLET) \
-     -E -c "make bb_build_iwyu $(TOOLCHAIN_OPT) $(INCLUDE_OPT)" | tee build.log
+# iwyu:
+# 	docker run --net=host -i -t \
+#      -v `pwd`:/mnt/steroids \
+#      --entrypoint sh steroids-deps-$(TRIPLET) \
+#      -E -c "cd /mnt/steroids && \
+#             mkdir -p cmake_build && \
+#             conan install ./conan \
+#              --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+#              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+#              --output-folder=cmake_build --build=missing && \
+#             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
+#              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
+#              -DCMAKE_C_INCLUDE_WHAT_YOU_USE='iwyu' \
+#              -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE='iwyu' 
+          #    -DBB_MORE_WARNINGS=ON && \
+#             cmake --build cmake_build" | tee build.log
 
 lint_build: bb_lint_build
 
 install: bb_install
 
 clean: bb_clean
-
-dockerfiles/deps-$(TRIPLET).dockerfile: deps/$(TRIPLET) scripts/build_dockerfile.py
-	scripts/build_dockerfile.py --target=$(TRIPLET)
 
 build-image: dockerfiles/deps-$(TRIPLET).dockerfile
 	docker build --progress=plain --network=host --no-cache \

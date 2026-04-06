@@ -28,13 +28,7 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_RBUF_LWRB})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-bb_find_library(
-  VAR_PREFIX LWRB
-  NAME lwrb
-  FILENAMES lwrb
-  COMPILER_OPTIONS -llwrb
-  REQUIRED
-)
+find_package(lwrb REQUIRED)
 
 target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
@@ -44,11 +38,10 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
-    "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-    ${LWRB_LIBRARY}
+    lwrb::lwrb
 )

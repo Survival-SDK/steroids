@@ -28,15 +28,10 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_INI_INIH})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-bb_find_library(
-  VAR_PREFIX INIH
-  NAME inih
-  FILENAMES inih
-  COMPILER_OPTIONS -linih
-  REQUIRED
-)
+find_package(inih REQUIRED)
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} 
+    -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "inih.c"
 )
@@ -49,11 +44,10 @@ bb_add_iwyu_mapping_file(
 )
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
-    "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-    ${INIH_LIBRARY}
+    inih::inih
 )

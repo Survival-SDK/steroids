@@ -28,6 +28,9 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_BMCODEC_STB_IMAGE})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
+find_package(stb CONFIG REQUIRED)
+get_target_property(STB_INCLUDE_DIRS stb::stb INTERFACE_INCLUDE_DIRECTORIES)
+
 target_compile_options(${ST_MODULE_TARGET} PRIVATE
     ${C_COMPILE_OPTIONS}
     -fms-extensions
@@ -39,6 +42,7 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
+    ${STB_INCLUDE_DIRS}
     "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
