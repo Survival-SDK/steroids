@@ -28,8 +28,14 @@ endfunction()
 # Script mode: execute when called with -P
 if(CMAKE_SCRIPT_MODE_FILE)
     file(READ "${SRC_FILE}" CONTENT)
+    string(REPLACE "\r\n" "\n" CONTENT "${CONTENT}")
+    string(REPLACE "\\" "\\\\" CONTENT "${CONTENT}")
+    string(REPLACE "\"" "\\\"" CONTENT "${CONTENT}")
+
+    string(REPLACE "\n" "\\n\" \\\n\"" CONTENT "${CONTENT}")
+
     file(WRITE "${DST_FILE}"
         "#pragma once\n\n"
-        "#define ${CONST_NAME} R\"\"\"\"(${CONTENT})\"\"\"\"\n"
+        "#define ${CONST_NAME} \"${CONTENT}\"\n"
     )
 endif()
