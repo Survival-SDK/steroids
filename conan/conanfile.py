@@ -82,7 +82,8 @@ class SteroidsConan(ConanFile):
     
     def generate(self):
         # Warmup mode for Docker image build: populate Conan cache only.
-        if self.conf.get("user.steroids:cache_warmup", default=False, check_type=bool):
+        if self.conf.get("user.steroids:cache_warmup", default=False, 
+         check_type=bool):
             self.output.info("Cache warmup mode enabled: skipping generators")
             return
 
