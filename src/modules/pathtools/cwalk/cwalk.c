@@ -43,9 +43,8 @@ st_moddata_t *st_module_pathtools_cwalk_init(st_modsmgr_t *modsmgr) {
 }
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_pathtools_cwalk_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_pathtools_cwalk_init(modsmgr);
 }
 #endif
 
@@ -93,30 +92,32 @@ static bool st_pathtools_is_iri(const char *path) {
 }
 
 static void st_pathtools_to_unix(char *dst, size_t dstsize, const char *path) {
-    bool scheme_skipped = !st_pathtools_is_iri(path);
+    if (!dst || dstsize == 0)
+        return;
 
     if (st_pathtools_is_iri(path)) {
         bool scheme_ending_begin = false;
-        bool first_slashes_begin = false;
 
-        while (path && *path && dstsize--) {
+        while (path && *path && dstsize-- > 1) {
+            bool should_stop_scheme = false;
+
             if (*path == ':')
                 scheme_ending_begin = true;
             *dst++ = *path;
-            if (scheme_ending_begin && isalnum(*path++))
+            if (scheme_ending_begin)
+                should_stop_scheme = isalnum(*path);
+            path++;
+            if (should_stop_scheme)
                 break;
         }
     }
 
-    while (path && *path && dstsize--) {
+    while (path && *path && dstsize-- > 1) {
         *dst++ = *path == '\\' ? '/' : *path;
         path++;
     }
 
-    if (dstsize == 0)
-        *dst == '\0';
-    else
-        *++dst == '\0';
+    *dst = '\0';
 }
 
 static bool st_pathtools_is_absolute(const char *path) {
@@ -160,7 +161,7 @@ static bool st_pathtools_resolve(st_pathtoolsctx_t *pathtools_ctx, char *dst,
         }
         case ST_PT_ABSOLUTE:
         case ST_PT_RELATIVE:
-            return cwk_path_normalize(path, dst, dstsize) < dstsize;
+            return cwk_path_normalize(unix_path, dst, dstsize) < dstsize;
         default:
             break;
     }

@@ -51,9 +51,8 @@ st_moddata_t *st_module_opts_ketopt_init(st_modsmgr_t *modsmgr) {
 }
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_opts_ketopt_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_opts_ketopt_init(modsmgr);
 }
 #endif
 
@@ -250,7 +249,6 @@ static bool st_opts_get_str(st_optsctx_t *opts_ctx, const char *opt, char *dst,
 
 static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
  size_t columns) {
-    size_t block_size;
     size_t opts_columns;
     size_t descr_columns;
     int    ret;
@@ -341,7 +339,7 @@ static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
         }
 
         ret = snprintf(dst, dstsize, "%*s",
-         (opts_len > opts_columns) ? opts_columns : (opts_columns - opts_len),
+         (opts_len > opts_columns) ? (int)opts_columns : (int)(opts_columns - opts_len),
          "");
         if (ret < 0 || (size_t)ret == dstsize)
             return false;
@@ -382,7 +380,7 @@ static bool st_opts_get_help(st_optsctx_t *opts_ctx, char *dst, size_t dstsize,
                     return false;
                 *dst++ = '\n';
 
-                ret = snprintf(dst, dstsize, "%*s", opts_columns, "");
+                ret = snprintf(dst, dstsize, "%*s", (int)opts_columns, "");
                 if (ret < 0 || (size_t)ret == dstsize)
                     return false;
                 dst += ret;

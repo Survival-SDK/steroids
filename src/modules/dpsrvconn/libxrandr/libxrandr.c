@@ -602,7 +602,6 @@ static void fullscreen_window(st_dpsrvconnctx_t *dpsrvconn_ctx, Window window,
     XWindowAttributes attrs;
     XEvent            event = {0};
     Atom              net_wm_fullscreen_monitors;
-    Bool              ewmh_supported = False;
     Display          *display = dpsrvconn_ctx->display;
 
     XGetWindowAttributes(display, window, &attrs);

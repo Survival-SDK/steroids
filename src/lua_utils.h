@@ -8,7 +8,7 @@
 #endif
 #include <lauxlib.h>
 
-static int st_lua_traceback(lua_State *lua_state) {
+static inline int st_lua_traceback(lua_State *lua_state) {
     lua_getfield(lua_state, LUA_GLOBALSINDEX, "debug");
     lua_getfield(lua_state, -1, "traceback");
     lua_pushvalue(lua_state, 1);
@@ -18,16 +18,17 @@ static int st_lua_traceback(lua_State *lua_state) {
     return 1;
 }
 
-static void *st_lua_create_userdata(lua_State *lua_state, size_t size) {
+static inline void *st_lua_create_userdata(lua_State *lua_state, size_t size) {
     return lua_newuserdata(lua_state, size);
 }
 
-static void st_lua_create_metatable(lua_State *lua_state,
+static inline void st_lua_create_metatable(lua_State *lua_state,
  const char *name) {
     luaL_newmetatable(lua_state, name);
 }
 
-static void st_lua_create_module(lua_State *lua_state, const char *name) {
+static inline void st_lua_create_module(lua_State *lua_state, 
+ const char *name) {
     lua_getfield(lua_state, LUA_GLOBALSINDEX, "package");
     lua_getfield(lua_state, -1, "loaded");
     lua_newtable(lua_state);
@@ -35,7 +36,8 @@ static void st_lua_create_module(lua_State *lua_state, const char *name) {
     lua_getfield(lua_state, -1, name);
 }
 
-static void st_lua_set_metatable(lua_State *lua_state, const char *name) {
+static inline void st_lua_set_metatable(lua_State *lua_state, 
+ const char *name) {
     #if LUA_VERSION_NUM >= 502 || defined(LUAJIT_VERSION)
         luaL_setmetatable((lua_State *)lua_state, name);
     #else
@@ -46,66 +48,66 @@ static void st_lua_set_metatable(lua_State *lua_state, const char *name) {
     #endif
 }
 
-static void st_lua_push_bool(lua_State *lua_state, bool val) {
+static inline void st_lua_push_bool(lua_State *lua_state, bool val) {
     lua_pushboolean(lua_state, val);
 }
 
-static void st_lua_push_integer(lua_State *lua_state, ptrdiff_t val) {
+static inline void st_lua_push_integer(lua_State *lua_state, ptrdiff_t val) {
     lua_pushinteger(lua_state, val);
 }
 
-static void st_lua_push_double(lua_State *lua_state, double val) {
+static inline void st_lua_push_double(lua_State *lua_state, double val) {
     lua_pushnumber(lua_state, val);
 }
 
-static void st_lua_push_nil(lua_State *lua_state) {
+static inline void st_lua_push_nil(lua_State *lua_state) {
     lua_pushnil(lua_state);
 }
 
-static void st_lua_push_string(lua_State *lua_state, const char *str) {
+static inline void st_lua_push_string(lua_State *lua_state, const char *str) {
     lua_pushstring(lua_state, str);
 }
 
-static void st_lua_set_nil_to_field(lua_State *lua_state,
+static inline void st_lua_set_nil_to_field(lua_State *lua_state,
  const char *name) {
     lua_pushnil(lua_state);
     lua_setfield(lua_state, -2, name);
 }
 
-static void st_lua_set_integer_to_field(lua_State *lua_state,
+static inline void st_lua_set_integer_to_field(lua_State *lua_state,
  const char *name, ptrdiff_t integer) {
     lua_pushinteger(lua_state, integer);
     lua_setfield(lua_state, -2, name);
 }
 
-static void st_lua_set_cfunction_to_field(lua_State *lua_state,
+static inline void st_lua_set_cfunction_to_field(lua_State *lua_state,
  const char *name, void *cfunction) {
     lua_pushcfunction(lua_state, cfunction);
     lua_setfield(lua_state, -2, name);
 }
 
-static void st_lua_set_pointer_to_field(lua_State *lua_state,
+static inline void st_lua_set_pointer_to_field(lua_State *lua_state,
  const char *name, void *pointer) {
     lua_pushlightuserdata(lua_state, pointer);
     lua_setfield(lua_state, -2, name);
 }
 
-static void st_lua_set_ffifunction_to_field(lua_State *lua_state,
+static inline void st_lua_set_ffifunction_to_field(lua_State *lua_state,
  const char *name, void *ffifunction) {
     st_lua_set_pointer_to_field(lua_state, name, ffifunction);
 }
 
-static void st_lua_set_copy_to_field(lua_State *lua_state,
+static inline void st_lua_set_copy_to_field(lua_State *lua_state,
  const char *name, int index) {
     lua_pushvalue(lua_state, index);
     lua_setfield(lua_state, -2, name);
 }
 
-static bool st_lua_get_bool(lua_State *lua_state, int index) {
+static inline bool st_lua_get_bool(lua_State *lua_state, int index) {
     return lua_toboolean(lua_state, index);
 }
 
-static char st_lua_get_char(lua_State *lua_state, int index) {
+static inline char st_lua_get_char(lua_State *lua_state, int index) {
     size_t      len;
     const char *str = lua_tolstring(lua_state, index, &len);
 
@@ -114,38 +116,39 @@ static char st_lua_get_char(lua_State *lua_state, int index) {
         : '\0';
 }
 
-static ptrdiff_t st_lua_get_integer(lua_State *lua_state, int index) {
+static inline ptrdiff_t st_lua_get_integer(lua_State *lua_state, int index) {
     return luaL_checkinteger(lua_state, index);
 }
 
-static double st_lua_get_double(lua_State *lua_state, int index) {
+static inline double st_lua_get_double(lua_State *lua_state, int index) {
     return luaL_checknumber(lua_state, index);
 }
 
-static const char *st_lua_get_lstring_or_null(lua_State *lua_state, int index,
- size_t *len) {
+static inline const char *st_lua_get_lstring_or_null(lua_State *lua_state, 
+ int index, size_t *len) {
     return lua_tolstring(lua_state, index, len);
 }
 
-static const char *st_lua_get_string(lua_State *lua_state, int index) {
+static inline const char *st_lua_get_string(lua_State *lua_state, int index) {
     return luaL_checkstring(lua_state, index);
 }
 
-static const char *st_lua_get_string_or_null(lua_State *lua_state, int index) {
+static inline const char *st_lua_get_string_or_null(lua_State *lua_state, 
+ int index) {
     return lua_tostring(lua_state, index);
 }
 
-static void *st_lua_get_userdata(lua_State *lua_state, int index) {
+static inline void *st_lua_get_userdata(lua_State *lua_state, int index) {
     return lua_touserdata(lua_state, index);
 }
 
-static void *st_lua_get_named_userdata(lua_State *lua_state, int index,
+static inline void *st_lua_get_named_userdata(lua_State *lua_state, int index,
  const char *name) {
     return luaL_checkudata(lua_state, index, name);
 }
 
-static void *st_lua_get_named_userdata_or_null(lua_State *lua_state, int index,
- const char *name) {
+static inline void *st_lua_get_named_userdata_or_null(lua_State *lua_state, 
+ int index, const char *name) {
     #if LUA_VERSION_NUM >= 502 || defined(LUAJIT_VERSION)
         return luaL_testudata((lua_State *)lua_state, index, name);
     #else
@@ -168,7 +171,7 @@ static void *st_lua_get_named_userdata_or_null(lua_State *lua_state, int index,
     #endif
 }
 
-static void *st_lua_get_global_userdata(lua_State *lua_state,
+static inline void *st_lua_get_global_userdata(lua_State *lua_state,
  const char *name) {
     void *userdata;
 
@@ -179,27 +182,27 @@ static void *st_lua_get_global_userdata(lua_State *lua_state,
     return userdata;
 }
 
-static void st_lua_register_cfunction(lua_State *lua_state, const char *name,
- void *cfunction) {
+static inline void st_lua_register_cfunction(lua_State *lua_state, 
+ const char *name, void *cfunction) {
     lua_register(lua_state, name, cfunction);
 }
 
-static void st_lua_pop(lua_State *lua_state, size_t elements_count) {
+static inline void st_lua_pop(lua_State *lua_state, size_t elements_count) {
     lua_pop(lua_state, (int)elements_count);
 }
 
-static void st_lua_raise_error(lua_State *lua_state, const char *msg) {
+static inline void st_lua_raise_error(lua_State *lua_state, const char *msg) {
     luaL_error(lua_state, "%s", msg);
 }
 
-static void st_lua_save_ptr_in_registry_by_ptr(lua_State *lua_state, void *key,
- void *data) {
+static inline void st_lua_save_ptr_in_registry_by_ptr(lua_State *lua_state, 
+ void *key, void *data) {
     lua_pushlightuserdata(lua_state, key);
     lua_pushlightuserdata(lua_state, data);
     lua_settable(lua_state, LUA_REGISTRYINDEX);
 }
 
-static void *st_lua_get_ptr_from_registry_by_ptr(lua_State *lua_state,
+static inline void *st_lua_get_ptr_from_registry_by_ptr(lua_State *lua_state,
  void *key) {
     lua_pushlightuserdata(lua_state, key);
     lua_gettable(lua_state, LUA_REGISTRYINDEX);

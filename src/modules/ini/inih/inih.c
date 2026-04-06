@@ -20,9 +20,6 @@ typedef struct {
     const char *filename;
 } st_userdata_t;
 
-static st_modsmgr_t      *global_modsmgr;
-static st_modsmgr_funcs_t global_modsmgr_funcs;
-
 static st_inictx_t *st_ini_init(const st_param_t params[]);
 static void st_ini_quit(st_inictx_t *ini_ctx);
 static void st_ini_destroy(st_ini_t *ini);
@@ -87,14 +84,10 @@ st_moddata_t *st_module_ini_inih_init(st_modsmgr_t *modsmgr) {
 }
 
 #ifdef ST_MODULE_TYPE_shared
-st_moddata_t *st_module_init(st_modsmgr_t *modsmgr,
- st_modsmgr_funcs_t *modsmgr_funcs) {
-    return st_module_ini_inih_init(modsmgr, modsmgr_funcs);
+st_moddata_t *st_module_init(st_modsmgr_t *modsmgr) {
+    return st_module_ini_inih_init(modsmgr);
 }
 #endif
-
-static const char *st_module_subsystem = "ini";
-static const char *st_module_name = "inih";
 
 static st_inictx_t *st_ini_init(const st_param_t params[]) {
     st_modsmgr_t   *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
@@ -449,8 +442,7 @@ valdup_fail:
 
 static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize) {
     const st_inictx_t *ini_ctx = (const st_inictx_t *)st_object_get_owner(ini);
-    st_htiter_t        section_it;
-    size_t             bufoffset;
+    st_htiter_t section_it;
 
     if (!ST_HTABLE_CALL(ini->sections, get_first, &section_it))
         return true;

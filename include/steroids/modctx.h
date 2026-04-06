@@ -39,8 +39,9 @@ static const st_modctx_funcs_t st_modctx_funcs = {
     .get_name      = st_modctx_get_name,
 };
 
-static st_modctx_t *st_modctx_new(const char *subsystem, const char *name,
- size_t size, void *module, const void *funcs, st_object_dtor_t dtor) {
+static inline st_modctx_t *st_modctx_new(const char *subsystem, 
+ const char *name, size_t size, void *module, const void *funcs, 
+ st_object_dtor_t dtor) {
     st_modctx_t *ctx = (st_modctx_t *)st_object_new(
      size ?: sizeof(st_modctx_t), funcs ?: &st_modctx_funcs, dtor, module);
 
@@ -58,7 +59,7 @@ static const char *st_modctx_get_name(const st_modctx_t *modctx) {
     return modctx->st_name;
 }
 
-static const st_param_t *st_modctx_get_param(const st_param_t params[],
+static inline const st_param_t *st_modctx_get_param(const st_param_t params[],
  const char *key) {
     const st_param_t *param;
 
@@ -77,7 +78,7 @@ static const st_param_t *st_modctx_get_param(const st_param_t params[],
     return NULL;
 }
 
-static void *st_modctx_get_param_as_ptr(const st_param_t params[],
+static inline void *st_modctx_get_param_as_ptr(const st_param_t params[],
  const char *key) {
     const st_param_t *param = st_modctx_get_param(params, key);
 
@@ -86,7 +87,7 @@ static void *st_modctx_get_param_as_ptr(const st_param_t params[],
         : NULL;
 }
 
-static int st_modctx_get_param_as_int(const st_param_t params[],
+static inline int st_modctx_get_param_as_int(const st_param_t params[],
  const char *key) {
     const st_param_t *param = st_modctx_get_param(params, key);
 
@@ -95,7 +96,7 @@ static int st_modctx_get_param_as_int(const st_param_t params[],
         : 0;
 }
 
-static bool st_modctx_get_param_as_bool(const st_param_t params[],
+static inline bool st_modctx_get_param_as_bool(const st_param_t params[],
  const char *key) {
     return !!st_modctx_get_param(params, key);
 }

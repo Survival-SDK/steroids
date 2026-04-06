@@ -56,9 +56,9 @@ static const st_moddata_funcs_t st_moddata_funcs = {
     .get_ctx_ctor  = st_moddata_get_ctx_ctor,
 };
 
-static st_moddata_t *st_moddata_new(const char *subsystem, const char *name,
- const char *type, const st_modprerq_t *prereqs, void *ctx_ctor,
- void *modsmgr) {
+static inline st_moddata_t *st_moddata_new(const char *subsystem, 
+ const char *name, const char *type, const st_modprerq_t *prereqs, 
+ void *ctx_ctor, void *modsmgr) {
     st_moddata_t *moddata = (st_moddata_t *)st_object_new(
      sizeof(st_moddata_t), &st_moddata_funcs, NULL, modsmgr);
 

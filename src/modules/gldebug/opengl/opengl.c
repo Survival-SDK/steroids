@@ -94,7 +94,7 @@ static bool glapi_least(st_gapi_t current_api, st_gapi_t req_api) {
 }
 
 static bool extension_supported(st_gldebugctx_t *gldebug_ctx, const char *ext) {
-    const char *extensions;
+    const GLubyte *extensions;
 
     if (glapi_least(gldebug_ctx->api, ST_GAPI_GL3)) {
         GLint extensions_count;
@@ -104,14 +104,15 @@ static bool extension_supported(st_gldebugctx_t *gldebug_ctx, const char *ext) {
             return false;
 
         for (GLuint i = 0; i < (GLuint)extensions_count; i++) {
-            if (strcmp(gldebug_ctx->gl.get_string_i(GL_EXTENSIONS, i), ext) == 0)
+            if (strcmp((const char *)gldebug_ctx->gl.get_string_i(GL_EXTENSIONS, 
+             i), ext) == 0)
                 return true;
         }
     }
 
     extensions = glGetString(GL_EXTENSIONS);
 
-    return extensions && strstr(extensions, ext);
+    return extensions && strstr((const char *)extensions, ext);
 }
 
 static void *glfuncs_load_with_check(st_glloaderctx_t *glloader_ctx,

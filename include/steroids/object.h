@@ -49,15 +49,15 @@ static st_object_t *st_object_init(st_object_t *obj, const void *funcs,
     return obj;
 }
 
-static st_object_t *st_object_new(size_t size, const void *funcs,
+static inline st_object_t *st_object_new(size_t size, const void *funcs,
  st_object_dtor_t dtor, st_object_t *owner) {
     st_object_t *obj = malloc(size ?: sizeof(st_object_t));
 
     return st_object_init(obj, funcs, dtor, owner);
 }
 
-static st_object_t *st_object_placement_new(void *buffer, const void *funcs,
- st_object_dtor_t dtor, st_object_t *owner) {
+static inline st_object_t *st_object_placement_new(void *buffer, 
+ const void *funcs, st_object_dtor_t dtor, st_object_t *owner) {
     return dtor
         ? st_object_init(buffer, funcs, dtor, owner)
         : NULL;
@@ -71,7 +71,7 @@ static st_object_t *st_object_get_owner_unsafe(void *obj) {
     return ((st_object_t *)obj)->st_owner;
 }
 
-static void st_object_destroy(void *obj) {
+static inline void st_object_destroy(void *obj) {
     if (((st_object_t *)obj)->st_dtor)
         ((st_object_t *)obj)->st_dtor(obj);
     else
@@ -79,11 +79,11 @@ static void st_object_destroy(void *obj) {
 }
 
 /* For stack objects, created with placement new */
-static void st_object_fake_dtor(void *obj) {
+static inline void st_object_fake_dtor(void *obj) {
     /* noop */
 }
 
 /* Destructor for object pointer placed inside container */
-static void st_object_free_by_ptr(void *objptr) {
+static inline void st_object_free_by_ptr(void *objptr) {
     st_object_destroy(*(void **)objptr);
 }

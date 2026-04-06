@@ -293,7 +293,7 @@ static bool st_modsmgr_have_singleton(const st_modsmgr_t *modsmgr,
 }
 
 static st_modctx_t *st_modsmgr_create_singleton(const st_modsmgr_t *modsmgr,
- const char *subsystem, const char *module_name, st_param_t params[]) {
+ const char *subsystem, const char *module_name, st_params_t params) {
     if (!st_modsmgr_have_singleton(modsmgr, subsystem, module_name)) {
         st_moddata_t *module_data = st_modsmgr_find_module(modsmgr, subsystem,
         module_name);

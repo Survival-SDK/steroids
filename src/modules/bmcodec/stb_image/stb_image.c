@@ -15,6 +15,7 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #include <stb_image.h>
 #pragma GCC diagnostic pop
 

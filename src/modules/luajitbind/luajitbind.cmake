@@ -58,7 +58,6 @@ function(st_build_luajitbind_module MODULE_NAME MODULE_TYPE_VAR)
     target_include_directories(${ST_MODULE_TARGET} PRIVATE
         ${LUAJIT_INCLUDE_DIRS}
         "${CMAKE_SOURCE_DIR}/include"
-        "${CMAKE_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/.."
         ${CMAKE_CURRENT_BINARY_DIR}
     )
