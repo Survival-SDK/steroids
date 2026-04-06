@@ -65,8 +65,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/angle"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/angle")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/dpsrvconn"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/dpsrvconn")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/fs"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/fs")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/gfxctx")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/keyboard"
@@ -77,8 +75,6 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/mouse"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/mouse")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/opts"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/opts")
-# add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luabind/pathtools"
-#  "${CMAKE_BINARY_DIR}/src/modules/luabind/pathtools")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/render"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/render")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/sprite"
