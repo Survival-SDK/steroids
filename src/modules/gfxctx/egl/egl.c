@@ -677,35 +677,59 @@ static void st_try_to_enable_debug(st_gfxctx_t *gfxctx,
 }
 
 static EGLDisplay st_get_egl_display(EGLNativeDisplayType native_display) {
-#if defined(__linux__)
-    PFNEGLGETPLATFORMDISPLAYPROC platform_display =
-     (PFNEGLGETPLATFORMDISPLAYPROC)eglGetProcAddress("eglGetPlatformDisplay");
-    PFNEGLGETPLATFORMDISPLAYEXTPROC platform_display_ext =
-     (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress(
-      "eglGetPlatformDisplayEXT");
+    EGLDisplay display = eglGetDisplay(native_display);
+    if (display != EGL_NO_DISPLAY)
+        return display;
 
-    if (platform_display || platform_display_ext) {
-        #ifdef EGL_PLATFORM_WAYLAND_KHR
-            EGLDisplay display = platform_display
-                ? platform_display(EGL_PLATFORM_WAYLAND_KHR, native_display, 
-                   NULL)
-                : platform_display_ext(EGL_PLATFORM_WAYLAND_KHR, native_display,
-                   NULL);
-            if (display != EGL_NO_DISPLAY)
-                return display;
+    #if defined(__linux__)
+        #if defined(PFNEGLGETPLATFORMDISPLAYPROC)
+            PFNEGLGETPLATFORMDISPLAYPROC platform_display =
+             (PFNEGLGETPLATFORMDISPLAYPROC)eglGetProcAddress(
+              "eglGetPlatformDisplay");
         #endif
-        #ifdef EGL_PLATFORM_X11_KHR
-            display = platform_display
-                ? platform_display(EGL_PLATFORM_X11_KHR, native_display, NULL)
-                : platform_display_ext(EGL_PLATFORM_X11_KHR, native_display, 
-                   NULL);
-            if (display != EGL_NO_DISPLAY)
-                return display;
-        #endif
-    }
-#endif
+        PFNEGLGETPLATFORMDISPLAYEXTPROC platform_display_ext =
+         (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress(
+          "eglGetPlatformDisplayEXT");
 
-    return eglGetDisplay(native_display);
+        if (
+        #if defined(PFNEGLGETPLATFORMDISPLAYPROC)
+            platform_display ||
+        #endif
+        platform_display_ext) {
+            display = EGL_NO_DISPLAY;
+
+            #ifdef EGL_PLATFORM_WAYLAND_KHR
+                #if defined(PFNEGLGETPLATFORMDISPLAYPROC)
+                    display = platform_display
+                        ? platform_display(EGL_PLATFORM_WAYLAND_KHR, 
+                         native_display, NULL)
+                        : platform_display_ext(EGL_PLATFORM_WAYLAND_KHR, 
+                         native_display, NULL);
+                #else
+                    display = platform_display_ext(EGL_PLATFORM_WAYLAND_KHR,
+                     native_display, NULL);
+                #endif
+                if (display != EGL_NO_DISPLAY)
+                    return display;
+            #endif
+            #ifdef EGL_PLATFORM_X11_KHR
+                #if defined(PFNEGLGETPLATFORMDISPLAYPROC)
+                    display = platform_display
+                        ? platform_display(EGL_PLATFORM_X11_KHR, native_display, 
+                         NULL)
+                        : platform_display_ext(EGL_PLATFORM_X11_KHR, 
+                         native_display, NULL);
+                #else
+                    display = platform_display_ext(EGL_PLATFORM_X11_KHR, 
+                     native_display, NULL);
+                #endif
+                if (display != EGL_NO_DISPLAY)
+                    return display;
+            #endif
+        }
+    #endif
+
+    return display;
 }
 
 static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
@@ -732,6 +756,8 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
     EGLint           egl_version_minor = 0;
     bool             version_changed = false;
     bool             debug_changed = false;
+    EGLNativeDisplayType native_display;
+    EGLNativeWindowType  native_window;
 
     gfxctx = (st_gfxctx_t *)st_object_new(sizeof(st_gfxctx_t), &gfxctx_funcs,
      (st_object_dtor_t)st_gfxctx_destroy, (st_object_t *)gfxctx_ctx);
@@ -750,8 +776,23 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
     if (!gfxctx->userdata)
         goto udata_fail;
 
-    gfxctx->display = st_get_egl_display(
-     (EGLNativeDisplayType)ST_MONITOR_CALL(monitor, get_native_device_handle));
+    native_display = (EGLNativeDisplayType)ST_MONITOR_CALL(
+     monitor, get_native_device_handle);
+    native_window = (EGLNativeWindowType)ST_WINDOW_CALL(window,
+     get_native_handle);
+
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: Creating EGL context (native display: %p, native window: %p, "
+     "requested gapi: %i.%i)", st_module_subsystem, st_module_name,
+     (void *)native_display, (void *)native_window, major, minor);
+
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: Calling st_get_egl_display()", st_module_subsystem,
+     st_module_name);
+    gfxctx->display = st_get_egl_display(native_display);
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: st_get_egl_display() returned %p", st_module_subsystem,
+     st_module_name, (void *)gfxctx->display);
 
     if (gfxctx->display == EGL_NO_DISPLAY) {
         EGLint egl_error = eglGetError();
@@ -763,6 +804,8 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         goto get_display_fail;
     }
 
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: Calling eglInitialize()", st_module_subsystem, st_module_name);
     if (eglInitialize(gfxctx->display, &egl_version_major, &egl_version_minor)
      == EGL_FALSE) {
         if (!gfxctx_ctx->debug_enabled)
@@ -772,6 +815,9 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
 
         goto egl_init_fail;
     }
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: eglInitialize() done, EGL version: %i.%i", st_module_subsystem,
+     st_module_name, egl_version_major, egl_version_minor);
 
     if (egl_version_minor < 5
      && renderable_type == EGL_OPENGL_BIT
@@ -855,11 +901,14 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         goto bind_api_fail;
     }
 
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: Calling eglCreateWindowSurface() (native window: %p)",
+     st_module_subsystem, st_module_name, (void *)native_window);
     gfxctx->surface = eglCreateWindowSurface(gfxctx->display,
-     gfxctx->cfg,
-     (EGLNativeWindowType)*(void *[]){ 
-      ST_WINDOW_CALL(window, get_native_handle) }, 
-     NULL);
+     gfxctx->cfg, native_window, NULL);
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: eglCreateWindowSurface() returned %p", st_module_subsystem,
+     st_module_name, (void *)gfxctx->surface);
     if (gfxctx->surface == EGL_NO_SURFACE) {
         if (!gfxctx_ctx->debug_enabled)
             ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
@@ -873,8 +922,13 @@ static st_gfxctx_t *st_gfxctx_create_impl(st_gfxctxctx_t *gfxctx_ctx,
         gfxctx_ctx->egl_label_object_khr(gfxctx->display, EGL_OBJECT_DISPLAY_KHR,
          gfxctx->surface, window);
 
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: Calling eglCreateContext()", st_module_subsystem, st_module_name);
     gfxctx->handle = eglCreateContext(gfxctx->display, gfxctx->cfg,
      shared ? shared->handle : EGL_NO_CONTEXT, egl_ctx_attrs);
+    ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, debug,
+     "%s_%s: eglCreateContext() returned %p", st_module_subsystem,
+     st_module_name, (void *)gfxctx->handle);
     if (gfxctx->handle == EGL_NO_CONTEXT) {
         if (!gfxctx_ctx->debug_enabled)
             ST_LOGGERCTX_CALL(gfxctx_ctx->logger_ctx, error,
