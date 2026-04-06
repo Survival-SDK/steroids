@@ -23,7 +23,7 @@ static bool st_keyboard_pressed(const st_keyboardctx_t *keyboard_ctx,
 static const char *st_keyboard_get_input(const st_keyboardctx_t *keyboard_ctx);
 
 static st_keyboardctx_funcs_t keyboardctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .process   = st_keyboard_process,
     .press     = st_keyboard_press,
     .release   = st_keyboard_release,

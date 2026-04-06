@@ -15,7 +15,7 @@ static bool st_luajitbind_bind(st_luajitbindctx_t *luajitbind_ctx,
  const char *state_name);
 
 static st_luajitbindctx_funcs_t luajitbindctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .bind = st_luajitbind_bind,
 };
 

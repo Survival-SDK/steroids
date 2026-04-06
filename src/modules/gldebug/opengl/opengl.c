@@ -52,7 +52,7 @@ static const char *st_gldebug_get_error_msg(const st_gldebugctx_t *gldebug_ctx,
  unsigned err);
 
 static st_gldebugctx_funcs_t st_gldebug_opengl_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .label_buffer        = st_gldebug_label_buffer,
     .label_shader        = st_gldebug_label_shader,
     .label_shdprog       = st_gldebug_label_shdprog,

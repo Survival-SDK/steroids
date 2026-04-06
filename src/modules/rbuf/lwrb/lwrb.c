@@ -29,12 +29,12 @@ static size_t st_rbuf_get_free_space(const st_rbuf_t *rbuf);
 static bool st_rbuf_is_empty(const st_rbuf_t *rbuf);
 
 static st_rbufctx_funcs_t rbufctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create = st_rbuf_create,
 };
 
 static st_rbuf_funcs_t rbuf_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .push           = st_rbuf_push,
     .peek           = st_rbuf_peek,
     .pop            = st_rbuf_pop,

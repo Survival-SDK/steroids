@@ -14,7 +14,7 @@ static int st_terminal_get_rows_count(const st_terminalctx_t *terminal_ctx);
 static int st_terminal_get_cols_count(const st_terminalctx_t *terminal_ctx);
 
 static st_terminalctx_funcs_t terminalctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_rows_count = st_terminal_get_rows_count,
     .get_cols_count = st_terminal_get_cols_count,
 };

@@ -19,7 +19,7 @@ static bool st_plugin_memload(st_pluginctx_t *plugin_ctx, const void *data,
  size_t size, bool force);
 
 static st_pluginctx_funcs_t pluginctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .load    = st_plugin_load,
     .memload = st_plugin_memload,
 };

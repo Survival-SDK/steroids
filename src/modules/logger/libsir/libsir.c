@@ -37,7 +37,7 @@ static void st_logger_set_postmortem_msg(st_loggerctx_t *logger_ctx,
  const char *msg);
 
 static st_loggerctx_funcs_t loggerctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .enable_events      = st_logger_enable_events,
     .set_stdout_levels  = st_logger_set_stdout_levels,
     .set_stderr_levels  = st_logger_set_stderr_levels,

@@ -30,7 +30,7 @@ static float st_angle_rdacos(const st_anglectx_t *angle_ctx, float angle_cos);
 static float st_angle_dgacos(const st_anglectx_t *angle_ctx, float angle_cos);
 
 static st_anglectx_funcs_t anglectx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .rtod           = st_angle_rtod,
     .dtor           = st_angle_dtor,
     .rnormalize360  = st_angle_rnormalize360,

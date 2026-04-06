@@ -33,12 +33,12 @@ static const void *st_htable_get_iter_key(const st_htiter_t *iter);
 static void *st_htable_get_iter_value(const st_htiter_t *iter);
 
 static st_htablectx_funcs_t htablectx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create = st_htable_create,
 };
 
 static st_htable_funcs_t htable_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .insert    = st_htable_insert,
     .get       = st_htable_get,
     .remove    = st_htable_remove,
@@ -49,7 +49,7 @@ static st_htable_funcs_t htable_funcs = {
 };
 
 static st_htiter_funcs_t htiter_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .get_next  = st_htable_next,
     .get_key   = st_htable_get_iter_key,
     .get_value = st_htable_get_iter_value,

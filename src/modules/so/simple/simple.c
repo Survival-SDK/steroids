@@ -18,13 +18,13 @@ static st_so_t *st_so_memopen(st_soctx_t *so_ctx, const void *data,
 static void *st_so_load_symbol(st_so_t *so, const char *name);
 
 static st_soctx_funcs_t soctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .open    = st_so_open,
     .memopen = st_so_memopen,
 };
 
 static st_so_funcs_t so_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .load_symbol = st_so_load_symbol,
 };
 

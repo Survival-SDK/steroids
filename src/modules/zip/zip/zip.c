@@ -30,13 +30,13 @@ static bool st_zip_extract_entry(st_zip_t *zip, size_t entrynum,
  const char *path);
 
 static st_zipctx_funcs_t zipctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .open    = st_zip_open,
     .memopen = st_zip_memopen,
 };
 
 static st_zip_funcs_t zip_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .get_entries_count = st_zip_get_entries_count,
     .get_entry_name    = st_zip_get_entry_name,
     .get_entry_type    = st_zip_get_entry_type,

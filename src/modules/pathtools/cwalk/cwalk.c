@@ -26,7 +26,7 @@ static bool st_pathtools_concat(st_pathtoolsctx_t *pathtools_ctx, char *dst,
  size_t dstsize, const char *path, const char *append);
 
 static st_pathtoolsctx_funcs_t pathtoolsctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .resolve        = st_pathtools_resolve,
     .get_parent_dir = st_pathtools_get_parent_dir,
     .concat         = st_pathtools_concat,

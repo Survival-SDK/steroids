@@ -22,7 +22,7 @@ static void st_spcpaths_get_cache_path(st_spcpathsctx_t *spcpaths_ctx,
  char *dst, size_t dstlen, const char *appname);
 
 static st_spcpathsctx_funcs_t spcpathsctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_config_path = st_spcpaths_get_config_path,
     .get_data_path   = st_spcpaths_get_data_path,
     .get_cache_path  = st_spcpaths_get_cache_path,

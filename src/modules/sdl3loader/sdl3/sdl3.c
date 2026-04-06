@@ -66,7 +66,7 @@ static const struct {
 };
 
 static st_sdl3loaderctx_funcs_t sdl3loaderctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .get_proc_address = st_sdl3loader_get_proc_address,
 };
 

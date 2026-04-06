@@ -46,14 +46,14 @@ static bool st_ini_export(const st_ini_t *ini, char *buffer, size_t bufsize);
 static bool st_ini_save(const st_ini_t *ini, const char *filename);
 
 static st_inictx_funcs_t inictx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create  = st_ini_create,
     .load    = st_ini_load,
     .memload = st_ini_memload,
 };
 
 static st_ini_funcs_t ini_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .section_exists = st_ini_section_exists,
     .key_exists     = st_ini_key_exists,
     .get_str        = st_ini_get_str,

@@ -27,7 +27,7 @@ static unsigned st_mouse_get_y(const st_mousectx_t *mouse_ctx);
 static const st_window_t *st_mouse_get_window(const st_mousectx_t *mouse_ctx);
 
 static st_mousectx_funcs_t mousectx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .process            = st_mouse_process,
     .press              = st_mouse_press,
     .release            = st_mouse_release,

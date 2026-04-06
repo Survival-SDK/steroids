@@ -19,12 +19,12 @@ static void *st_mpool_alloc(st_mpool_t *mpool);
 static void st_mpool_free(st_mpool_t *mpool, void *ptr);
 
 static st_mpoolctx_funcs_t mpoolctx_funcs = {
-    st_modctx_funcs,
+    ST_MODCTX_FUNCS,
     .create = st_mpool_create,
 };
 
 static st_mpool_funcs_t mpool_funcs = {
-    st_object_funcs,
+    ST_OBJECT_FUNCS,
     .alloc = st_mpool_alloc,
     .free  = st_mpool_free,
 };
