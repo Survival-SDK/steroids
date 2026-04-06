@@ -4,31 +4,23 @@ include barebones.mk
 
 TRIPLET=any-any-any
 
-ifeq ($(TRIPLET),any-any-any)
-    TOOLCHAIN_OPT=toolchain=cc
-    INCLUDE_OPT=--include-dir=/usr/local/include
-else
-    TOOLCHAIN_OPT=toolchain=$(TRIPLET)-gcc
-    INCLUDE_OPT=--include-dir=/usr/local/$(TRIPLET)/include
-endif
-
 run-image:
 	docker run --net=host -i -t -v ~/.vgazer:/root/.vgazer \
      -v `pwd`:/mnt/steroids --entrypoint sh steroids-deps-$(TRIPLET)
 
-# release:
-# 	docker run --net=host -i -t \
-#      -v `pwd`:/mnt/steroids \
-#      --entrypoint sh steroids-deps-$(TRIPLET) \
-#      -E -c "cd /mnt/steroids && \
-#             mkdir -p cmake_build && \
-#             conan install ./conan \
-#              --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
-#              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
-#              --output-folder=cmake_build --build=missing && \
-#             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Release \
-#              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake && \
-#             cmake --build cmake_build" | tee build.log
+relwithdebinfo:
+	docker run --net=host -i -t \
+     -v `pwd`:/mnt/steroids \
+     --entrypoint sh steroids-deps-$(TRIPLET) \
+     -E -c "cd /mnt/steroids && \
+            mkdir -p cmake_build && \
+            conan install ./conan \
+             --profile:host=conan/profiles/$(TRIPLET)-$@.profile \
+             --profile:build=conan/profiles/$(TRIPLET)-build.profile \
+             --output-folder=cmake_build --build=missing && \
+            cmake -B cmake_build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+             -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake && \
+            cmake --build cmake_build" | tee build.log
 
 debug:
 	docker run --net=host -i -t \
