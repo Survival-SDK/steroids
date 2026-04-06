@@ -28,7 +28,22 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_DPSRVCONN_SDL3})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-find_package(SDL3 REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
+if(TARGET SDL3::Headers)
+    set(ST_DPSRVCONN_SDL3_INCLUDE_TARGET SDL3::Headers)
+elseif(TARGET SDL3::SDL3)
+    set(ST_DPSRVCONN_SDL3_INCLUDE_TARGET SDL3::SDL3)
+elseif(TARGET SDL3::SDL3-shared)
+    set(ST_DPSRVCONN_SDL3_INCLUDE_TARGET SDL3::SDL3-shared)
+elseif(TARGET SDL3::SDL3-static)
+    set(ST_DPSRVCONN_SDL3_INCLUDE_TARGET SDL3::SDL3-static)
+else()
+    message(FATAL_ERROR "No SDL3 include provider target found")
+endif()
+get_target_property(ST_DPSRVCONN_SDL3_INCLUDE_DIRS
+    ${ST_DPSRVCONN_SDL3_INCLUDE_TARGET}
+    INTERFACE_INCLUDE_DIRECTORIES
+)
 
 target_compile_options(${ST_MODULE_TARGET} PRIVATE 
     ${C_COMPILE_OPTIONS} -fms-extensions
@@ -40,6 +55,7 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
+    ${ST_DPSRVCONN_SDL3_INCLUDE_DIRS}
     "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/src"

@@ -28,7 +28,12 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_OPTS_KETOPT})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
+find_package(ketopt REQUIRED)
+get_target_property(KETOPT_INCLUDE_DIRS ketopt::ketopt 
+    INTERFACE_INCLUDE_DIRECTORIES)
+
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} 
+    -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "ketopt.c"
 )
@@ -41,7 +46,7 @@ bb_add_iwyu_mapping_file(
 )
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
-    "${CMAKE_FIND_ROOT_PATH}/include"
+    ${KETOPT_INCLUDE_DIRS}
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )

@@ -1,0 +1,4 @@
+sources:
+  "3.2.0":
+    url: "https://github.com/MaJerle/lwrb/archive/refs/tags/v3.2.0.tar.gz"
+    sha256: "11534ef4fe51039707b75e62d19943f92e0b076e0cc5f40997720b254ed163b1"

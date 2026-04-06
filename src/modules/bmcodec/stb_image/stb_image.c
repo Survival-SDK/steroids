@@ -15,7 +15,7 @@
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #pragma GCC diagnostic pop
 
 #define REQ_CHANNELS   4

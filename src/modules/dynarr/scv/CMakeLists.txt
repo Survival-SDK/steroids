@@ -28,13 +28,7 @@ bb_add_more_warnings(
 st_add_module(${ST_MODULE_TARGET} ${ST_MODULE_DYNARR_SCV})
 st_process_internal_module(${ST_MODULE_TARGET} ${ST_MODULE_TYPE})
 
-bb_find_library(
-  VAR_PREFIX SCV
-  NAME scv
-  FILENAMES scv
-  COMPILER_OPTIONS -lscv
-  REQUIRED
-)
+find_package(scv REQUIRED)
 
 target_compile_options(${ST_MODULE_TARGET} PRIVATE
     ${C_COMPILE_OPTIONS}
@@ -48,11 +42,10 @@ target_sources(${ST_MODULE_TARGET} PRIVATE
 bb_set_c_std(${ST_MODULE_TARGET} STD 11 EXTENSIONS)
 
 target_include_directories(${ST_MODULE_TARGET} PRIVATE
-    "${CMAKE_FIND_ROOT_PATH}/include"
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-    ${SCV_LIBRARY}
+    scv::scv
 )

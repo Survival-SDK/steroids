@@ -1,0 +1,4 @@
+sources:
+  "cci.20260404":
+    url: "https://github.com/anholt/hash_table/archive/5033a65b8d9f2f030ed1ac9ee1bc2d909de252a3.tar.gz"
+    sha256: "7bfbc75580db85fea99812a3230ae1494d53190dfa6244bc01d09030484c4c86"
