@@ -2,7 +2,6 @@
 * Linux
 * Docker
 * GNU Make
-* Python 3.x
 
 # Preparing image
 ```console
