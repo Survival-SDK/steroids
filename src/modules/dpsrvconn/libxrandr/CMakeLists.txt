@@ -34,7 +34,8 @@ if(NOT X11_Xrandr_FOUND)
     message(FATAL_ERROR "libXrandr not found.")
 endif()
 
-target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} -fms-extensions)
+target_compile_options(${ST_MODULE_TARGET} PRIVATE ${C_COMPILE_OPTIONS} 
+    -D_GNU_SOURCE -fms-extensions)
 target_sources(${ST_MODULE_TARGET} PRIVATE
     "libxrandr.c"
 )
