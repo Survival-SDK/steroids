@@ -1,0 +1,5 @@
+sources:
+  "0.8.6":
+    url: "http://prdownloads.sourceforge.net/ezxml/ezxml-0.8.6.tar.gz?download"
+    filename: "ezxml-0.8.6.tar.gz"
+    sha256: "a68d52257dcb0ff2ad3d71c8c64311edb8030254bb8b581e229aeaba6231cdf9"

@@ -48,6 +48,7 @@ RUN mkdir -p "${CONAN_HOME}"
 RUN --mount=type=bind,source=.,target=/tmp/steroids \
     conan export /tmp/steroids/conan/recipes/cfgpath/all \
  && conan export /tmp/steroids/conan/recipes/cmake_barebones/all \
+ && conan export /tmp/steroids/conan/recipes/ezxml/all \
  && conan export /tmp/steroids/conan/recipes/hash_table/all \
  && conan export /tmp/steroids/conan/recipes/ketopt/all \
  && conan export /tmp/steroids/conan/recipes/libsir/all \
