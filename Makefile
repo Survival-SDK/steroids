@@ -19,7 +19,8 @@ relwithdebinfo:
              --profile:build=conan/profiles/$(TRIPLET)-build.profile \
              --output-folder=cmake_build --build=missing && \
             cmake -B cmake_build -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-             -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake && \
+             -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake  \
+             -DBB_MORE_WARNINGS=ON -DBB_WERROR=ON && \
             cmake --build cmake_build" | tee build.log
 
 debug:
@@ -35,7 +36,7 @@ debug:
             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-             -DBB_MORE_WARNINGS=ON && \
+             -DBB_MORE_WARNINGS=ON -DBB_WERROR=ON && \
             cmake --build cmake_build" | tee build.log
 
 # coverage:
@@ -51,7 +52,7 @@ debug:
 #             cmake -B cmake_build -DCMAKE_BUILD_TYPE=Debug \
 #              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
 #              -DCMAKE_C_FLAGS='--coverage' -DCMAKE_CXX_FLAGS='--coverage' 
-          #    -DBB_MORE_WARNINGS=ON && \
+          #    -DBB_MORE_WARNINGS=ON -DBB_WERROR=ON && \
 #             cmake --build cmake_build" | tee build.log
 
 # lint:
@@ -68,7 +69,7 @@ debug:
 #              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
 #              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 #              -DCMAKE_C_CLANG_TIDY='clang-tidy' 
-          #    -DBB_MORE_WARNINGS=ON && \
+          #    -DBB_MORE_WARNINGS=ON -DBB_WERROR=ON && \
 #             cmake --build cmake_build" | tee build.log
 
 # iwyu:
@@ -85,7 +86,7 @@ debug:
 #              -DCMAKE_TOOLCHAIN_FILE=cmake_build/conan_toolchain.cmake \
 #              -DCMAKE_C_INCLUDE_WHAT_YOU_USE='iwyu' \
 #              -DCMAKE_CXX_INCLUDE_WHAT_YOU_USE='iwyu' 
-          #    -DBB_MORE_WARNINGS=ON && \
+          #    -DBB_MORE_WARNINGS=ON -DBB_WERROR=ON && \
 #             cmake --build cmake_build" | tee build.log
 
 lint_build: bb_lint_build
