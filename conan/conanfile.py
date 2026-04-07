@@ -59,14 +59,6 @@ class SteroidsConan(ConanFile):
         ])
     
     def requirements(self):
-        # Custom recipes (local)
-        self.requires("cfgpath/cci.20260404")
-        self.requires("hash_table/cci.20260404")
-        self.requires("ketopt/cci.20260404")
-        self.requires("libsir/2.2.5")
-        self.requires("lwrb/3.2.0")
-        self.requires("scv/cci.20260404")
-        
         # Dependencies from ConanCenter
         self.requires("cwalk/1.2.8")
         self.requires("inih/62")
@@ -75,6 +67,15 @@ class SteroidsConan(ConanFile):
         self.requires("luajit/2.1.0-beta3")
         self.requires("sdl/3.4.0")
         self.requires("stb/cci.20240531")
+
+        # Custom recipes (local)
+        self.requires("cfgpath/cci.20260404")
+        self.requires("ezxml/0.8.6")
+        self.requires("hash_table/cci.20260404")
+        self.requires("ketopt/cci.20260404")
+        self.requires("libsir/2.2.5")
+        self.requires("lwrb/3.2.0")
+        self.requires("scv/cci.20260404")
     
     def build_requirements(self):
         # Build tools and CMake modules

@@ -119,6 +119,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/timer/simple"
  "${CMAKE_BINARY_DIR}/src/modules/timer/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/vec2/simple"
  "${CMAKE_BINARY_DIR}/src/modules/vec2/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/xml/ezxml"
+ "${CMAKE_BINARY_DIR}/src/modules/xml/ezxml")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/zip/zip"
  "${CMAKE_BINARY_DIR}/src/modules/zip/zip")
 
