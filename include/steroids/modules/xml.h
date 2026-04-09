@@ -34,8 +34,12 @@ typedef bool (*st_xml_tag_has_attribute_t)(const st_xml_t *xml,
 typedef int (*st_xml_get_tag_attributes_count_t)(const st_xml_t *xml);
 typedef const char *(*st_xml_get_tag_attribute_name_t)(const st_xml_t *xml, 
  int index);
-typedef const char *(*st_xml_get_tag_attribute_value_t)(const st_xml_t *xml, 
+typedef const char *(*st_xml_get_tag_attribute_value_str_t)(const st_xml_t *xml, 
  const char *attribute_name);
+typedef bool (*st_xml_get_tag_attribute_value_int_t)(const st_xml_t *xml, 
+ int *dst,const char *attribute_name);
+typedef bool (*st_xml_get_tag_attribute_value_single_t)(const st_xml_t *xml, 
+ float *dst, const char *attribute_name);
 
 /* child iter methods */
 typedef bool (*st_xml_next_child_t)(st_xmlchilditer_t *current, 
@@ -57,14 +61,16 @@ typedef struct {
 
 typedef struct {
     st_object_funcs_t;
-    st_xml_first_child_t              first_child;
-    st_xml_first_named_child_t        first_named_child;
-    st_xml_get_tag_name_t             get_name;
-    st_xml_get_tag_text_t             get_text;
-    st_xml_tag_has_attribute_t        has_attribute;
-    st_xml_get_tag_attributes_count_t get_attributes_count;
-    st_xml_get_tag_attribute_name_t   get_attribute_name;
-    st_xml_get_tag_attribute_value_t  get_attribute_value;
+    st_xml_first_child_t                    first_child;
+    st_xml_first_named_child_t              first_named_child;
+    st_xml_get_tag_name_t                   get_name;
+    st_xml_get_tag_text_t                   get_text;
+    st_xml_tag_has_attribute_t              has_attribute;
+    st_xml_get_tag_attributes_count_t       get_attributes_count;
+    st_xml_get_tag_attribute_name_t         get_attribute_name;
+    st_xml_get_tag_attribute_value_str_t    get_attribute_value_str;
+    st_xml_get_tag_attribute_value_int_t    get_attribute_value_int;
+    st_xml_get_tag_attribute_value_single_t get_attribute_value_single;
 } st_xml_funcs_t;
 
 typedef struct st_xmlchilditer_funcs {
