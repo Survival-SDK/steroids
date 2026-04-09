@@ -1,0 +1,214 @@
+-- Atlas context and atlas object
+package.preload["AtlasCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+
+    ffi.cdef[[
+        typedef struct st_atlasctx {
+            st_modctx_t __st_parent;
+        } st_atlasctx_t;
+
+        typedef struct st_atlas {
+            st_object_t __st_parent;
+        } st_atlas_t;
+
+        typedef st_atlas_t *(*st_atlas_load_t)(st_atlasctx_t *atlas_ctx, 
+         const char *filename);
+        typedef st_atlas_t *(*st_atlas_create_empty_t)(
+         st_atlasctx_t *atlas_ctx, const char *filename);
+        typedef bool (*st_atlas_add_subimage_t)(st_atlas_t *atlas,
+         const char *name, unsigned x, unsigned y, unsigned width,
+         unsigned height);
+        typedef const char *(*st_atlas_get_filename_t)(const st_atlas_t *atlas);
+        typedef int (*st_atlas_get_subimages_count_t)(const st_atlas_t *atlas);
+        typedef const char *(*st_atlas_get_subimage_name_t)(
+         const st_atlas_t *atlas, unsigned index);
+        typedef unsigned (*st_atlas_get_subimage_x_t)(
+         const st_atlas_t *atlas, unsigned index);
+        typedef unsigned (*st_atlas_get_subimage_y_t)(
+         const st_atlas_t *atlas, unsigned index);
+        typedef unsigned (*st_atlas_get_subimage_width_t)(
+         const st_atlas_t *atlas, unsigned index);
+        typedef unsigned (*st_atlas_get_subimage_height_t)(
+         const st_atlas_t *atlas, unsigned index);
+
+        typedef struct {
+            st_modctx_funcs_t       __st_parent_funcs;
+            st_atlas_load_t         load;
+            void                   *__memload;
+            st_atlas_create_empty_t create_empty;
+        } st_atlasctx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t              __st_parent_funcs;
+            st_atlas_add_subimage_t        add_subimage;
+            st_atlas_get_filename_t        get_filename;
+            st_atlas_get_subimages_count_t get_subimages_count;
+            st_atlas_get_subimage_name_t   get_subimage_name;
+            st_atlas_get_subimage_x_t      get_subimage_x;
+            st_atlas_get_subimage_y_t      get_subimage_y;
+            st_atlas_get_subimage_width_t  get_subimage_width;
+            st_atlas_get_subimage_height_t get_subimage_height;
+        } st_atlas_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_atlasctx_t *",
+    }
+
+    M.__atlas = {}
+
+    M.__atlas.methods = setmetatable({
+        add_subimage = function(self, name, x, y, width, height)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).add_subimage(self.handle, name, x, y, width, height)
+        end,
+
+        get_filename = function(self)
+            return ffi.string(ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_filename(self.handle))
+        end,
+
+        get_subimages_count = function(self)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimages_count(self.handle)
+        end,
+
+        get_subimage_name = function(self, index)
+            local name = ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimage_name(self.handle, index)
+
+            if name == nil then
+                return nil
+            end
+
+            return ffi.string(name)
+        end,
+
+        get_subimage_x = function(self, index)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimage_x(self.handle, index)
+        end,
+
+        get_subimage_y = function(self, index)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimage_y(self.handle, index)
+        end,
+
+        get_subimage_width = function(self, index)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimage_width(self.handle, index)
+        end,
+
+        get_subimage_height = function(self, index)
+            return ffi.cast("const st_atlas_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subimage_height(self.handle, index)
+        end,
+    }, { __index = Object.methods })
+
+    M.__atlas.__mt = ffi.metatype(
+        "struct { st_atlas_t *handle; bool owned; }", {
+        __index = M.__atlas.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.methods = setmetatable({
+        load = function(self, filename)
+            local atlas_handle = ffi.cast("const st_atlasctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).load(self.handle, filename)
+
+            if atlas_handle == nil then
+                error(string.format(
+                    "AtlasCtx.load: failed to load atlas from file '%s'",
+                    filename or "nil")
+                )
+            end
+
+            return Object.__mtnew(M.__atlas.__mt, atlas_handle, true)
+        end,
+
+        create_empty = function(self, filename)
+            local atlas_handle = ffi.cast("const st_atlasctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).create_empty(self.handle, filename)
+
+            if atlas_handle == nil then
+                error(string.format(
+                    "AtlasCtx.create_empty: failed to create atlas for file '%s'",
+                    filename or "nil")
+                )
+            end
+
+            return Object.__mtnew(M.__atlas.__mt, atlas_handle, true)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_atlasctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local atlas_ctor = modsmgr:get_ctor("atlas", name)
+        if not atlas_ctor then
+            error(string.format(
+                "AtlasCtx.new_by_name: constructor not found for atlas '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local atlas_ctx = atlas_ctor(params)
+
+        if not atlas_ctx then
+            error(string.format(
+                "AtlasCtx.new_by_name: failed to create atlas instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_atlasctx_t *", atlas_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+
+        return modsmgr:get_singleton("atlas", module_name):as("AtlasCtx")
+    end
+
+    return M
+end
+
