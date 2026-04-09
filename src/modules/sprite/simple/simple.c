@@ -17,6 +17,9 @@ static void st_sprite_destroy(st_sprite_t *sprite);
 
 static st_sprite_t *st_sprite_from_texture(st_spritectx_t *sprite_ctx,
  const st_texture_t *texture);
+static st_sprite_t *st_sprite_from_texture_region(st_spritectx_t *sprite_ctx,
+ const st_texture_t *texture, unsigned x, unsigned y, unsigned width, 
+ unsigned height);
 static const st_texture_t *st_sprite_get_texture(const st_sprite_t *sprite);
 static unsigned st_sprite_get_width(const st_sprite_t *sprite);
 static unsigned st_sprite_get_height(const st_sprite_t *sprite);
@@ -24,7 +27,8 @@ static void st_sprite_export_uv(const st_sprite_t *sprite, st_uv_t *dstuv);
 
 static st_spritectx_funcs_t spritectx_funcs = {
     ST_MODCTX_FUNCS,
-    .from_texture = st_sprite_from_texture,
+    .from_texture        = st_sprite_from_texture,
+    .from_texture_region = st_sprite_from_texture_region,
 };
 
 static st_sprite_funcs_t sprite_funcs = {
@@ -124,6 +128,67 @@ static st_sprite_t *st_sprite_from_texture(st_spritectx_t *sprite_ctx,
     sprite->uv.lower_left.v  = 1.0f;
     sprite->uv.lower_right.u = 1.0f;
     sprite->uv.lower_right.v = 1.0f;
+
+    return sprite;
+}
+
+static st_sprite_t *st_sprite_from_texture_region(st_spritectx_t *sprite_ctx,
+ const st_texture_t *texture, unsigned x, unsigned y, unsigned width,
+ unsigned height) {
+    unsigned     texture_width;
+    unsigned     texture_height;
+    st_sprite_t *sprite;
+
+    if (!texture) {
+        ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, error,
+         "%s_%s: Unable to create sprite region from NULL texture",
+         st_module_subsystem, st_module_name);
+
+        return NULL;
+    }
+
+    texture_width  = ST_TEXTURE_CALL(texture, get_width);
+    texture_height = ST_TEXTURE_CALL(texture, get_height);
+    if (!texture_width || !texture_height) {
+        ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, error,
+         "%s_%s: Unable to create sprite region from texture with zero width "
+         "or height", st_module_subsystem, st_module_name);
+
+        return NULL;
+    }
+
+    if (x > texture_width || y > texture_height
+     || width > texture_width - x || height > texture_height - y) {
+        ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, error,
+         "%s_%s: Sprite region %ux%u at (%u,%u) is out of texture bounds "
+         "%ux%u", st_module_subsystem, st_module_name, width, height, x, y,
+         texture_width, texture_height);
+
+        return NULL;
+    }
+
+    sprite = (st_sprite_t *)st_object_new(sizeof(st_sprite_t), &sprite_funcs,
+     (st_object_dtor_t)st_sprite_destroy, (st_object_t *)sprite_ctx);
+    if (!sprite) {
+        ST_LOGGERCTX_CALL(sprite_ctx->logger_ctx, error,
+         "%s_%s: Unable to create sprite object", st_module_subsystem,
+         st_module_name);
+
+        return NULL;
+    }
+
+    sprite->texture = texture;
+    sprite->width = width;
+    sprite->height = height;
+
+    sprite->uv.upper_left.u = (float)x / (float)texture_width;
+    sprite->uv.upper_left.v = (float)y / (float)texture_height;
+    sprite->uv.upper_right.u = (float)(x + width) / (float)texture_width;
+    sprite->uv.upper_right.v = (float)y / (float)texture_height;
+    sprite->uv.lower_left.u = (float)x / (float)texture_width;
+    sprite->uv.lower_left.v = (float)(y + height) / (float)texture_height;
+    sprite->uv.lower_right.u = (float)(x + width) / (float)texture_width;
+    sprite->uv.lower_right.v = (float)(y + height) / (float)texture_height;
 
     return sprite;
 }

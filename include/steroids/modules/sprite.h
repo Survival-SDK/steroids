@@ -27,15 +27,20 @@
 
 typedef st_sprite_t *(*st_sprite_from_texture_t)(st_spritectx_t *sprite_ctx,
  const st_texture_t *texture);
+typedef st_sprite_t *(*st_sprite_from_texture_region_t)(
+ st_spritectx_t *sprite_ctx, const st_texture_t *texture, unsigned x, 
+ unsigned y, unsigned width, unsigned height);
 typedef const st_texture_t *(*st_sprite_get_texture_t)(
  const st_sprite_t *sprite);
 typedef unsigned (*st_sprite_get_width_t)(const st_sprite_t *sprite);
 typedef unsigned (*st_sprite_get_height_t)(const st_sprite_t *sprite);
-typedef void (*st_sprite_export_uv_t)(const st_sprite_t *sprite, st_uv_t *dstuv);
+typedef void (*st_sprite_export_uv_t)(const st_sprite_t *sprite, 
+ st_uv_t *dstuv);
 
 typedef struct {
     st_modctx_funcs_t;
-    st_sprite_from_texture_t from_texture;
+    st_sprite_from_texture_t        from_texture;
+    st_sprite_from_texture_region_t from_texture_region;
 } st_spritectx_funcs_t;
 
 typedef struct {
