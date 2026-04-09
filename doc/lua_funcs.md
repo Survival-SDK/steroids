@@ -69,6 +69,40 @@ angle_ctx:get_owner(): object
 angle_ctx:get_owner_unsafe(): object
 ```
 
+## atlas
+```luau
+AtlasCtx = require "AtlasCtx"
+
+AtlasCtx.new(...): atlas_ctx
+AtlasCtx.new_by_name(module_name: string, ...): atlas_ctx
+AtlasCtx.get_instance(module_name: ?string): atlas_ctx
+
+atlas_ctx:load(filename: string): atlas
+atlas_ctx:create_empty(filename: string): atlas
+-- inherited from modctx
+atlas_ctx:get_subsystem(): string
+atlas_ctx:get_name(): string
+atlas_ctx:as(target: string | table): any
+-- inherited from object
+atlas_ctx:destroy()
+atlas_ctx:get_owner(): object
+atlas_ctx:get_owner_unsafe(): object
+
+atlas:add_subimage(name: string, x: integer, y: integer, width: integer,
+ height: integer): bool
+atlas:get_filename(): string
+atlas:get_subimages_count(): integer
+atlas:get_subimage_name(index: integer): string | nil
+atlas:get_subimage_x(index: integer): integer
+atlas:get_subimage_y(index: integer): integer
+atlas:get_subimage_width(index: integer): integer
+atlas:get_subimage_height(index: integer): integer
+-- inherited from object
+atlas:destroy()
+atlas:get_owner(): object
+atlas:get_owner_unsafe(): object
+```
+
 ## dpsrvconn
 ```luau
 DpsrvConnCtx = require "DpsrvConnCtx"
