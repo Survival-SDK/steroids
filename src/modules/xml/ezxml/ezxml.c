@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
 #include <ezxml.h>
@@ -60,13 +61,13 @@ static st_xmlctx_funcs_t xmlctx_funcs = {
 
 static st_xml_funcs_t xml_funcs = {
     ST_OBJECT_FUNCS,
-    .first_child          = st_xml_first_child,
-    .first_named_child    = st_xml_first_named_child,
-    .get_name             = st_xml_get_tag_name,
-    .get_text             = st_xml_get_tag_text,
-    .has_attribute        = st_xml_tag_has_attribute,
-    .get_attributes_count = st_xml_get_tag_attributes_count,
-    .get_attribute_name   = st_xml_get_tag_attribute_name,
+    .first_child                 = st_xml_first_child,
+    .first_named_child           = st_xml_first_named_child,
+    .get_name                    = st_xml_get_tag_name,
+    .get_text                    = st_xml_get_tag_text,
+    .has_attribute               = st_xml_tag_has_attribute,
+    .get_attributes_count        = st_xml_get_tag_attributes_count,
+    .get_attribute_name          = st_xml_get_tag_attribute_name,
     .get_attribute_value_str     = st_xml_get_tag_attribute_value_str,
     .get_attribute_value_int     = st_xml_get_tag_attribute_value_int,
     .get_attribute_value_single  = st_xml_get_tag_attribute_value_single,
@@ -151,7 +152,7 @@ static st_xml_t *st_xml_load_impl(st_xmlctx_t *xml_ctx, char *data,
         return NULL;
     }
 
-    xml->handle = handle;
+    xml->st_userdata = (uintptr_t)handle;
     xml->buffer = data;
 
     return xml;
@@ -259,7 +260,7 @@ static st_xml_t *st_xml_memload(st_xmlctx_t *xml_ctx, const void *data,
 
 static void st_xml_destroy(st_xml_t *xml) {
     if (xml) {
-        ezxml_free(xml->handle);
+        ezxml_free((struct ezxml *)xml->st_userdata);
         free(xml->buffer);
         free(xml);
     }
@@ -274,7 +275,7 @@ static bool st_xml_first_child(st_xml_t *xml, st_xmlchilditer_t *dst) {
     iter = (st_xmlchilditer_t *)st_object_placement_new(dst, 
      &xmlchilditer_funcs, st_object_fake_dtor, (st_object_t *)xml);
 
-    iter->st_userdata = (uintptr_t)xml->handle->child;
+    iter->st_userdata = (uintptr_t)((struct ezxml *)xml->st_userdata)->child;
 
     return !!iter->st_userdata;
 }
@@ -285,21 +286,23 @@ static bool st_xml_first_named_child(st_xml_t *xml,
 
     assert(xml);
     assert(dst);
+    assert(tag_name);
 
     iter = (st_xmlnamedchilditer_t *)st_object_placement_new(dst, 
      &xmlnamedchilditer_funcs, st_object_fake_dtor, (st_object_t *)xml);
 
-    iter->st_userdata = (uintptr_t)ezxml_child(xml->handle, tag_name);
+    iter->st_userdata = (uintptr_t)ezxml_child((struct ezxml *)xml->st_userdata, 
+     tag_name);
 
     return !!iter->st_userdata;
 }
 
 static const char *st_xml_get_tag_name(const st_xml_t *xml) {
-    return ezxml_name(xml->handle);
+    return ezxml_name(((struct ezxml *)xml->st_userdata));
 }
 
 static const char *st_xml_get_tag_text(const st_xml_t *xml) {
-    const char *text = ezxml_txt(xml->handle);
+    const char *text = ezxml_txt(((struct ezxml *)xml->st_userdata));
 
     return strlen(text) > 0 
         ? text 
@@ -308,11 +311,11 @@ static const char *st_xml_get_tag_text(const st_xml_t *xml) {
 
 static bool st_xml_tag_has_attribute(const st_xml_t *xml, 
  const char *attribute_name) {
-    return !!ezxml_attr(xml->handle, attribute_name);
+    return !!ezxml_attr((struct ezxml *)xml->st_userdata, attribute_name);
 }
 
 static int st_xml_get_tag_attributes_count(const st_xml_t *xml) {
-    char **attributes = xml->handle->attr;
+    char **attributes = ((struct ezxml *)xml->st_userdata)->attr;
     int    attrs_count = 0;
 
     while (*attributes) {
@@ -325,7 +328,7 @@ static int st_xml_get_tag_attributes_count(const st_xml_t *xml) {
 
 static const char *st_xml_get_tag_attribute_name(const st_xml_t *xml, 
  int index) {
-    char **attributes = xml->handle->attr;
+    char **attributes = ((struct ezxml *)xml->st_userdata)->attr;
     int    attrs_count = 0;
 
     while (*attributes) {
@@ -389,8 +392,7 @@ static bool st_xml_next_child(st_xmlchilditer_t *current,
     return true;
 }
 
-static bool st_xml_get_iter_tag_impl(const st_object_t *iter, st_xml_t *dst) {
-    struct ezxml *handle;
+static bool st_xml_get_iter_tag_impl(const st_xmlchilditer_t *iter, st_xml_t *dst) {
     st_object_t  *iter_owner;
 
     if (!iter || !dst)
@@ -398,13 +400,10 @@ static bool st_xml_get_iter_tag_impl(const st_object_t *iter, st_xml_t *dst) {
 
     iter_owner = st_object_get_owner_unsafe(iter);
 
-    handle = (struct ezxml *)iter->st_userdata;
-
     st_object_placement_new(dst, &xml_funcs, st_object_fake_dtor, 
      st_object_get_owner_unsafe(iter_owner));
     
-    dst->handle = handle;
-    dst->buffer = NULL;
+    dst->st_userdata = iter->st_userdata;
 
     return true;
 }
