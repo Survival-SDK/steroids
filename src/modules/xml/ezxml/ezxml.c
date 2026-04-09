@@ -31,8 +31,12 @@ static bool st_xml_tag_has_attribute(const st_xml_t *xml,
 static int st_xml_get_tag_attributes_count(const st_xml_t *xml);
 static const char *st_xml_get_tag_attribute_name(const st_xml_t *xml, 
  int index);
-static const char *st_xml_get_tag_attribute_value(const st_xml_t *xml, 
+static const char *st_xml_get_tag_attribute_value_str(const st_xml_t *xml, 
  const char *attribute_name);
+static bool st_xml_get_tag_attribute_value_int(const st_xml_t *xml, int *dst,
+ const char *attribute_name);
+static bool st_xml_get_tag_attribute_value_single(const st_xml_t *xml, 
+ float *dst, const char *attribute_name);
 
 /* tag destructor */
 static void st_xml_destroy(st_xml_t *xml);
@@ -63,7 +67,9 @@ static st_xml_funcs_t xml_funcs = {
     .has_attribute        = st_xml_tag_has_attribute,
     .get_attributes_count = st_xml_get_tag_attributes_count,
     .get_attribute_name   = st_xml_get_tag_attribute_name,
-    .get_attribute_value  = st_xml_get_tag_attribute_value,
+    .get_attribute_value_str     = st_xml_get_tag_attribute_value_str,
+    .get_attribute_value_int     = st_xml_get_tag_attribute_value_int,
+    .get_attribute_value_single  = st_xml_get_tag_attribute_value_single,
 };
 
 static st_xmlchilditer_funcs_t xmlchilditer_funcs = {
@@ -333,9 +339,35 @@ static const char *st_xml_get_tag_attribute_name(const st_xml_t *xml,
     return NULL;
 }
 
-static const char *st_xml_get_tag_attribute_value(const st_xml_t *xml, 
+static const char *st_xml_get_tag_attribute_value_str(const st_xml_t *xml, 
  const char *attribute_name) {
-    return ezxml_attr(xml->handle, attribute_name);
+    return ezxml_attr((struct ezxml *)xml->st_userdata, attribute_name);
+}
+
+static bool st_xml_get_tag_attribute_value_int(const st_xml_t *xml, int *dst,
+ const char *attribute_name) {
+    const char *value = ezxml_attr((struct ezxml *)xml->st_userdata, 
+     attribute_name);
+
+    if (!value || !dst)
+        return false;
+
+    *dst = strtol(value, NULL, 10);
+
+    return true;
+}
+
+static bool st_xml_get_tag_attribute_value_single(const st_xml_t *xml, 
+ float *dst, const char *attribute_name) {
+    const char *value = ezxml_attr((struct ezxml *)xml->st_userdata, 
+     attribute_name);
+
+    if (!value || !dst)
+        return false;
+
+    *dst = strtof(value, NULL);
+
+    return true;
 }
 
 static bool st_xml_next_child(st_xmlchilditer_t *current, 
