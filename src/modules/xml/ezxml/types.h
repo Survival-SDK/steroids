@@ -13,8 +13,8 @@ typedef struct {
 
 typedef struct {
     st_object_t;
-    struct ezxml *handle;
-    char         *buffer; /* needed by struct ezxml */
+    // struct ezxml *handle;
+    char *buffer; /* needed by struct ezxml */
 } st_xml_t;
 
 typedef st_object_t st_xmlchilditer_t;
