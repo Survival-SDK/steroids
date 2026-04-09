@@ -30,6 +30,9 @@ package.preload["SpriteCtx"] = function()
 
         typedef st_sprite_t *(*st_sprite_from_texture_t)(
          st_spritectx_t *sprite_ctx, const st_texture_t *texture);
+        typedef st_sprite_t *(*st_sprite_from_texture_region_t)(
+         st_spritectx_t *sprite_ctx, const st_texture_t *texture, unsigned x,
+         unsigned y, unsigned width, unsigned height);
         typedef const st_texture_t *(*st_sprite_get_texture_t)(
          const st_sprite_t *sprite);
         typedef unsigned (*st_sprite_get_width_t)(const st_sprite_t *sprite);
@@ -38,8 +41,9 @@ package.preload["SpriteCtx"] = function()
         //  st_uv_t *dstuv);
 
         typedef struct {
-            st_modctx_funcs_t        __st_parent_funcs;
-            st_sprite_from_texture_t from_texture;
+            st_modctx_funcs_t               __st_parent_funcs;
+            st_sprite_from_texture_t        from_texture;
+            st_sprite_from_texture_region_t from_texture_region;
         } st_spritectx_funcs_t;
 
         typedef struct {
@@ -114,6 +118,21 @@ package.preload["SpriteCtx"] = function()
 
             if sprite_handle == nil then
                 error("SpriteCtx.from_texture: failed to create sprite from texture")
+            end
+
+            return Object.__mtnew(M.__sprite.__mt, sprite_handle, true)
+        end,
+
+        from_texture_region = function(self, texture, x, y, width, height)
+            local texture_handle = ffi.cast("st_texture_t *", texture.handle)
+            local sprite_handle = ffi.cast("const st_spritectx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).from_texture_region(self.handle, texture_handle, x, y, width,
+             height)
+
+            if sprite_handle == nil then
+                error("SpriteCtx.from_texture_region: failed to create "
+                 .. "sprite from texture region")
             end
 
             return Object.__mtnew(M.__sprite.__mt, sprite_handle, true)

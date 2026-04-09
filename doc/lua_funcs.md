@@ -423,6 +423,8 @@ SpriteCtx.new_by_name(module_name: string, ...): sprite_ctx
 SpriteCtx.get_instance(module_name: ?string): sprite_ctx
 
 sprite_ctx:from_texture(texture: texture): sprite
+sprite_ctx:from_texture_region(texture: texture, x: integer, y: integer,
+ width: integer, height: integer): sprite
 -- inherited from modctx
 sprite_ctx:get_subsystem(): string
 sprite_ctx:get_name(): string
