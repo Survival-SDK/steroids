@@ -64,9 +64,16 @@ package.preload["SpriteCtx"] = function()
 
     M.__sprite.methods = setmetatable({
         get_texture = function(self)
-            return ffi.cast("const st_sprite_funcs_t *",
+            local texture_handle = ffi.cast("const st_sprite_funcs_t *",
                 ffi.cast("st_object_t *", self.handle).funcs
             ).get_texture(self.handle)
+
+            if texture_handle == nil then
+                return nil
+            end
+
+            return Object.__mtnew(Texture.__texture.__mt,
+                ffi.cast("st_texture_t *", texture_handle), false)
         end,
 
         get_width = function(self)
