@@ -44,7 +44,3 @@ target_include_directories(${ST_MODULE_TARGET} PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
     ${CMAKE_CURRENT_BINARY_DIR}
 )
-
-target_link_libraries(${ST_MODULE_TARGET} PRIVATE
-    dlist
-)
