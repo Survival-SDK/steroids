@@ -1,0 +1,222 @@
+-- Font context and font object
+package.preload["FontCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+    local Sprite  = require "SpriteCtx"
+
+    ffi.cdef[[
+        typedef struct st_fontctx {
+            st_modctx_t __st_parent;
+        } st_fontctx_t;
+
+        typedef struct st_font {
+            st_object_t __st_parent;
+        } st_font_t;
+
+        typedef st_font_t *(*st_font_load_t)(
+         st_fontctx_t *font_ctx, const char *filename);
+        typedef st_font_t *(*st_font_create_empty_t)(
+         st_fontctx_t *font_ctx, unsigned line_height, unsigned base,
+         unsigned texture_width, unsigned texture_height, unsigned pages_count);
+        typedef bool (*st_font_add_page_t)(
+         st_font_t *font, unsigned index, const char *filename);
+        typedef bool (*st_font_add_char_t)(
+         st_font_t *font, uint32_t ucs4code, unsigned subimage_x,
+         unsigned subimage_y, unsigned subimage_width,
+         unsigned subimage_height, int xoffset, int yoffset, int xadvance,
+         unsigned page);
+        typedef unsigned (*st_font_get_line_height_t)(const st_font_t *font);
+        typedef unsigned (*st_font_get_base_t)(const st_font_t *font);
+        typedef const st_sprite_t *(*st_font_get_sprite_t)(
+         const st_font_t *font, uint32_t ucs4code);
+        typedef int (*st_font_get_xoffset_t)(
+         const st_font_t *font, uint32_t ucs4code);
+        typedef int (*st_font_get_yoffset_t)(
+         const st_font_t *font, uint32_t ucs4code);
+        typedef int (*st_font_get_xadvance_t)(
+         const st_font_t *font, uint32_t ucs4code);
+
+        typedef struct {
+            st_modctx_funcs_t      __st_parent_funcs;
+            st_font_load_t         load;
+            void                  *__memload;
+            st_font_create_empty_t create_empty;
+        } st_fontctx_funcs_t;
+
+        typedef struct {
+            st_object_funcs_t         __st_parent_funcs;
+            st_font_add_page_t        add_page;
+            void                     *__memadd_page;
+            st_font_add_char_t        add_char;
+            st_font_get_line_height_t get_line_height;
+            st_font_get_base_t        get_base;
+            st_font_get_sprite_t      get_sprite;
+            st_font_get_xoffset_t     get_xoffset;
+            st_font_get_yoffset_t     get_yoffset;
+            st_font_get_xadvance_t    get_xadvance;
+        } st_font_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_fontctx_t *",
+    }
+
+    M.__font = {}
+
+    M.__font.methods = setmetatable({
+        add_page = function(self, index, filename)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).add_page(self.handle, index, filename)
+        end,
+
+        add_char = function(self, ucs4code, subimage_x, subimage_y,
+         subimage_width, subimage_height, xoffset, yoffset, xadvance, page)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).add_char(self.handle, ucs4code, subimage_x, subimage_y,
+             subimage_width, subimage_height, xoffset, yoffset, xadvance, page)
+        end,
+
+        get_line_height = function(self)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_line_height(self.handle)
+        end,
+
+        get_base = function(self)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_base(self.handle)
+        end,
+
+        get_sprite = function(self, ucs4code)
+            local sprite_handle = ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_sprite(self.handle, ucs4code)
+
+            if sprite_handle == nil then
+                return nil
+            end
+
+            return Object.__mtnew(Sprite.__sprite.__mt,
+                ffi.cast("st_sprite_t *", sprite_handle), false)
+        end,
+
+        get_xoffset = function(self, ucs4code)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_xoffset(self.handle, ucs4code)
+        end,
+
+        get_yoffset = function(self, ucs4code)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_yoffset(self.handle, ucs4code)
+        end,
+
+        get_xadvance = function(self, ucs4code)
+            return ffi.cast("const st_font_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_xadvance(self.handle, ucs4code)
+        end,
+    }, { __index = Object.methods })
+
+    M.__font.__mt = ffi.metatype(
+        "struct { st_font_t *handle; bool owned; }", {
+        __index = M.__font.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.methods = setmetatable({
+        load = function(self, filename)
+            local font_handle = ffi.cast("const st_fontctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).load(self.handle, filename)
+
+            if font_handle == nil then
+                error(string.format(
+                    "FontCtx.load: failed to load font from file '%s'",
+                    filename or "nil")
+                )
+            end
+
+            return Object.__mtnew(M.__font.__mt, font_handle, true)
+        end,
+
+        create_empty = function(self, line_height, base, texture_width,
+         texture_height, pages_count)
+            local font_handle = ffi.cast("const st_fontctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).create_empty(self.handle, line_height, base, texture_width,
+             texture_height, pages_count)
+
+            if font_handle == nil then
+                error("FontCtx.create_empty: failed to create empty font")
+            end
+
+            return Object.__mtnew(M.__font.__mt, font_handle, true)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_fontctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local font_ctor = modsmgr:get_ctor("font", name)
+        if not font_ctor then
+            error(string.format(
+                "FontCtx.new_by_name: constructor not found for font '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local font_ctx = font_ctor(params)
+
+        if not font_ctx then
+            error(string.format(
+                "FontCtx.new_by_name: failed to create font instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_fontctx_t *", font_ctx),
+         true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+
+        return modsmgr:get_singleton("font", module_name):as("FontCtx")
+    end
+
+    return M
+end
+

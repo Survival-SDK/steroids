@@ -47,6 +47,10 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/events/simple"
  "${CMAKE_BINARY_DIR}/src/modules/events/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fnv1a/simple"
  "${CMAKE_BINARY_DIR}/src/modules/fnv1a/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/font/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/font/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fontloader/bmfont"
+ "${CMAKE_BINARY_DIR}/src/modules/fontloader/bmfont")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/fs/simple"
  "${CMAKE_BINARY_DIR}/src/modules/fs/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/gfxctx/egl"
@@ -71,6 +75,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/atlas"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/atlas")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/dpsrvconn"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/dpsrvconn")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/font"
+ "${CMAKE_BINARY_DIR}/src/modules/luajitbind/font")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/gfxctx"
  "${CMAKE_BINARY_DIR}/src/modules/luajitbind/gfxctx")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/luajitbind/keyboard"
