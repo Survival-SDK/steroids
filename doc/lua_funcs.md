@@ -103,6 +103,42 @@ atlas:get_owner(): object
 atlas:get_owner_unsafe(): object
 ```
 
+## font
+```luau
+FontCtx = require "FontCtx"
+
+FontCtx.new(...): font_ctx
+FontCtx.new_by_name(module_name: string, ...): font_ctx
+FontCtx.get_instance(module_name: ?string): font_ctx
+
+font_ctx:load(filename: string): font
+font_ctx:create_empty(line_height: integer, base: integer,
+ texture_width: integer, texture_height: integer, pages_count: integer): font
+-- inherited from modctx
+font_ctx:get_subsystem(): string
+font_ctx:get_name(): string
+font_ctx:as(target: string | table): any
+-- inherited from object
+font_ctx:destroy()
+font_ctx:get_owner(): object
+font_ctx:get_owner_unsafe(): object
+
+font:add_page(index: integer, filename: string): bool
+font:add_char(ucs4code: integer, subimage_x: integer, subimage_y: integer,
+ subimage_width: integer, subimage_height: integer, xoffset: integer,
+ yoffset: integer, xadvance: integer, page: integer): bool
+font:get_line_height(): integer
+font:get_base(): integer
+font:get_sprite(ucs4code: integer): sprite | nil
+font:get_xoffset(ucs4code: integer): integer
+font:get_yoffset(ucs4code: integer): integer
+font:get_xadvance(ucs4code: integer): integer
+-- inherited from object
+font:destroy()
+font:get_owner(): object
+font:get_owner_unsafe(): object
+```
+
 ## dpsrvconn
 ```luau
 DpsrvConnCtx = require "DpsrvConnCtx"
