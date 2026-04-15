@@ -129,6 +129,8 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/texture/opengl"
  "${CMAKE_BINARY_DIR}/src/modules/texture/opengl")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/timer/simple"
  "${CMAKE_BINARY_DIR}/src/modules/timer/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/txtout/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/txtout/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/utf8/utf8proc"
  "${CMAKE_BINARY_DIR}/src/modules/utf8/utf8proc")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/vec2/simple"
