@@ -1,6 +1,7 @@
 #pragma once
 
 #include "steroids/modctx.h"
+#include "steroids/modules/font.h"
 #include "steroids/modules/gfxctx.h"
 #include "steroids/modules/sprite.h"
 
@@ -29,6 +30,9 @@ typedef void (*st_render_put_sprite_rvsheared_t)(const st_renderctx_t *render_ct
 typedef void (*st_render_put_sprite_dvsheared_t)(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float degrees, float pivot_x, float pivot_y);
+typedef void (*st_render_put_text_t)(const st_renderctx_t *render_ctx,
+ const st_font_t *font, const char *text, size_t codepoints, float x, float y, 
+ float z, float hscale, float vscale, float pivot_x, float pivot_y);
 typedef void (*st_render_process_t)(st_renderctx_t *render_ctx);
 
 typedef struct {
@@ -40,6 +44,7 @@ typedef struct {
     st_render_put_sprite_dhsheared_t put_sprite_dhsheared;
     st_render_put_sprite_rvsheared_t put_sprite_rvsheared;
     st_render_put_sprite_dvsheared_t put_sprite_dvsheared;
+    st_render_put_text_t             put_text;
     st_render_process_t              process;
 } st_renderctx_funcs_t;
 
