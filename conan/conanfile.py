@@ -67,6 +67,7 @@ class SteroidsConan(ConanFile):
         self.requires("luajit/2.1.0-beta3")
         self.requires("sdl/3.4.0")
         self.requires("stb/cci.20240531")
+        self.requires("utf8proc/2.9.0")
 
         # Custom recipes (local)
         self.requires("cfgpath/cci.20260404")
