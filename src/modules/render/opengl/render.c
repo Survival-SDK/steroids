@@ -29,6 +29,9 @@
 #define ATTR_TEXCOORD_OFFSET           \
  (sizeof(float) * ATTR_POS_COMPONENTS_COUNT)
 
+#define TEXT_DEFAULT_CODEPOINTS 8192
+#define TEXT_MAX_CODEPOINTS     65536
+
 #ifdef _WIN32
     #define MINIMAL_OPENGL "1.1"
 #elif __linux__
@@ -61,6 +64,9 @@ static void st_render_put_sprite_rvsheared(const st_renderctx_t *render_ctx,
 static void st_render_put_sprite_dvsheared(const st_renderctx_t *render_ctx,
  const st_sprite_t *sprite, float x, float y, float z, float hscale,
  float vscale, float degrees, float pivot_x, float pivot_y);
+static void st_render_put_text(const st_renderctx_t *render_ctx,
+ const st_font_t *font, const char *text, size_t codepoints, float x, float y, 
+ float z, float hscale, float vscale, float pivot_x, float pivot_y);
 static void st_render_process(st_renderctx_t *render_ctx);
 
 static st_renderctx_funcs_t st_render_opengl_funcs = {
@@ -72,6 +78,7 @@ static st_renderctx_funcs_t st_render_opengl_funcs = {
     .put_sprite_dhsheared = st_render_put_sprite_dhsheared,
     .put_sprite_rvsheared = st_render_put_sprite_rvsheared,
     .put_sprite_dvsheared = st_render_put_sprite_dvsheared,
+    .put_text             = st_render_put_text,
     .process              = st_render_process,
 };
 
@@ -84,6 +91,7 @@ static const st_modprerq_t mod_prereqs[] = {
     { "logger", NULL, },
     { "matrix3x3", NULL, },
     { "sprite", NULL, },
+    { "txtout", NULL, },
     { "vec2", NULL, },
     {0},
 };
@@ -172,6 +180,18 @@ static st_renderctx_t *st_render_init(const st_param_t params[]) {
         ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
          "render_opengl: Unable to get texture context");
         goto texture_fail;
+    }
+
+    render_ctx->txtout_ctx = ST_MODSMGR_CALL(modsmgr, have_singleton, "txtout", 
+     NULL) 
+        ? (st_txtoutctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton, "txtout", 
+         NULL)
+        : (st_txtoutctx_t *)ST_MODSMGR_CALL(modsmgr, create_singleton, "txtout", 
+         NULL, (st_params_t){{0}});
+    if (!render_ctx->txtout_ctx) {
+        ST_LOGGERCTX_CALL(render_ctx->logger_ctx, error,
+         "render_opengl: Unable to get txtout context");
+        goto txtout_fail;
     }
 
     render_ctx->vec2_ctx = ST_MODSMGR_CALL(modsmgr, get_singleton, "vec2", NULL);
@@ -356,6 +376,7 @@ queue_fail:
 version_check_fail:
 glfuncs_fail:
 vec2_fail:
+txtout_fail:
 texture_fail:
 sprite_fail:
 matrix3x3_fail:
@@ -440,6 +461,28 @@ static void st_render_put_sprite_dvsheared(const st_renderctx_t *render_ctx,
 
     ST_DRAWQ_CALL(render_ctx->queue, add, sprite, x, y, z, hscale, vscale,
      0.0f, 0.0f, radians, pivot_x, pivot_y);
+}
+
+static void st_render_put_text(const st_renderctx_t *render_ctx,
+ const st_font_t *font, const char *text, size_t codepoints, float x, float y, 
+ float z, float hscale, float vscale, float pivot_x, float pivot_y) {
+    size_t entries_max = (codepoints > 0 && codepoints <= TEXT_MAX_CODEPOINTS) 
+        ? codepoints 
+        : TEXT_DEFAULT_CODEPOINTS;
+    st_txtoutentry_t entries[entries_max];
+    size_t actual_codepoints = codepoints ?: entries_max;
+    ssize_t entries_count = ST_TXTOUTCTX_CALL(render_ctx->txtout_ctx, 
+     get_output_data, entries, font, text, actual_codepoints, x, y, hscale, vscale, 
+     pivot_x, pivot_y);
+
+    if (entries_count < 0)
+        return;
+
+    for (size_t i = 0; i < entries_count && i < actual_codepoints; i++) {
+        ST_DRAWQ_CALL(render_ctx->queue, add, entries[i].sprite, entries[i].x, 
+         entries[i].y, z, entries[i].hscale, entries[i].vscale, 0.0f, 0.0f, 
+         0.0f, 0.0f, 0.0f);
+    }
 }
 
 typedef struct {

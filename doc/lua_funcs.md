@@ -447,6 +447,7 @@ render_ctx:put_sprite_rhsheared(sprite: sprite, x: double, y: double, z: double,
 render_ctx:put_sprite_dhsheared(sprite: sprite, x: double, y: double, z: double, hscale: double, vscale: double, degrees: double, pivot_x: double, pivot_y: double)
 render_ctx:put_sprite_rvsheared(sprite: sprite, x: double, y: double, z: double, hscale: double, vscale: double, radians: double, pivot_x: double, pivot_y: double)
 render_ctx:put_sprite_dvsheared(sprite: sprite, x: double, y: double, z: double, hscale: double, vscale: double, degrees: double, pivot_x: double, pivot_y: double)
+render_ctx:put_text(font: font, text: string, codepoints: integer, x: double, y: double, z: double, hscale: double, vscale: double, pivot_x: double, pivot_y: double)
 render_ctx:process()
 ```
 

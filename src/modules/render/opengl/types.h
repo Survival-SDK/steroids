@@ -13,6 +13,7 @@
 #include "steroids/modules/matrix3x3.h"
 #include "steroids/modules/sprite.h"
 #include "steroids/modules/texture.h"
+#include "steroids/modules/txtout.h"
 #include "steroids/modules/vec2.h"
 
 #include "glfuncs.h"
@@ -69,6 +70,7 @@ typedef struct st_renderctx {
     st_matrix3x3ctx_t *matrix3x3_ctx;
     st_spritectx_t    *sprite_ctx;
     st_texturectx_t   *texture_ctx;
+    st_txtoutctx_t    *txtout_ctx;
     st_vec2ctx_t      *vec2_ctx;
     st_dpsrvconnctx_t *dpsrvconn_ctx;
     st_window_t       *window;
