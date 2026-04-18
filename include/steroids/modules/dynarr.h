@@ -24,6 +24,7 @@ typedef bool (*st_dynarr_sort_t)(st_dynarr_t *dynarr,
 typedef bool (*st_dynarr_extract_t)(const st_dynarr_t *dynarr, void *dst,
  size_t index);
 typedef const void *(*st_dynarr_get_t)(const st_dynarr_t *dynarr, size_t index);
+typedef const void *(*st_dynarr_get_last_t)(const st_dynarr_t *dynarr);
 typedef const void *(*st_dynarr_get_all_t)(const st_dynarr_t *dynarr);
 typedef size_t (*st_dynarr_get_elements_count_t)(const st_dynarr_t *dynarr);
 typedef bool (*st_dynarr_is_empty_t)(const st_dynarr_t *dynarr);
@@ -41,6 +42,7 @@ typedef struct {
     st_dynarr_sort_t               sort;
     st_dynarr_extract_t            extract;
     st_dynarr_get_t                get;
+    st_dynarr_get_last_t           get_last;
     st_dynarr_get_all_t            get_all;
     st_dynarr_get_elements_count_t get_elements_count;
     st_dynarr_is_empty_t           is_empty;
