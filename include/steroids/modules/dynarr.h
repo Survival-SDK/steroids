@@ -23,8 +23,8 @@ typedef bool (*st_dynarr_sort_t)(st_dynarr_t *dynarr,
  int (*cmpfunc)(const void *, const void *, void *), void *userptr);
 typedef bool (*st_dynarr_extract_t)(const st_dynarr_t *dynarr, void *dst,
  size_t index);
-typedef const void *(*st_dynarr_get_t)(st_dynarr_t *dynarr, size_t index);
-typedef const void *(*st_dynarr_get_all_t)(st_dynarr_t *dynarr);
+typedef const void *(*st_dynarr_get_t)(const st_dynarr_t *dynarr, size_t index);
+typedef const void *(*st_dynarr_get_all_t)(const st_dynarr_t *dynarr);
 typedef size_t (*st_dynarr_get_elements_count_t)(const st_dynarr_t *dynarr);
 typedef bool (*st_dynarr_is_empty_t)(const st_dynarr_t *dynarr);
 

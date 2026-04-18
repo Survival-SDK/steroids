@@ -22,8 +22,8 @@ static bool st_dynarr_sort(st_dynarr_t *dynarr,
  int (*cmpfunc)(const void *, const void *, void *), void *userptr);
 static bool st_dynarr_extract(const st_dynarr_t *dynarr, void *dst,
  size_t index);
-static const void *st_dynarr_get(st_dynarr_t *dynarr, size_t index);
-static const void *st_dynarr_get_all(st_dynarr_t *dynarr);
+static const void *st_dynarr_get(const st_dynarr_t *dynarr, size_t index);
+static const void *st_dynarr_get_all(const st_dynarr_t *dynarr);
 static size_t st_dynarr_get_elements_count(const st_dynarr_t *dynarr);
 static bool st_dynarr_is_empty(const st_dynarr_t *dynarr);
 
@@ -155,11 +155,11 @@ static bool st_dynarr_extract(const st_dynarr_t *dynarr, void *dst,
     return true;
 }
 
-static const void *st_dynarr_get(st_dynarr_t *dynarr, size_t index) {
+static const void *st_dynarr_get(const st_dynarr_t *dynarr, size_t index) {
     return scv_at(dynarr->handle, index);
 }
 
-static const void *st_dynarr_get_all(st_dynarr_t *dynarr) {
+static const void *st_dynarr_get_all(const st_dynarr_t *dynarr) {
     return scv_data(dynarr->handle);
 }
 
