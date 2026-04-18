@@ -1,0 +1,301 @@
+package.preload["AtilesCtx"] = function()
+    local ffi = require "ffi"
+
+    local ModCtx  = require "ModCtx"
+    local ModsMgr = require "ModsMgr"
+    local Object  = require "Object"
+    local Atlas   = require "AtlasCtx"
+    local Sprite  = require "SpriteCtx"
+    local Texture = require "TextureCtx"
+
+    ffi.cdef[[
+        typedef struct st_atilesctx {
+            st_modctx_t __st_parent;
+        } st_atilesctx_t;
+
+        typedef struct st_atileset st_atileset_t;
+        typedef struct st_atileset st_atile_t;
+        // typedef struct st_texture st_texture_t;
+        // typedef struct st_atlas st_atlas_t;
+        // typedef struct st_sprite st_sprite_t;
+
+        typedef enum {
+            ST_ATS_NORTH_WALL = 0,
+            ST_ATS_SOUTH_WALL = 1,
+            ST_ATS_EAST_WALL = 2,
+            ST_ATS_WEST_WALL = 3,
+            ST_ATS_NORTH_EAST_EXTERNAL_CORNER = 4,
+            ST_ATS_SOUTH_EAST_EXTERNAL_CORNER = 5,
+            ST_ATS_SOUTH_WEST_EXTERNAL_CORNER = 6,
+            ST_ATS_NORTH_WEST_EXTERNAL_CORNER = 7,
+            ST_ATS_NORTH_EAST_INTERNAL_CORNER = 8,
+            ST_ATS_SOUTH_EAST_INTERNAL_CORNER = 9,
+            ST_ATS_SOUTH_WEST_INTERNAL_CORNER = 10,
+            ST_ATS_NORTH_WEST_INTERNAL_CORNER = 11,
+            ST_ATS_ENTIRE = 12,
+            ST_ATS_EMPTY = 13,
+
+            ST_ATS_NONEMPTY_LEN = 13,
+            ST_ATS_LEN = 14,
+        } st_atsubtile_t;
+
+        typedef enum {
+            ST_ATSPP_NW = 0,
+            ST_ATSPP_NE,
+            ST_ATSPP_SE,
+            ST_ATSPP_SW,
+
+            ST_ATSPP_LEN = 4,
+        } st_atsubtilepos_t;
+
+        typedef enum {
+            ST_ATNM_SAME,
+            ST_ATNM_ANY,
+        } st_atnghbrmode_t;
+
+        typedef const st_atileset_t *(*st_atiles_tileset_load_t)(
+         st_atilesctx_t *atilesctx, const char *filename);
+        typedef const st_atileset_t *(*st_atiles_tileset_from_texture_t)(
+         st_atilesctx_t *atilesctx, st_texture_t *texture);
+        typedef const st_atileset_t *(*st_atiles_tileset_from_atlas_t)(
+         st_atilesctx_t *atilesctx, const st_atlas_t *atlas);
+        typedef int (*st_atiles_add_layer_t)(st_atilesctx_t *atilesctx,
+         unsigned rows, unsigned cols, unsigned tile_width,
+         unsigned tile_height, st_atnghbrmode_t neighbor_mode);
+        typedef void (*st_atiles_update_tile_t)(st_atilesctx_t *atilesctx,
+         unsigned layer_index, unsigned row, unsigned col, st_atile_t *tile,
+         bool update_subtiles);
+        typedef const st_atile_t *(*st_atiles_get_tile_t)(
+         const st_atilesctx_t *atilesctx, unsigned layer_index, unsigned row,
+         unsigned col);
+        typedef void (*st_atiles_get_subtile_t)(const st_atilesctx_t *atilesctx,
+         st_atsubtile_t dst[ST_ATSPP_LEN], unsigned layer_index, unsigned row,
+         unsigned col);
+        typedef void (*st_atiles_get_subtile_sprite_t)(
+         const st_atilesctx_t *atilesctx, const st_sprite_t *dst[ST_ATSPP_LEN],
+         unsigned layer_index, unsigned row, unsigned col);
+        typedef void (*st_atiles_update_t)(st_atilesctx_t *atilesctx);
+
+        typedef struct {
+            st_modctx_funcs_t                 __st_parent_funcs;
+            st_atiles_tileset_load_t          tileset_load;
+            st_atiles_tileset_from_texture_t  tileset_from_texture;
+            st_atiles_tileset_from_atlas_t    tileset_from_atlas;
+            st_atiles_add_layer_t             add_layer;
+            st_atiles_update_tile_t           update_tile;
+            st_atiles_get_tile_t              get_tile;
+            st_atiles_get_subtile_t           get_subtile;
+            st_atiles_get_subtile_sprite_t    get_subtile_sprite;
+            st_atiles_update_t                update;
+        } st_atilesctx_funcs_t;
+    ]]
+
+    local M = {
+        __ctype = "st_atilesctx_t *",
+    }
+
+    M.methods = setmetatable({
+        tileset_load = function(self, filename)
+            local tileset = ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).tileset_load(self.handle, filename)
+
+            if tileset == nil then
+                error(string.format(
+                    "AtilesCtx.tileset_load: failed to load tileset '%s'",
+                    filename or "nil")
+                )
+            end
+
+            return ffi.cast("st_atileset_t *", tileset)
+        end,
+
+        tileset_from_texture = function(self, texture)
+            local tileset = ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).tileset_from_texture(self.handle,
+             ffi.cast("st_texture_t *", texture.handle))
+
+            if tileset == nil then
+                error("AtilesCtx.tileset_from_texture: failed to create tileset")
+            end
+
+            return ffi.cast("st_atileset_t *", tileset)
+        end,
+
+        tileset_from_atlas = function(self, atlas)
+            local tileset = ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).tileset_from_atlas(self.handle,
+             ffi.cast("st_atlas_t *", atlas.handle))
+
+            if tileset == nil then
+                error("AtilesCtx.tileset_from_atlas: failed to create tileset")
+            end
+
+            return ffi.cast("st_atileset_t *", tileset)
+        end,
+
+        add_layer = function(self, rows, cols, tile_width, tile_height,
+         neighbor_mode)
+            return ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).add_layer(self.handle, rows, cols, tile_width, tile_height,
+             neighbor_mode)
+        end,
+
+        update_tile = function(self, layer_index, row, col, tile,
+         update_subtiles)
+            local tile_handle = nil
+
+            if tile ~= nil then
+                tile_handle = ffi.cast("st_atile_t *", tile)
+            end
+
+            ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).update_tile(self.handle, layer_index, row, col, tile_handle,
+             update_subtiles)
+        end,
+
+        get_tile = function(self, layer_index, row, col)
+            local tile_handle = ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_tile(self.handle, layer_index, row, col)
+
+            if tile_handle == nil then
+                return nil
+            end
+
+            return ffi.cast("st_atile_t *", tile_handle)
+        end,
+
+        get_subtile = function(self, layer_index, row, col)
+            local dst = ffi.new("st_atsubtile_t[4]")
+
+            ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subtile(self.handle, dst, layer_index, row, col)
+
+            return dst[ffi.C.ST_ATSPP_NW], dst[ffi.C.ST_ATSPP_NE],
+                dst[ffi.C.ST_ATSPP_SW], dst[ffi.C.ST_ATSPP_SE]
+        end,
+
+        get_subtile_sprite = function(self, layer_index, row, col)
+            local dst = ffi.new("const st_sprite_t *[4]")
+            local nw = nil
+            local ne = nil
+            local se = nil
+            local sw = nil
+
+            ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).get_subtile_sprite(self.handle, dst, layer_index, row, col)
+
+            if dst[ffi.C.ST_ATSPP_NW] ~= nil then
+                nw = Object.__mtnew(Sprite.__sprite.__mt, 
+                 ffi.cast("st_sprite_t *", dst[ffi.C.ST_ATSPP_NW]), false)
+            end
+            if dst[ffi.C.ST_ATSPP_NE] ~= nil then
+                ne = Object.__mtnew(Sprite.__sprite.__mt, 
+                 ffi.cast("st_sprite_t *", dst[ffi.C.ST_ATSPP_NE]), false)
+            end
+            if dst[ffi.C.ST_ATSPP_SE] ~= nil then
+                se = Object.__mtnew(Sprite.__sprite.__mt, 
+                 ffi.cast("st_sprite_t *", dst[ffi.C.ST_ATSPP_SE]), false)
+            end
+            if dst[ffi.C.ST_ATSPP_SW] ~= nil then
+                sw = Object.__mtnew(Sprite.__sprite.__mt, 
+                 ffi.cast("st_sprite_t *", dst[ffi.C.ST_ATSPP_SW]), false)
+            end
+
+            return nw, ne, sw, se 
+        end,
+
+        update = function(self)
+            ffi.cast("const st_atilesctx_funcs_t *",
+                ffi.cast("st_object_t *", self.handle).funcs
+            ).update(self.handle)
+        end,
+    }, { __index = ModCtx.methods })
+
+    M.__mt = ffi.metatype(
+        "struct { st_atilesctx_t *handle; bool owned; }", {
+        __index = M.methods,
+        __new = function(class, handle, owned)
+            return ffi.new(class, handle, owned)
+        end,
+        __gc = function(self)
+            if self.owned then
+                self:destroy()
+            end
+        end,
+    })
+
+    M.new_by_name = function(name, ...)
+        local modsmgr = ModsMgr.get_instance()
+
+        local atiles_ctor = modsmgr:get_ctor("atiles", name)
+        if not atiles_ctor then
+            error(string.format(
+                "AtilesCtx.new_by_name: constructor not found for atiles '%s'",
+                name or "nil")
+            )
+        end
+
+        local params = ModCtx.__create_modctx_params(modsmgr, ...)
+        local atiles_ctx = atiles_ctor(params)
+
+        if not atiles_ctx then
+            error(string.format(
+                "AtilesCtx.new_by_name: failed to create atiles instance '%s'",
+                name or "nil")
+            )
+        end
+
+        return Object.__mtnew(M.__mt, ffi.cast("st_atilesctx_t *",
+            atiles_ctx), true)
+    end
+
+    M.new = function(...)
+        return M.new_by_name(nil, ...)
+    end
+
+    M.get_instance = function(module_name)
+        local modsmgr = ModsMgr.get_instance()
+
+        return modsmgr:get_singleton("atiles", module_name):as("AtilesCtx")
+    end
+
+    -- Neighbor mode constants
+    M.nm_same = ffi.C.ST_ATNM_SAME
+    M.nm_any = ffi.C.ST_ATNM_ANY
+
+    -- Subtile position constants
+    M.spp_nw = ffi.C.ST_ATSPP_NW
+    M.spp_ne = ffi.C.ST_ATSPP_NE
+    M.spp_se = ffi.C.ST_ATSPP_SE
+    M.spp_sw = ffi.C.ST_ATSPP_SW
+    M.spp_len = ffi.C.ST_ATSPP_LEN
+
+    -- Subtile constants
+    M.st_north_wall = ffi.C.ST_ATS_NORTH_WALL
+    M.st_south_wall = ffi.C.ST_ATS_SOUTH_WALL
+    M.st_east_wall = ffi.C.ST_ATS_EAST_WALL
+    M.st_west_wall = ffi.C.ST_ATS_WEST_WALL
+    M.st_north_east_external_corner = ffi.C.ST_ATS_NORTH_EAST_EXTERNAL_CORNER
+    M.st_south_east_external_corner = ffi.C.ST_ATS_SOUTH_EAST_EXTERNAL_CORNER
+    M.st_south_west_external_corner = ffi.C.ST_ATS_SOUTH_WEST_EXTERNAL_CORNER
+    M.st_north_west_external_corner = ffi.C.ST_ATS_NORTH_WEST_EXTERNAL_CORNER
+    M.st_north_east_internal_corner = ffi.C.ST_ATS_NORTH_EAST_INTERNAL_CORNER
+    M.st_south_east_internal_corner = ffi.C.ST_ATS_SOUTH_EAST_INTERNAL_CORNER
+    M.st_south_west_internal_corner = ffi.C.ST_ATS_SOUTH_WEST_INTERNAL_CORNER
+    M.st_north_west_internal_corner = ffi.C.ST_ATS_NORTH_WEST_INTERNAL_CORNER
+    M.st_entire = ffi.C.ST_ATS_ENTIRE
+    M.st_empty = ffi.C.ST_ATS_EMPTY
+    M.st_nonempty_len = ffi.C.ST_ATS_NONEMPTY_LEN
+    M.st_len = ffi.C.ST_ATS_LEN
+
+    return M
+end
+
