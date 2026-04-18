@@ -69,6 +69,64 @@ angle_ctx:get_owner(): object
 angle_ctx:get_owner_unsafe(): object
 ```
 
+## atiles
+```luau
+AtilesCtx = require "AtilesCtx"
+
+AtilesCtx.new(...): atiles_ctx
+AtilesCtx.new_by_name(module_name: string, ...): atiles_ctx
+AtilesCtx.get_instance(module_name: ?string): atiles_ctx
+
+AtilesCtx.nm_same: number
+AtilesCtx.nm_any: number
+
+AtilesCtx.spp_nw: number
+AtilesCtx.spp_ne: number
+AtilesCtx.spp_se: number
+AtilesCtx.spp_sw: number
+AtilesCtx.spp_len: number
+
+AtilesCtx.st_north_wall: number
+AtilesCtx.st_south_wall: number
+AtilesCtx.st_east_wall: number
+AtilesCtx.st_west_wall: number
+AtilesCtx.st_north_east_external_corner: number
+AtilesCtx.st_south_east_external_corner: number
+AtilesCtx.st_south_west_external_corner: number
+AtilesCtx.st_north_west_external_corner: number
+AtilesCtx.st_north_east_internal_corner: number
+AtilesCtx.st_south_east_internal_corner: number
+AtilesCtx.st_south_west_internal_corner: number
+AtilesCtx.st_north_west_internal_corner: number
+AtilesCtx.st_entire: number
+AtilesCtx.st_empty: number
+<!-- AtilesCtx.st_nonempty_len: number
+AtilesCtx.st_len: number -->
+
+atiles_ctx:tileset_load(filename: string): cdata
+atiles_ctx:tileset_from_texture(texture: texture): cdata
+atiles_ctx:tileset_from_atlas(atlas: atlas): cdata
+atiles_ctx:add_layer(rows: number, cols: number, tile_width: number,
+ tile_height: number, neighbor_mode: number): number
+atiles_ctx:update_tile(layer_index: number, row: number, col: number,
+ tile: cdata | nil, update_subtiles: boolean)
+atiles_ctx:get_tile(layer_index: number, row: number, col: number):
+ cdata | nil
+atiles_ctx:get_subtile(layer_index: number, row: number, col: number):
+ number, number, number, number -- nw, ne, sw, se
+atiles_ctx:get_subtile_sprite(layer_index: number, row: number, col: number):
+ sprite | nil, sprite | nil, sprite | nil, sprite | nil -- nw, ne, sw, se
+atiles_ctx:update()
+-- inherited from modctx
+atiles_ctx:get_subsystem(): string
+atiles_ctx:get_name(): string
+atiles_ctx:as(target: string | table): any
+-- inherited from object
+atiles_ctx:destroy()
+atiles_ctx:get_owner(): object
+atiles_ctx:get_owner_unsafe(): object
+```
+
 ## atlas
 ```luau
 AtlasCtx = require "AtlasCtx"
