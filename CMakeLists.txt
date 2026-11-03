@@ -121,8 +121,14 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/runner/simple"
  "${CMAKE_BINARY_DIR}/src/modules/runner/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sdl3loader/sdl3"
  "${CMAKE_BINARY_DIR}/src/modules/sdl3loader/sdl3")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sndcodec/sdl3"
+ "${CMAKE_BINARY_DIR}/src/modules/sndcodec/sdl3")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sndcodec/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/sndcodec/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/so/simple"
  "${CMAKE_BINARY_DIR}/src/modules/so/simple")
+add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sound/simple"
+ "${CMAKE_BINARY_DIR}/src/modules/sound/simple")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/spcpaths/cfgpath"
  "${CMAKE_BINARY_DIR}/src/modules/spcpaths/cfgpath")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src/modules/sprite/simple"

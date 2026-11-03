@@ -47,6 +47,9 @@ static const struct {
     SDL3_FUNC_ENTRY(SDL_GetWindowFromID),
     SDL3_FUNC_ENTRY(SDL_GetDisplayForWindow),
 
+    /* audio */
+    SDL3_FUNC_ENTRY(SDL_LoadWAV),
+
     /* properties */
     SDL3_FUNC_ENTRY(SDL_CreateProperties),
     SDL3_FUNC_ENTRY(SDL_DestroyProperties),
@@ -91,7 +94,7 @@ static st_sdl3loaderctx_t *st_sdl3loader_init(const st_param_t params[]) {
     st_loggerctx_t     *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
      get_singleton, "logger", NULL);
     st_sdl3loaderctx_t *sdl3loader_ctx = (st_sdl3loaderctx_t *)st_modctx_new(
-     "sdl3loader", "sdl3", sizeof(st_sdl3loaderctx_t), NULL, 
+     "sdl3loader", "sdl3", sizeof(st_sdl3loaderctx_t), NULL,
      &sdl3loaderctx_funcs, (st_object_dtor_t)st_sdl3loader_quit);
 
     if (!sdl3loader_ctx) {
@@ -124,6 +127,6 @@ static void *st_sdl3loader_get_proc_address(
         if (strcmp(sdl3_functions[i].name, funcname) == 0)
             return sdl3_functions[i].ptr;
     }
-    
+
     return NULL;
 }

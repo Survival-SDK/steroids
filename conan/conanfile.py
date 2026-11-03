@@ -37,7 +37,7 @@ class SteroidsConan(ConanFile):
         "sdl/*:vulkan": False,
         "sdl/*:dbus": False,
     }
-    
+
     def system_requirements(self):
         # Install system libraries for X11 and OpenGL/EGL
         dnf = Dnf(self)
@@ -48,7 +48,7 @@ class SteroidsConan(ConanFile):
             "libglvnd-devel",
             "mesa-libEGL-devel",
         ])
-        
+
         yum = Yum(self)
         yum.install([
             "pkgconfig",
@@ -57,7 +57,7 @@ class SteroidsConan(ConanFile):
             "libglvnd-devel",
             "mesa-libEGL-devel",
         ])
-    
+
     def requirements(self):
         # Dependencies from ConanCenter
         self.requires("cwalk/1.2.8")
@@ -77,14 +77,14 @@ class SteroidsConan(ConanFile):
         self.requires("libsir/2.2.5")
         self.requires("lwrb/3.2.0")
         self.requires("scv/cci.20260404")
-    
+
     def build_requirements(self):
         # Build tools and CMake modules
         self.tool_requires("cmake_barebones/cci.20260404")
-    
+
     def generate(self):
         # Warmup mode for Docker image build: populate Conan cache only.
-        if self.conf.get("user.steroids:cache_warmup", default=False, 
+        if self.conf.get("user.steroids:cache_warmup", default=False,
          check_type=bool):
             self.output.info("Cache warmup mode enabled: skipping generators")
             return
