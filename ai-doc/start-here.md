@@ -1,10 +1,6 @@
 # Документация для AI-агентов проекта Steroids
 
-Это главный файл документации для агентов Cursor.
-
-## Поведенческие правила
-
-Поведенческие правила агента находятся в `.cursor/rules/`
+Это главный файл документации для AI-агентов проекта.
 
 ## Структура документации
 
@@ -23,6 +19,7 @@
 - **`ai-doc/cmake-patterns.md`** — паттерны CMake для сборки модулей
 - **`ai-doc/best-practices.md`** — best practices и edge cases (зависимости, POD vs OOP, обработка ошибок)
 - **`ai-doc/gfxctx-specifics.md`** — специфичные правила для модуля gfxctx
+- **`ai-doc/main-luajit.md`** — правила работы с файлом `main.luajit` (песочница пользователя)
 
 ## Порядок изучения (для новых агентов)
 
@@ -37,7 +34,8 @@
 7. `current.md` — понять текущую задачу
 8. `best-practices.md` — edge cases и best practices (читать по необходимости)
 9. `gfxctx-specifics.md` — специфика gfxctx (читать при работе с графикой)
-10. `luajit-bindings.md` и `cmake-patterns.md` — по необходимости
+10. `main-luajit.md` — правила работы с `main.luajit` (читать при работе с этим файлом)
+11. `luajit-bindings.md` и `cmake-patterns.md` — по необходимости
 
 ## Важные примечания
 
@@ -52,3 +50,4 @@
 - **Работа с кодом проекта:** изучи `branch.md`, `module-system.md`, `best-practices.md` и `cmake-patterns.md`
 - **Создание LuaJIT биндинга:** изучи `luajit-bindings.md`
 - **Работа с OOP:** изучи `oop-system.md` и `best-practices.md`
+- **Работа с `main.luajit`:** изучи `main-luajit.md`
