@@ -21,7 +21,7 @@ class SteroidsConan(ConanFile):
         "sdl/*:xscrnsaver": True,
         "sdl/*:xshape": True,
         "sdl/*:xsync": True,
-        "sdl/*:audio": False,
+        "sdl/*:audio": True,
         "sdl/*:alsa": False,
         "sdl/*:pulseaudio": False,
         "sdl/*:sndio": False,

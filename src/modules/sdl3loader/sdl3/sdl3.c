@@ -49,6 +49,13 @@ static const struct {
 
     /* audio */
     SDL3_FUNC_ENTRY(SDL_LoadWAV),
+    SDL3_FUNC_ENTRY(SDL_CreateAudioStream),
+    SDL3_FUNC_ENTRY(SDL_PutAudioStreamData),
+    SDL3_FUNC_ENTRY(SDL_PutAudioStreamPlanarData),
+    SDL3_FUNC_ENTRY(SDL_GetAudioStreamData),
+    SDL3_FUNC_ENTRY(SDL_GetAudioStreamAvailable),
+    SDL3_FUNC_ENTRY(SDL_FlushAudioStream),
+    SDL3_FUNC_ENTRY(SDL_DestroyAudioStream),
 
     /* properties */
     SDL3_FUNC_ENTRY(SDL_CreateProperties),
