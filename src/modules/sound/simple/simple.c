@@ -1,17 +1,13 @@
 #include "simple.h"
 
-// #include <errno.h>
-// #include <stdbool.h>
-// #include <stddef.h>
-// #include <stdio.h>
-// #include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "steroids/moddata.h"
 #include "steroids/modsmgr.h"
 #include "steroids/modules/sndcodec.h"
+#include "types.h"
 
-// #define ERRMSGBUF_SIZE  128
 #define CODEC_NAME_SIZE                32
 #define DEFAULT_MIXFMT_RATE            48000
 #define DEFAULT_MIXFMT_CHANNELS_COUNT  2
@@ -24,17 +20,17 @@ static void st_sound_quit(st_soundctx_t *sound_ctx);
 static st_sound_t *st_sound_load(st_soundctx_t *sound_ctx,
  const char *filename, st_soundtype_t type);
 static st_sound_t *st_sound_import_preloaded(st_soundctx_t *sound_ctx,
- size_t frames_per_channel, const st_pcmfmt_t *src_fmt, const void *pcm[],
- size_t pcm_len_per_channel);
+ const st_pcmfmt_t *src_fmt, const void *pcm[], size_t pcm_len_per_channel);
 static st_sound_t *st_sound_import_streamed(st_soundctx_t *sound_ctx,
- struct st_sndstream *sndstream, size_t frames_per_channel,
- const st_pcmfmt_t *src_fmt, struct st_sndcodecctx *codec_ctx,
- const char *asset_id);
+ struct st_sndstream *sndstream, const st_pcmfmt_t *src_fmt,
+ struct st_sndcodecctx *codec_ctx, const char *asset_id);
 static const st_pcmfmt_t *st_sound_get_mix_fmt(const st_soundctx_t *sound_ctx);
 
 static st_soundtype_t st_sound_get_type(const st_sound_t *sound);
-static size_t st_sound_get_frames_per_channel(const st_sound_t *sound);
-static const st_pcmfmt_t *st_sound_get_fmt(const st_sound_t *sound);
+
+static size_t st_sound_get_pcm_size_per_channel(const st_prldsound_t *sound);
+
+static const st_pcmfmt_t *st_sound_get_src_fmt(const st_strmsound_t *sound);
 
 static st_soundctx_funcs_t soundctx_funcs = {
     ST_MODCTX_FUNCS,
@@ -44,15 +40,27 @@ static st_soundctx_funcs_t soundctx_funcs = {
     .get_mix_fmt      = st_sound_get_mix_fmt,
 };
 
+#define ST_SOUND_FUNCS             \
+    ST_OBJECT_FUNCS,               \
+    .get_type = st_sound_get_type
+
 static st_sound_funcs_t sound_funcs = {
-    ST_OBJECT_FUNCS,
-    .get_type               = st_sound_get_type,
-    .get_frames_per_channel = st_sound_get_frames_per_channel,
-    .get_fmt                = st_sound_get_fmt,
+    ST_SOUND_FUNCS,
+};
+
+static st_prldsound_funcs_t prldsound_funcs = {
+    ST_SOUND_FUNCS,
+    .get_pcm_size_per_channel = st_sound_get_pcm_size_per_channel,
+};
+
+static st_strmsound_funcs_t strmsound_funcs = {
+    ST_SOUND_FUNCS,
+    .get_src_fmt = st_sound_get_src_fmt,
 };
 
 static const st_modprerq_t mod_prereqs[] = {
     { "logger", NULL, },
+    { "pcmconv", NULL, },
     {0},
 };
 
@@ -118,29 +126,52 @@ static void st_sound_init_codecs(st_soundctx_t *sound_ctx,
 }
 
 static st_soundctx_t *st_sound_init(const st_param_t params[]) {
-    st_modsmgr_t      *modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
-    st_loggerctx_t    *logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr,
-     get_singleton, "logger", NULL);
-    st_soundctx_t     *sound_ctx = (st_soundctx_t *)st_modctx_new("sound",
-     "simple", sizeof(st_soundctx_t), NULL, &soundctx_funcs,
-     (st_object_dtor_t)st_sound_quit);
-    unsigned           mixfmt_rate = st_modctx_get_param_as_uint(params,
-     "rate");
-    unsigned           mixfmt_channels_count = st_modctx_get_param_as_uint(
-     params, "channels_count");
-    st_sndchnllayout_t mixfmt_channels_layout = st_modctx_get_param_as_int(
-     params, "channels_layout");
-    st_sndsamplefmt_t  mixfmt_sample_fmt = st_modctx_get_param_as_int(params,
-     "sample_fmt");
+    st_modsmgr_t      *modsmgr;
+    st_loggerctx_t    *logger_ctx;
+    st_pcmconvctx_t   *pcmconv_ctx;
+    st_soundctx_t     *sound_ctx;
+    unsigned           mixfmt_rate;
+    unsigned           mixfmt_channels_count;
+    st_sndchnllayout_t mixfmt_channels_layout;
+    st_sndsamplefmt_t  mixfmt_sample_fmt;
 
-    if (!sound_ctx) {
+    modsmgr = st_modctx_get_param_as_ptr(params, "modsmgr");
+    if (!modsmgr)
+        return NULL;
+
+    logger_ctx = (st_loggerctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "logger", NULL);
+    if (!logger_ctx)
+        return NULL;
+
+    pcmconv_ctx = (st_pcmconvctx_t *)ST_MODSMGR_CALL(modsmgr, get_singleton,
+     "pcmconv", NULL);
+    if (!pcmconv_ctx) {
         ST_LOGGERCTX_CALL(logger_ctx, error,
-         "sound_simple: unable to create new sound ctx object");
+         "sound_simple: Unable to get initialized pcmconv context");
 
         return NULL;
     }
 
+    sound_ctx = (st_soundctx_t *)st_modctx_new("sound", "simple",
+     sizeof(st_soundctx_t), NULL, &soundctx_funcs,
+     (st_object_dtor_t)st_sound_quit);
+    if (!sound_ctx) {
+        ST_LOGGERCTX_CALL(logger_ctx, error,
+         "sound_simple: Unable to create new sound ctx object");
+
+        return NULL;
+    }
+
+    mixfmt_rate = st_modctx_get_param_as_uint(params, "rate");
+    mixfmt_channels_count = st_modctx_get_param_as_uint(params,
+     "channels_count");
+    mixfmt_channels_layout = st_modctx_get_param_as_int(params,
+     "channels_layout");
+    mixfmt_sample_fmt = st_modctx_get_param_as_int(params, "sample_fmt");
+
     sound_ctx->logger_ctx = logger_ctx;
+    sound_ctx->pcmconv_ctx = pcmconv_ctx;
     sound_ctx->mix_fmt    = (st_pcmfmt_t){
         .rate = mixfmt_rate ?: DEFAULT_MIXFMT_RATE,
         .channels = mixfmt_channels_count ?: DEFAULT_MIXFMT_CHANNELS_COUNT,
@@ -184,9 +215,11 @@ static st_sound_t *st_sound_load(st_soundctx_t *sound_ctx,
 
 static void st_sound_destroy_preloaded(void *psound) {
     st_prldsound_t *sound = psound;
+    st_soundctx_t  *sound_ctx = (st_soundctx_t *)ST_PRLDSOUND_CALL(sound,
+     get_owner);
 
-    if (sound->src_fmt.channels_layout == ST_SND_CL_PLANAR) {
-        for (size_t i = 0; i < sound->src_fmt.channels; i++) {
+    if (sound_ctx->mix_fmt.channels_layout == ST_SND_CL_PLANAR) {
+        for (size_t i = 0; i < sound_ctx->mix_fmt.channels; i++) {
             if (sound->pcm[i])
                 free(sound->pcm[i]);
         }
@@ -203,99 +236,172 @@ static void st_sound_destroy_streamed(void *psound) {
     free(sound);
 }
 
-static st_sound_t *st_sound_import_preloaded(st_soundctx_t *sound_ctx,
- size_t frames_per_channel, const st_pcmfmt_t *src_fmt, const void *pcm[],
- size_t pcm_len_per_channel) {
-     st_prldsound_t *sound;
+static void **convert_pcm_to_mix_fmt(st_soundctx_t *sound_ctx,
+ size_t *dst_pcm_size_per_channel, const st_pcmfmt_t *src_fmt, const void *pcm[],
+ size_t src_pcm_size_per_channel) {
+    void        **dst_pcm;
+    ssize_t       converted_size_pre_channel;
+    st_pcmconv_t *converter = ST_PCMCONVCTX_CALL(sound_ctx->pcmconv_ctx,
+     create_converter, src_fmt, &sound_ctx->mix_fmt);
 
-     if (frames_per_channel == 0 || !is_pcmfmt_valid(src_fmt)) {
-         ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-          "sound_simple: Incorrect PCM format");
+    if (!converter) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to create PCM-converter");
 
-         return NULL;
-     }
+        return NULL;
+    }
 
-     sound = (st_prldsound_t *)st_object_new(
-      sizeof(st_prldsound_t), &sound_funcs, st_sound_destroy_preloaded,
-      (st_object_t *)sound_ctx);
+    if (!ST_PCMCONV_CALL(converter, put_pcm, pcm, src_pcm_size_per_channel)) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to put src PCM data to PCM-converter");
 
-     if (!sound) {
-         ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-          "sound_simple: Unable to create object for preloaded sound");
+        goto put_pcm_fail;
+    }
 
-         return NULL;
-     }
+    if (!ST_PCMCONV_CALL(converter, flush)) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to flush converted PCM data to converter output"
+        );
 
-     sound->type = ST_SND_ST_PRELOAD;
-     sound->frames_per_channel = frames_per_channel;
-     memcpy(&sound->src_fmt, src_fmt, sizeof(st_pcmfmt_t));
+        goto flush_fail;
+    }
 
-     if (sound->src_fmt.channels_layout == ST_SND_CL_INTERLEAVED) {
-         sound->pcm = malloc(sizeof(void *));
-         if (!sound->pcm) {
-             ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-              "sound_simple: Unable to allocate memory for loaded pcm data "
-              "pointer");
+    *dst_pcm_size_per_channel = ST_PCMCONV_CALL(converter,
+     get_available_pcm_size_per_channel);
+    if (*dst_pcm_size_per_channel == -1) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to get size of converted PCM data");
 
-             goto pcm_array_malloc_fail;
-         }
+        goto get_size_fail;
+    }
 
-         sound->pcm[0] = malloc(pcm_len_per_channel * sound->src_fmt.channels);
-         if (!sound->pcm[0]) {
-             ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-              "sound_simple: Unable to allocate memory for loaded pcm data");
+    if (sound_ctx->mix_fmt.channels_layout == ST_SND_CL_INTERLEAVED) {
+        if (*dst_pcm_size_per_channel > SIZE_MAX / sound_ctx->mix_fmt.channels)
+        {
+            ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+             "sound_simple: Expected so huge PCM data size after converting");
 
-             goto pcm_malloc_fail;
-         }
+            goto huge_size;
+        }
 
-         memcpy(sound->pcm[0], pcm[0],
-          pcm_len_per_channel * sound->src_fmt.channels);
-     } else {
-         sound->pcm = malloc(sizeof(void *) * sound->src_fmt.channels);
-         if (!sound->pcm) {
-             ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-              "sound_simple: Unable to allocate memory for loaded pcm data "
-              "array");
+        dst_pcm = malloc(sizeof(void *));
+        if (!dst_pcm) {
+            ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+             "sound_simple: Unable to allocate memory for pcm data pointer");
 
-             goto pcm_array_malloc_fail;
-         }
+            goto pcm_array_malloc_fail;
+        }
 
-         memset(sound->pcm, 0, sizeof(void *) * sound->src_fmt.channels);
+        dst_pcm[0] = malloc(
+         *dst_pcm_size_per_channel * sound_ctx->mix_fmt.channels);
+        if (!dst_pcm[0]) {
+            ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+             "sound_simple: Unable to allocate memory for loaded pcm data");
 
-         for (size_t i = 0; i < sound->src_fmt.channels; i++) {
-             sound->pcm[i] = malloc(pcm_len_per_channel);
-             if (!sound->pcm[i]) {
-                 ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
-                  "sound_simple: Unable to allocate memory for loaded pcm "
-                  "data");
+            goto pcm_malloc_fail;
+        }
+    } else {
+        dst_pcm = malloc(sizeof(void *) * sound_ctx->mix_fmt.channels);
+        if (!dst_pcm) {
+            ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+             "sound_simple: Unable to allocate memory for loaded pcm data "
+             "array");
 
-                 goto pcm_malloc_fail;
-             }
+            goto pcm_array_malloc_fail;
+        }
 
-             memcpy(sound->pcm[i], pcm[i], pcm_len_per_channel);
-         }
-     }
+        memset(dst_pcm, 0, sizeof(void *) * sound_ctx->mix_fmt.channels);
 
-     return (st_sound_t *)sound;
+        for (size_t i = 0; i < sound_ctx->mix_fmt.channels; i++) {
+            dst_pcm[i] = malloc(*dst_pcm_size_per_channel);
+            if (!dst_pcm[i]) {
+                ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+                 "sound_simple: Unable to allocate memory for loaded pcm "
+                 "data");
 
-pcm_malloc_fail:
-    if (sound->src_fmt.channels_layout == ST_SND_CL_PLANAR) {
-        for (size_t i = 0; i < sound->src_fmt.channels; i++) {
-            if (sound->pcm[i])
-                free(sound->pcm[i]);
+                goto pcm_malloc_fail;
+            }
         }
     }
-    free(sound->pcm);
+
+    converted_size_pre_channel = ST_PCMCONV_CALL(converter, get_pcm, dst_pcm,
+     *dst_pcm_size_per_channel);
+    if (converted_size_pre_channel == -1) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to get converted PCM data");
+
+        goto get_pcm_fail;
+    }
+
+    *dst_pcm_size_per_channel = converted_size_pre_channel;
+
+    ST_PCMCONV_CALL(converter, destroy);
+
+    return dst_pcm;
+
+get_pcm_fail:
+pcm_malloc_fail:
+    if (sound_ctx->mix_fmt.channels_layout == ST_SND_CL_PLANAR) {
+        for (size_t i = 0; i < sound_ctx->mix_fmt.channels; i++) {
+            if (dst_pcm[i])
+                free(dst_pcm[i]);
+        }
+    } else {
+        if (dst_pcm[0])
+            free(dst_pcm[0]);
+    }
+    free(dst_pcm);
+
 pcm_array_malloc_fail:
+huge_size:
+get_size_fail:
+flush_fail:
+put_pcm_fail:
+    ST_PCMCONV_CALL(converter, destroy);
+
+    return NULL;
+}
+
+static st_sound_t *st_sound_import_preloaded(st_soundctx_t *sound_ctx,
+ const st_pcmfmt_t *src_fmt, const void *pcm[], size_t pcm_size_per_channel) {
+    st_prldsound_t *sound;
+
+    if (!is_pcmfmt_valid(src_fmt)) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Incorrect PCM format");
+
+        return NULL;
+    }
+
+    sound = (st_prldsound_t *)st_object_new(
+     sizeof(st_prldsound_t), &prldsound_funcs, st_sound_destroy_preloaded,
+     (st_object_t *)sound_ctx);
+
+    if (!sound) {
+        ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
+         "sound_simple: Unable to create object for preloaded sound");
+
+        return NULL;
+    }
+
+    sound->pcm = convert_pcm_to_mix_fmt(sound_ctx, &sound->pcm_size_per_channel,
+     src_fmt, pcm, pcm_size_per_channel);
+    if (!sound->pcm)
+        goto convert_fail;
+
+    sound->type = ST_SND_ST_PRELOAD;
+
+    return (st_sound_t *)sound;
+
+convert_fail:
     free(sound);
 
     return NULL;
 }
 
 static st_sound_t *st_sound_import_streamed(st_soundctx_t *sound_ctx,
- struct st_sndstream *sndstream, size_t frames_per_channel,
- const st_pcmfmt_t *src_fmt, struct st_sndcodecctx *codec_ctx,
- const char *asset_id) {
+ struct st_sndstream *sndstream, const st_pcmfmt_t *src_fmt,
+ struct st_sndcodecctx *codec_ctx, const char *asset_id) {
      st_strmsound_t *sound;
 
      if (!src_fmt) {
@@ -312,9 +418,8 @@ static st_sound_t *st_sound_import_streamed(st_soundctx_t *sound_ctx,
          return NULL;
      }
 
-     sound = (st_strmsound_t *)st_object_new(
-      sizeof(st_strmsound_t), &sound_funcs, st_sound_destroy_streamed,
-      (st_object_t *)sound_ctx);
+     sound = (st_strmsound_t *)st_object_new(sizeof(st_strmsound_t),
+      &strmsound_funcs, st_sound_destroy_streamed, (st_object_t *)sound_ctx);
 
      if (!sound) {
          ST_LOGGERCTX_CALL(sound_ctx->logger_ctx, error,
@@ -331,7 +436,6 @@ static st_sound_t *st_sound_import_streamed(st_soundctx_t *sound_ctx,
      }
 
      sound->type = ST_SND_ST_STREAM;
-     sound->frames_per_channel = frames_per_channel;
      memcpy(&sound->src_fmt, src_fmt, sizeof(st_pcmfmt_t));
      sound->codec_ctx = (st_modctx_t *)codec_ctx;
      sound->handle = sndstream;
@@ -348,10 +452,10 @@ static st_soundtype_t st_sound_get_type(const st_sound_t *sound) {
     return sound ? sound->type : ST_SND_ST_UNKNOWN;
 }
 
-static size_t st_sound_get_frames_per_channel(const st_sound_t *sound) {
-    return sound ? sound->frames_per_channel : 0;
+static size_t st_sound_get_pcm_size_per_channel(const st_prldsound_t *sound) {
+    return sound ? sound->pcm_size_per_channel : 0;
 }
 
-static const st_pcmfmt_t *st_sound_get_fmt(const st_sound_t *sound) {
+static const st_pcmfmt_t *st_sound_get_src_fmt(const st_strmsound_t *sound) {
     return sound ? &sound->src_fmt : NULL;
 }

@@ -26,17 +26,17 @@ struct st_sndcodecctx;
 typedef st_sound_t *(*st_sound_load_t)(st_soundctx_t *sound_ctx,
  const char *filename, st_soundtype_t type);
 typedef st_sound_t *(*st_sound_import_preloaded_t)(st_soundctx_t *sound_ctx,
- size_t frames_per_channel, const st_pcmfmt_t *src_fmt, const void *pcm[],
- size_t pcm_len_per_channel);
+ const st_pcmfmt_t *src_fmt, const void *pcm[], size_t pcm_len_per_channel);
 typedef st_sound_t *(*st_sound_import_streamed_t)(st_soundctx_t *sound_ctx,
- struct st_sndstream *sndstream, size_t frames_per_channel,
- const st_pcmfmt_t *src_fmt, struct st_sndcodecctx *codec_ctx,
- const char *asset_id);
+ struct st_sndstream *sndstream, const st_pcmfmt_t *src_fmt,
+ struct st_sndcodecctx *codec_ctx, const char *asset_id);
 typedef const st_pcmfmt_t *(*st_sound_get_mix_fmt_t)(
  const st_soundctx_t *sound_ctx);
 typedef st_soundtype_t (*st_sound_get_type_t)(const st_sound_t *sound);
-typedef size_t (*st_sound_get_frames_per_channel_t)(const st_sound_t *sound);
-typedef const st_pcmfmt_t *(*st_sound_get_fmt_t)(const st_sound_t *sound);
+typedef size_t (*st_sound_get_pcm_size_per_channel_t)(
+ const st_prldsound_t *sound);
+typedef const st_pcmfmt_t *(*st_sound_get_src_fmt_t)(
+ const st_strmsound_t *sound);
 
 typedef struct {
     st_modctx_funcs_t;
@@ -48,10 +48,18 @@ typedef struct {
 
 typedef struct {
     st_object_funcs_t;
-    st_sound_get_type_t               get_type;
-    st_sound_get_frames_per_channel_t get_frames_per_channel;
-    st_sound_get_fmt_t                get_fmt;
+    st_sound_get_type_t get_type;
 } st_sound_funcs_t;
+
+typedef struct {
+    st_sound_funcs_t;
+    st_sound_get_pcm_size_per_channel_t get_pcm_size_per_channel;
+} st_prldsound_funcs_t;
+
+typedef struct {
+    st_sound_funcs_t;
+    st_sound_get_src_fmt_t get_src_fmt;
+} st_strmsound_funcs_t;
 
 #define ST_SOUNDCTX_CALL(ctx, func, ...) \
     ((st_soundctx_funcs_t *)((const st_object_t *)ctx)->funcs)->func(ctx, \
@@ -59,3 +67,9 @@ typedef struct {
 #define ST_SOUND_CALL(object, func, ...) \
     ((st_sound_funcs_t *)((const st_object_t *)object)->funcs)->func(object, \
      ## __VA_ARGS__)
+#define ST_PRLDSOUND_CALL(object, func, ...) \
+    ((st_prldsound_funcs_t *)((const st_object_t *)object)->funcs)->func( \
+     object, ## __VA_ARGS__)
+#define ST_STRMSOUND_CALL(object, func, ...) \
+    ((st_strmsound_funcs_t *)((const st_object_t *)object)->funcs)->func( \
+     object, ## __VA_ARGS__)

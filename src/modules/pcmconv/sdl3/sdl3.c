@@ -279,18 +279,22 @@ static void st_pcmconv_destroy_converter(st_pcmconv_t *converter) {
 
 static size_t pcm_size_to_samples_count(size_t pcm_size,
  st_sndsamplefmt_t sample_fmt) {
-     switch (sample_fmt) {
+    switch (sample_fmt) {
         case ST_SND_SF_U8:
         case ST_SND_SF_S8:
             return pcm_size;
         case ST_SND_SF_S16LE:
         case ST_SND_SF_S16BE:
-            return pcm_size / 2;
+            return pcm_size % 2 == 0
+                ? pcm_size / 2
+                : 0;
         case ST_SND_SF_S32LE:
         case ST_SND_SF_S32BE:
         case ST_SND_SF_F32LE:
         case ST_SND_SF_F32BE:
-            return pcm_size / 4;
+            return pcm_size % 4 == 0
+                ? pcm_size / 4
+                : 0;
         case ST_SND_SF_UNKNOWN :
         default:
             return 0;
@@ -306,10 +310,8 @@ static bool st_pcmconv_put_pcm(st_pcmconv_t *converter, const void **pcm,
         size_t samples_count = pcm_size_to_samples_count(pcm_size_per_channel,
          converter->input_fmt.sample_fmt);
 
-        if (samples_count == 0)
+        if (samples_count == 0 || samples_count > INT_MAX)
             return false;
-
-        assert(samples_count <= INT_MAX );
 
         return pcmconv_ctx->sdl3.put_audio_stream_planar_data(converter->stream,
          pcm, converter->input_fmt.channels, samples_count);
@@ -337,12 +339,17 @@ static ssize_t st_pcmconv_get_pcm(st_pcmconv_t *converter, void **dst,
  size_t dst_size_per_channel) {
     st_pcmconvctx_t *pcmconv_ctx = (st_pcmconvctx_t *)ST_OBJECT_CALL(converter,
      get_owner);
+    int              get_data_size;
 
-    assert(dst_size_per_channel < INT_MAX / converter->output_fmt.channels);
+    if (dst_size_per_channel > INT_MAX / converter->output_fmt.channels)
+        return -1;
 
-    return pcmconv_ctx->sdl3.get_audio_stream_data(converter->stream, dst[0],
-     dst_size_per_channel * converter->output_fmt.channels)
-     / converter->output_fmt.channels;
+    get_data_size = pcmconv_ctx->sdl3.get_audio_stream_data(converter->stream,
+     dst[0], dst_size_per_channel * converter->output_fmt.channels);
+
+    return get_data_size == -1
+        ? -1
+        : get_data_size / converter->output_fmt.channels;
 }
 
 static bool st_pcmconv_flush(st_pcmconv_t *converter) {

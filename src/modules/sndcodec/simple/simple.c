@@ -131,7 +131,7 @@ static st_sndsamplefmt_t wav_to_samplefmt(bool float_pcm, int bits_per_sample) {
 }
 
 static bool st_sndcodec_stream_open(st_sndstream_t *sndstream,
- st_pcmfmt_t *src_fmt, size_t *frames_per_channel, const char *path) {
+ st_pcmfmt_t *src_fmt, const char *path) {
     uint16_t block_align = 0;
     char     header_id[4];
     bool     have_fmt = false;
@@ -222,8 +222,6 @@ static bool st_sndcodec_stream_open(st_sndstream_t *sndstream,
             if (sndstream->data_size % block_align != 0)
                 goto fail; /* Incorrect data size */
 
-            *frames_per_channel = sndstream->data_size / block_align;
-
             /* данные не читаем — только запоминаем позицию */
         } else {
             /* неизвестный чанк — пропускаем */
@@ -274,7 +272,6 @@ static st_sound_t *st_sndcodec_load_streamed(st_sndcodecctx_t *sndcodec_ctx,
  const char *filename) {
     st_sound_t      *result;
     st_pcmfmt_t      src_fmt;
-    size_t           frames_per_channel;
     st_sndstream_t  *sndstream = (st_sndstream_t *)st_object_new(
      sizeof(st_sndstream_t), &sndstream_funcs,
      (st_object_dtor_t)st_sndcodec_stream_close, (st_object_t *)sndcodec_ctx);
@@ -282,12 +279,11 @@ static st_sound_t *st_sndcodec_load_streamed(st_sndcodecctx_t *sndcodec_ctx,
     if (!sndstream)
         return NULL;
 
-    if (!st_sndcodec_stream_open(sndstream, &src_fmt, &frames_per_channel,
-     filename))
+    if (!st_sndcodec_stream_open(sndstream, &src_fmt, filename))
          goto stream_open_fail;
 
     result = ST_SOUNDCTX_CALL(sndcodec_ctx->sound_ctx, import_streamed,
-     sndstream, frames_per_channel, &src_fmt, sndcodec_ctx, filename);
+     sndstream, &src_fmt, sndcodec_ctx, filename);
     if (!result)
         goto import_streamed_fail;
 

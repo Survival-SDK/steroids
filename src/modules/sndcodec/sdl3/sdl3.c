@@ -200,15 +200,15 @@ static st_sound_t *st_sndcodec_load_preloaded(st_sndcodecctx_t *sndcodec_ctx,
     Uint32        len = 0;       /* длина в байтах */
     st_pcmfmt_t   src_fmt;
 
-    if (!sndcodec_ctx->sdl3.load_wav(filename, &spec, &data, &len))
+    if (!sndcodec_ctx->sdl3.load_wav(filename, &spec, &data, &len)
+     || len % SDL_AUDIO_FRAMESIZE(spec) != 0)
         return NULL;
 
     audiospec_to_pcmfmt(&src_fmt, &spec);
 
     if (is_pcmfmt_valid(&src_fmt))
         result = ST_SOUNDCTX_CALL(sndcodec_ctx->sound_ctx, import_preloaded,
-         len / SDL_AUDIO_FRAMESIZE(spec), &src_fmt, (const void *[]){data},
-         len / src_fmt.channels);
+         &src_fmt, (const void *[]){data}, len / src_fmt.channels);
 
     sndcodec_ctx->sdl3.free(data);
 
